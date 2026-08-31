@@ -98,7 +98,7 @@ internal object HomeThreadListPresentation {
     }
 
     fun projectIdentity(item: HostPresentation.UnifiedThreadItem): String =
-        "${item.connectionId.value}:${item.project.id}"
+        HomeProjectFilterPresentation.projectIdentity(item.connectionId, item.project.id)
 
     fun launchDefaults(
         project: RemoteProject,

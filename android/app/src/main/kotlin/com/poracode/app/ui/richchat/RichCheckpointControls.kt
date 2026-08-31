@@ -1,8 +1,10 @@
 package com.poracode.app.ui.richchat
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -21,16 +23,22 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.poracode.app.R
 import com.poracode.app.chat.RichCheckpoint
@@ -87,6 +95,14 @@ fun RichCheckpointControls(
                             contentDescription = stringResource(R.string.rich_chat_refresh_checkpoints),
                         )
                     }
+                }
+                state.failure?.let { failure ->
+                    Text(
+                        richChatFailureText(failure) ?: stringResource(R.string.rich_chat_request_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
                 }
                 val values = (state.turns + state.checkpoints)
                     .distinctBy(RichCheckpoint::checkpointItemId)
@@ -186,37 +202,71 @@ fun RichCheckpointControls(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CheckpointRow(
     checkpoint: RichCheckpoint,
     enabled: Boolean,
     onRestore: () -> Unit,
 ) {
-    ListItem(
-        headlineContent = {
-            Text(
-                stringResource(
-                    if (checkpoint.isTurn) {
-                        R.string.rich_chat_turn_checkpoint
-                    } else {
-                        R.string.rich_chat_file_checkpoint
-                    },
-                ),
-            )
-        },
-        supportingContent = {
-            Text(
-                stringResource(
-                    R.string.rich_chat_checkpoint_summary,
-                    checkpoint.capturedAt,
-                    checkpoint.changedFiles?.size ?: 0,
-                ),
-            )
-        },
-        trailingContent = {
-            TextButton(onClick = onRestore, enabled = enabled) {
-                Text(stringResource(R.string.rich_chat_restore_files))
-            }
+    val restoreLabel = stringResource(R.string.rich_chat_restore_files)
+    // Swipe-to-restore is an additional gesture; the trailing button stays so the action
+    // remains discoverable and reachable without a swipe gesture (touch or accessibility).
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.StartToEnd && enabled) onRestore()
+            false
         },
     )
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = enabled,
+        enableDismissFromEndToStart = false,
+        backgroundContent = {
+            Row(
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 20.dp)
+                    .semantics { contentDescription = restoreLabel },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Outlined.History,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Text(restoreLabel, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            }
+        },
+    ) {
+        ListItem(
+            headlineContent = {
+                Text(
+                    stringResource(
+                        if (checkpoint.isTurn) {
+                            R.string.rich_chat_turn_checkpoint
+                        } else {
+                            R.string.rich_chat_file_checkpoint
+                        },
+                    ),
+                )
+            },
+            supportingContent = {
+                Text(
+                    stringResource(
+                        R.string.rich_chat_checkpoint_summary,
+                        checkpoint.capturedAt,
+                        checkpoint.changedFiles?.size ?: 0,
+                    ),
+                )
+            },
+            trailingContent = {
+                TextButton(onClick = onRestore, enabled = enabled) {
+                    Text(restoreLabel)
+                }
+            },
+        )
+    }
 }

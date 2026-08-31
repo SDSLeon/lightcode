@@ -38,6 +38,7 @@
     <string name="rich_chat_remove_attachment">Usuń załącznik %1$s</string>
     <string name="rich_chat_attachment_invalid">Wybierz niepusty plik o rozmiarze nie większym niż 20 MiB.</string>
     <string name="rich_chat_attachment_upload_failed">Nie udało się przesłać załącznika. Twoja wiadomość została zachowana.</string>
+    <string name="rich_chat_camera_unavailable">Na tym urządzeniu nie ma dostępnej aplikacji aparatu.</string>
 
     <string name="rich_chat_requests_title">Prośba agenta</string>
     <string name="rich_chat_allow">Zezwól</string>
@@ -100,4 +101,34 @@
     <string name="rich_chat_conversation">Rozmowa</string>
     <string name="rich_chat_cancel">Anuluj</string>
     <string name="rich_chat_submit">Prześlij</string>
+    <string name="rich_chat_composer_controls">Ustawienia edytora</string>
+    <string name="rich_chat_composer_controls_summary">Ustawienia edytora: %1$s</string>
+    <string name="rich_chat_model">Model</string>
+    <string name="rich_chat_effort">Poziom wysiłku</string>
+    <string name="rich_chat_context">Kontekst</string>
+    <string name="rich_chat_fast_mode">Tryb szybki</string>
+    <string name="rich_chat_thinking">Myślenie</string>
+    <string name="rich_chat_mode">Tryb</string>
+    <string name="rich_chat_permissions">Uprawnienia</string>
+    <string name="rich_chat_mcp_servers">Serwery MCP</string>
+    <string name="rich_chat_browser_mcp">Przeglądarka</string>
+    <string name="rich_chat_crossagent_mcp">Crossagents</string>
+    <string name="rich_chat_chrome_mcp">Chrome</string>
+    <string name="rich_chat_computer_use">Sterowanie komputerem</string>
+    <string name="rich_chat_subagent">Podagent</string>
+    <string name="rich_chat_crossagent">Crossagent</string>
+    <string name="rich_chat_workflow">Przepływ pracy</string>
+    <string name="rich_chat_activity_count">Aktywności: %1$d</string>
+    <string name="rich_chat_sign_in_required">Wymagane logowanie</string>
+    <string name="rich_chat_plan">Plan</string>
+    <string name="rich_chat_errors">Błędy</string>
+    <string name="rich_chat_plan_pending">Oczekujące</string>
+    <string name="rich_chat_plan_in_progress">W toku</string>
+    <string name="rich_chat_plan_completed">Ukończone</string>
+    <string name="rich_chat_plan_step_description">%1$s, %2$s</string>
+    <string name="rich_chat_agent_settings">Ustawienia agenta</string>
+    <string name="rich_chat_open_request">Otwórz prośbę</string>
+    <string name="rich_chat_app_controls">Sterowanie aplikacją</string>
+    <string name="rich_chat_remove_context">Usuń %1$s</string>
+    <string name="rich_chat_send_steer">Wyślij instrukcję uzupełniającą</string>
 </resources>

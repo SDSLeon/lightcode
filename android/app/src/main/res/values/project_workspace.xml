@@ -72,4 +72,21 @@
     <string name="workspace_permission_denied">This session does not have permission for that action.</string>
     <string name="workspace_project_changed">The selected project or desktop changed. Try again.</string>
     <string name="workspace_invalid_response">The desktop returned an invalid workspace response.</string>
+    <string name="workspace_create_entry">Create file or folder</string>
+    <string name="workspace_create_file">Create file</string>
+    <string name="workspace_create_folder">Create folder</string>
+    <string name="workspace_file_actions">Actions for %1$s</string>
+    <string name="workspace_rename">Rename</string>
+    <string name="workspace_move">Move</string>
+    <string name="workspace_delete">Delete</string>
+    <string name="workspace_delete_message">Delete %1$s? This cannot be undone.</string>
+    <string name="workspace_delete_folder_message">Delete %1$s and all its contents? This cannot be undone.</string>
+    <string name="workspace_mutation_uncertain">The connection ended before the desktop confirmed the file action. The folder was refreshed; review it before trying another action.</string>
+    <string name="workspace_parent_folder">Destination folder</string>
+    <string name="workspace_entry_name">Name</string>
+    <string name="workspace_confirm">Confirm</string>
+    <string name="workspace_copy_relative_path">Copy path</string>
+    <string name="workspace_copy_absolute_path">Copy absolute path</string>
+    <string name="workspace_markdown_preview">Preview Markdown</string>
+    <string name="workspace_markdown_edit">Edit Markdown</string>
 </resources>

@@ -72,4 +72,21 @@
     <string name="workspace_permission_denied">Diese Sitzung hat keine Berechtigung für diese Aktion.</string>
     <string name="workspace_project_changed">Das ausgewählte Projekt oder der Desktop hat sich geändert. Versuche es erneut.</string>
     <string name="workspace_invalid_response">Der Desktop hat eine ungültige Arbeitsbereichsantwort zurückgegeben.</string>
+    <string name="workspace_create_entry">Datei oder Ordner erstellen</string>
+    <string name="workspace_create_file">Datei erstellen</string>
+    <string name="workspace_create_folder">Ordner erstellen</string>
+    <string name="workspace_file_actions">Aktionen für %1$s</string>
+    <string name="workspace_rename">Umbenennen</string>
+    <string name="workspace_move">Verschieben</string>
+    <string name="workspace_delete">Löschen</string>
+    <string name="workspace_delete_message">%1$s löschen? Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="workspace_delete_folder_message">%1$s und den gesamten Inhalt löschen? Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="workspace_mutation_uncertain">Die Verbindung wurde beendet, bevor der Desktop die Dateiaktion bestätigt hat. Der Ordner wurde aktualisiert. Prüfe ihn, bevor du eine weitere Aktion versuchst.</string>
+    <string name="workspace_parent_folder">Zielordner</string>
+    <string name="workspace_entry_name">Name</string>
+    <string name="workspace_confirm">Bestätigen</string>
+    <string name="workspace_copy_relative_path">Pfad kopieren</string>
+    <string name="workspace_copy_absolute_path">Absoluten Pfad kopieren</string>
+    <string name="workspace_markdown_preview">Markdown-Vorschau</string>
+    <string name="workspace_markdown_edit">Markdown bearbeiten</string>
 </resources>

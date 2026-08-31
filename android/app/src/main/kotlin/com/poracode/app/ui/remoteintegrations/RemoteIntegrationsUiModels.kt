@@ -6,9 +6,17 @@ import com.poracode.app.model.remoteintegrations.PrWatchKey
 import com.poracode.app.model.remoteintegrations.ScheduleDraft
 import com.poracode.app.model.remoteintegrations.ScheduleRecurrence
 import com.poracode.app.model.remoteintegrations.ScheduledTask
+import com.poracode.app.protocol.ProtocolConstants
 import com.poracode.app.session.remoteintegrations.IntegrationHostLease
 
 enum class RemoteIntegrationsSection { Update, Schedules, PrWatches }
+
+data class ScheduleRunThreadTarget(
+    val threadId: String,
+    val presentedId: String,
+    val title: String,
+    val model: String,
+)
 
 data class RemoteIntegrationsAccess(
     val hasHost: Boolean,
@@ -21,7 +29,7 @@ data class RemoteIntegrationsAccess(
 ) {
     companion object {
         fun from(lease: IntegrationHostLease?): RemoteIntegrationsAccess {
-            val compatible = lease?.protocolVersion == 8
+            val compatible = lease?.protocolVersion == ProtocolConstants.REMOTE_PROTOCOL_VERSION
             val ready = lease?.ready == true
             val online = lease?.online == true
             fun scope(value: String) = compatible && ready && online && value in lease!!.scopes

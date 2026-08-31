@@ -3,26 +3,15 @@ package com.poracode.app.ui.projects.workspace
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -42,23 +31,22 @@ import com.poracode.app.R
 import com.poracode.app.model.GitFileChange
 import com.poracode.app.model.GitMutationOutcome
 import com.poracode.app.model.GitOperationRequest
-import com.poracode.app.model.GitRequests
 import com.poracode.app.model.ProjectWorkspaceTarget
-import com.poracode.app.protocol.git.GitProcedure
+import com.poracode.app.model.hostPath
 import com.poracode.app.session.projects.GitExecutionResult
 import com.poracode.app.session.projects.GithubOperationsController
 import com.poracode.app.session.projects.ProjectHostLease
 import com.poracode.app.session.projects.GitOperationsController
 import com.poracode.app.session.projects.ProjectOperationResult
+import com.poracode.app.session.projects.invalidates
 import com.poracode.app.session.projects.ProjectWorkspaceController
 import com.poracode.app.session.projects.ProjectWorkspaceEntry
 import com.poracode.app.session.projects.ProjectWorkspaceGateway
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonPrimitive
 
-private enum class EditorExitAction { Back, Reload, Open }
+internal enum class EditorExitAction { Back, Reload, Open, Discard }
 
 /**
  * Native project files/Git surface. The caller owns composition of the workspace controller and
@@ -75,6 +63,8 @@ fun ProjectWorkspaceScreen(
     target: ProjectWorkspaceTarget,
     projectName: String,
     onBack: () -> Unit,
+    initialSection: ProjectWorkspaceSection = ProjectWorkspaceSection.Files,
+    initialGithubSection: ProjectGithubSection = ProjectGithubSection.PullRequests,
     modifier: Modifier = Modifier,
 ) {
     val workspace by controller.state.collectAsStateWithLifecycle()
@@ -82,7 +72,9 @@ fun ProjectWorkspaceScreen(
     val access = ProjectWorkspaceAccess.from(lease, target.identity)
     val scope = rememberCoroutineScope()
     var initialized by remember(lease?.key, target.identity, access) { mutableStateOf(false) }
-    var sectionName by rememberSaveable { mutableStateOf(ProjectWorkspaceSection.Files.name) }
+    var sectionName by rememberSaveable(target.identity, initialSection) {
+        mutableStateOf(initialSection.name)
+    }
     val section = ProjectWorkspaceSection.valueOf(sectionName)
     var searchText by rememberSaveable(target.identity) { mutableStateOf("") }
     var showingSearch by rememberSaveable(target.identity) { mutableStateOf(false) }
@@ -93,6 +85,8 @@ fun ProjectWorkspaceScreen(
     var diffRequest by rememberSaveable(target.identity) { mutableIntStateOf(0) }
     var editorEpoch by rememberSaveable(target.identity) { mutableIntStateOf(0) }
     var saveFailed by rememberSaveable(target.identity) { mutableStateOf(false) }
+    var showingBranches by rememberSaveable(target.identity) { mutableStateOf(false) }
+    var showingWorktrees by rememberSaveable(target.identity) { mutableStateOf(false) }
 
     LaunchedEffect(lease?.key, target, access) {
         controller.close(target.identity)
@@ -120,8 +114,10 @@ fun ProjectWorkspaceScreen(
         ProjectWorkspaceEntry()
     }
     val gitEntry = gitOperations.entries[target.identity]
+    val branchList = remember(gitEntry?.branches) { decodeGitBranchList(gitEntry?.branches) }
+    val worktreeList = remember(gitEntry?.worktrees) { decodeGitWorktreeList(gitEntry?.worktrees) }
     val file = entry.openFile
-    var draft by rememberSaveable(
+    var draft by remember(
         target.identity,
         file?.path,
         file?.modifiedAtMs,
@@ -162,6 +158,9 @@ fun ProjectWorkspaceScreen(
     )
     var pendingAction by remember { mutableStateOf<EditorExitAction?>(null) }
     var pendingPath by remember { mutableStateOf<String?>(null) }
+    var pendingMutation by remember(target.identity) {
+        mutableStateOf<PendingProjectEntryMutation?>(null)
+    }
 
     val executeAction: (EditorExitAction, String?) -> Unit = { action, path ->
         when (action) {
@@ -182,6 +181,12 @@ fun ProjectWorkspaceScreen(
                     }
                 }
             }
+            EditorExitAction.Discard -> {
+                // Reverts the in-editor buffer in place; unlike Back/Reload/Open this never
+                // navigates or re-fetches the file.
+                draft = file?.content.orEmpty()
+                saveFailed = false
+            }
         }
     }
     val requestAction: (EditorExitAction, String?) -> Unit = { action, path ->
@@ -191,6 +196,9 @@ fun ProjectWorkspaceScreen(
         } else {
             executeAction(action, path)
         }
+    }
+    val executeMutation: (PendingProjectEntryMutation) -> Unit = { pending ->
+        scope.launch { controller.mutateEntry(pending.target, pending.mutation) }
     }
     val submitGit: (GitOperationRequest) -> Unit = { request ->
         scope.launch {
@@ -212,47 +220,31 @@ fun ProjectWorkspaceScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(projectName) },
-                navigationIcon = {
-                    IconButton(onClick = { requestAction(EditorExitAction.Back, null) }) {
-                        Icon(
-                            Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            if (section == ProjectWorkspaceSection.Files) {
-                                scope.launch {
-                                    if (showingSearch && searchText.isNotBlank()) {
-                                        controller.searchFiles(target, searchText.trim())
-                                    } else {
-                                        controller.loadTree(
-                                            target,
-                                            entry.tree?.directoryPath.orEmpty(),
-                                        )
-                                    }
-                                }
-                            } else if (section == ProjectWorkspaceSection.Git) {
-                                selectedDiffPath = null
-                                scope.launch { controller.refreshGit(target) }
+            ProjectWorkspaceTopBar(
+                projectName = projectName,
+                section = section,
+                access = access,
+                actions = actions,
+                onBack = { requestAction(EditorExitAction.Back, null) },
+                onShowBranches = { showingBranches = true },
+                onShowWorktrees = { showingWorktrees = true },
+                onRefresh = {
+                    if (section == ProjectWorkspaceSection.Files) {
+                        scope.launch {
+                            if (showingSearch && searchText.isNotBlank()) {
+                                controller.searchFiles(target, searchText.trim())
                             } else {
-                                scope.launch { githubController.refresh(target) }
+                                controller.loadTree(
+                                    target,
+                                    entry.tree?.directoryPath.orEmpty(),
+                                )
                             }
-                        },
-                        enabled = when (section) {
-                            ProjectWorkspaceSection.Files -> actions.canBrowse
-                            ProjectWorkspaceSection.Git -> actions.canRefreshGit
-                            ProjectWorkspaceSection.Github -> access.canRead
-                        },
-                    ) {
-                        Icon(
-                            Icons.Outlined.Refresh,
-                            contentDescription = stringResource(R.string.workspace_refresh),
-                        )
+                        }
+                    } else if (section == ProjectWorkspaceSection.Git) {
+                        selectedDiffPath = null
+                        scope.launch { controller.refreshGit(target) }
+                    } else {
+                        scope.launch { githubController.refresh(target) }
                     }
                 },
             )
@@ -261,13 +253,18 @@ fun ProjectWorkspaceScreen(
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (
                 entry.loadingTree || entry.searching || entry.loadingFile ||
-                entry.savingFile || entry.loadingGit || diffState == ProjectGitDiffUiState.Loading
+                entry.savingFile || entry.mutatingEntry || entry.loadingGit ||
+                diffState == ProjectGitDiffUiState.Loading
             ) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
             }
             ProjectWorkspaceAccessBanner(lease, access)
             if (entry.failure != null && !saveFailed) {
-                ProjectWorkspaceFailureCard(entry.failure, modifier = Modifier)
+                ProjectWorkspaceFailureCard(
+                    entry.failure,
+                    mutationUncertain = entry.mutationUncertain,
+                    modifier = Modifier,
+                )
             }
             PrimaryTabRow(selectedTabIndex = section.ordinal) {
                 ProjectWorkspaceSection.entries.forEach { candidate ->
@@ -293,6 +290,7 @@ fun ProjectWorkspaceScreen(
                 if (section == ProjectWorkspaceSection.Files) {
                     FilesWorkspaceContent(
                         entry = entry,
+                        rootPath = target.location.hostPath(),
                         draft = draft,
                         dirty = dirty,
                         saveFailed = saveFailed,
@@ -315,6 +313,18 @@ fun ProjectWorkspaceScreen(
                             scope.launch { controller.loadTree(target, path) }
                         },
                         onFile = { path -> requestAction(EditorExitAction.Open, path) },
+                        onMutation = { mutation ->
+                            val pending = PendingProjectEntryMutation(
+                                target,
+                                mutation,
+                                file?.path.orEmpty(),
+                            )
+                            if (dirty && file != null && mutation.invalidates(file.path)) {
+                                pendingMutation = pending
+                            } else {
+                                executeMutation(pending)
+                            }
+                        },
                         onDraftChange = { draft = it; saveFailed = false },
                         onSave = {
                             scope.launch {
@@ -323,6 +333,7 @@ fun ProjectWorkspaceScreen(
                             }
                         },
                         onReload = { requestAction(EditorExitAction.Reload, null) },
+                        onDiscard = { requestAction(EditorExitAction.Discard, null) },
                     )
                 } else if (section == ProjectWorkspaceSection.Git) {
                     ProjectGitPane(
@@ -341,42 +352,28 @@ fun ProjectWorkspaceScreen(
                             selectedDiffStaged = change.staged
                             diffRequest += 1
                         },
-                        onStage = { change ->
-                            submitGit(
-                                GitRequests.create(
-                                    GitProcedure.Stage,
-                                    target.location,
-                                    mapOf("filePath" to JsonPrimitive(change.path)),
-                                ),
-                            )
-                        },
+                        onStage = { change -> submitGit(gitStageRequest(target.location, change.path)) },
                         onUnstage = { change ->
-                            submitGit(
-                                GitRequests.create(
-                                    GitProcedure.Unstage,
-                                    target.location,
-                                    mapOf("filePath" to JsonPrimitive(change.path)),
-                                ),
-                            )
+                            submitGit(gitUnstageRequest(target.location, change.path))
                         },
                         onRevert = { change ->
-                            submitGit(
-                                GitRequests.create(
-                                    GitProcedure.Revert,
-                                    target.location,
-                                    mapOf("filePath" to JsonPrimitive(change.path)),
-                                ),
-                            )
+                            submitGit(gitRevertRequest(target.location, change.path))
                         },
                         actions = {
                             ProjectGitActions(
                                 location = target.location,
                                 status = requireNotNull(entry.gitSnapshot?.status),
+                                activeWorktreePaths = activeWorktreePaths(worktreeList),
                                 enabled = access.canWrite,
                                 busy = gitEntry?.activeMutation != null,
                                 outcome = gitEntry?.lastOutcome,
                                 onRequest = submitGit,
                             )
+                        },
+                        onRetry = if (actions.canRefreshGit) {
+                            { scope.launch { controller.refreshGit(target) } }
+                        } else {
+                            null
                         },
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -387,6 +384,7 @@ fun ProjectWorkspaceScreen(
                         canRead = access.canRead,
                         canOperate = access.canWrite,
                         expanded = expanded,
+                        initialSection = initialGithubSection,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -394,51 +392,54 @@ fun ProjectWorkspaceScreen(
         }
     }
 
-    val pending = pendingAction
-    if (pending != null) {
-        AlertDialog(
-            onDismissRequest = { pendingAction = null; pendingPath = null },
-            title = { Text(stringResource(R.string.workspace_discard_title)) },
-            text = {
-                Text(
-                    stringResource(
-                        R.string.workspace_discard_message,
-                        file?.path.orEmpty(),
-                    ),
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    pendingAction = null
-                    val path = pendingPath
-                    pendingPath = null
-                    executeAction(pending, path)
-                }) { Text(stringResource(R.string.workspace_discard)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingAction = null; pendingPath = null }) {
-                    Text(stringResource(R.string.workspace_keep_editing))
-                }
-            },
-        )
-    }
+    ProjectWorkspaceDiscardDialog(
+        pendingAction = pendingAction,
+        filePath = file?.path,
+        onConfirm = {
+            val pending = pendingAction
+            pendingAction = null
+            val path = pendingPath
+            pendingPath = null
+            if (pending != null) executeAction(pending, path)
+        },
+        onDismiss = { pendingAction = null; pendingPath = null },
+    )
 
-    if (gitEntry?.pendingConfirmation != null) {
-        GitConfirmationDialog(
-            onConfirm = {
-                scope.launch {
-                    when (val result = gitController.confirm(target)) {
-                        is GitExecutionResult.Completed ->
-                            if (result.outcome is GitMutationOutcome.Applied) {
-                                selectedDiffPath = null
-                                controller.refreshGit(target)
-                                gitController.refresh(target)
-                            }
-                        else -> Unit
-                    }
+    ProjectWorkspaceGitConfirmationOverlay(
+        visible = gitEntry?.pendingConfirmation != null,
+        onConfirm = {
+            scope.launch {
+                when (val result = gitController.confirm(target)) {
+                    is GitExecutionResult.Completed ->
+                        if (result.outcome is GitMutationOutcome.Applied) {
+                            selectedDiffPath = null
+                            controller.refreshGit(target)
+                            gitController.refresh(target)
+                        }
+                    else -> Unit
                 }
-            },
-            onDismiss = { gitController.dismissConfirmation(target.identity) },
-        )
-    }
+            }
+        },
+        onDismiss = { gitController.dismissConfirmation(target.identity) },
+    )
+    ProjectMutationDiscardDialog(
+        pending = pendingMutation,
+        onConfirm = {
+            pendingMutation = null
+            executeMutation(it)
+        },
+        onDismiss = { pendingMutation = null },
+    )
+
+    ProjectWorkspaceBranchWorktreeOverlays(
+        location = target.location,
+        branches = branchList,
+        worktrees = worktreeList,
+        enabled = access.canWrite && gitEntry?.activeMutation == null,
+        showingBranches = showingBranches,
+        showingWorktrees = showingWorktrees,
+        onSubmitGit = submitGit,
+        onDismissBranches = { showingBranches = false },
+        onDismissWorktrees = { showingWorktrees = false },
+    )
 }

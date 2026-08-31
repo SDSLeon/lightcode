@@ -14,10 +14,20 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -33,6 +43,7 @@ import com.poracode.app.session.settings.SettingsOperationFailure
 internal fun SettingsAccessBanner(
     access: SettingsUiAccess,
     needsRead: Boolean,
+    needsProjectsManage: Boolean = false,
 ) {
     val message = when {
         !access.hasSelection -> stringResource(R.string.settings_no_host)
@@ -40,6 +51,8 @@ internal fun SettingsAccessBanner(
         !access.ready -> stringResource(R.string.settings_not_ready)
         !access.online -> stringResource(R.string.settings_offline)
         needsRead && !access.canRead -> stringResource(R.string.settings_read_denied)
+        needsProjectsManage && !access.canManageProjects ->
+            stringResource(R.string.settings_manage_projects_denied)
         else -> null
     } ?: return
     Card(
@@ -81,6 +94,25 @@ internal fun SettingsSection(
             )
             content()
         }
+    }
+}
+
+/**
+ * Same Card/padding recipe as [SettingsSection] but with no heading. Use this for a pane whose
+ * single section would otherwise repeat the `TopAppBar` title as an in-content header (e.g. a
+ * "General" pane under a "General" nav title) — the nav bar already carries that title.
+ */
+@Composable
+internal fun SettingsCard(
+    modifier: Modifier = Modifier,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+    Card(modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            content = content,
+        )
     }
 }
 
@@ -178,8 +210,55 @@ internal fun SettingsMutationMessage(outcome: SettingsMutationOutcome?) {
     }
 }
 
+/**
+ * Read-only single-choice dropdown for settings pickers (generation provider/model/effort,
+ * workspace storage mode, PR automation, and merge method). [options] pairs a stable value
+ * with its display label; [value] must match one option's first component or the field
+ * renders blank rather than guessing a selection.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun settingsFailureMessage(failure: SettingsOperationFailure): String = when (failure) {
+internal fun SettingsDropdownRow(
+    label: String,
+    value: String,
+    options: List<Pair<String, String>>,
+    enabled: Boolean = true,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.first == value }?.second ?: value
+    ExposedDropdownMenuBox(
+        expanded = expanded && enabled,
+        onExpandedChange = { if (enabled) expanded = it },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        OutlinedTextField(
+            value = selectedLabel,
+            onValueChange = {},
+            readOnly = true,
+            enabled = enabled,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded && enabled) },
+            modifier = Modifier
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded && enabled, onDismissRequest = { expanded = false }) {
+            options.forEach { (optionValue, optionLabel) ->
+                DropdownMenuItem(
+                    text = { Text(optionLabel) },
+                    onClick = {
+                        onSelect(optionValue)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun settingsFailureMessage(failure: SettingsOperationFailure): String = when (failure) {
     SettingsOperationFailure.NoSession -> stringResource(R.string.settings_no_host)
     SettingsOperationFailure.Offline -> stringResource(R.string.settings_offline)
     SettingsOperationFailure.SessionNotReady -> stringResource(R.string.settings_not_ready)

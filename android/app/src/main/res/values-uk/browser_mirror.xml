@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">Зупинити віддзеркалення</string>
     <string name="browser_mirror_empty">Відкритих вкладок браузера немає.</string>
     <string name="browser_mirror_stopped">Віддзеркалення браузера зупинено.</string>
+    <string name="browser_mirror_move_left">Перемістити ліворуч</string>
+    <string name="browser_mirror_move_right">Перемістити праворуч</string>
+    <string name="browser_mirror_privacy_notice">На віддзеркалених сторінках може відображатися особиста інформація. Зображення залишаються на цьому пристрої та видаляються, коли ви залишаєте цей екран.</string>
 </resources>

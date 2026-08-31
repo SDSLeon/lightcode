@@ -68,7 +68,9 @@ fun EmptyStateView(
         modifier = modifier
             .fillMaxSize()
             .padding(24.dp)
-            .semantics { contentDescription = "$title. $message" },
+            .semantics {
+                contentDescription = if (title.endsWith(".")) "$title $message" else "$title. $message"
+            },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

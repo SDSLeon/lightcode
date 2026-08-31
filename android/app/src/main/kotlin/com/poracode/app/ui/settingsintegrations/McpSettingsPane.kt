@@ -44,6 +44,7 @@ internal fun McpSettingsPane(
     globalOwner: SkillOwner,
     projectOwner: SkillOwner?,
     callbacks: SettingsIntegrationsCallbacks,
+    lockProjectOwner: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var owner by remember(projectOwner) { mutableStateOf(projectOwner ?: globalOwner) }
@@ -52,7 +53,7 @@ internal fun McpSettingsPane(
         modifier.padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
+        if (!lockProjectOwner) item {
             Row(
                 Modifier.fillMaxWidth().padding(top = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -151,6 +152,7 @@ private fun McpGroupCard(
                     access.canOperate && access.online,
                     { callbacks.onProbeMcp(owner, external.server) },
                     { callbacks.onBeginOauth(owner, external.server) },
+                    { callbacks.onImportMcp(owner, external.server) },
                 )
             }
         }
@@ -164,6 +166,7 @@ private fun McpServerRow(
     canOperate: Boolean,
     onProbe: () -> Unit,
     onOauth: () -> Unit,
+    onImport: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(external.server.name, style = MaterialTheme.typography.titleSmall)
@@ -176,6 +179,10 @@ private fun McpServerRow(
         }
         if (probe != null) ProbeSummary(probe)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                enabled = canOperate && external.unsupportedReason == null,
+                onClick = onImport,
+            ) { Text(stringResource(R.string.settings_integrations_import)) }
             OutlinedButton(
                 enabled = canOperate && external.unsupportedReason == null,
                 onClick = onProbe,

@@ -78,12 +78,27 @@
     <string name="home_no_matching_threads">Aucun fil correspondant</string>
     <string name="home_no_matching_threads_message">Modifiez la recherche ou le filtre de projets.</string>
     <string name="home_quick_compose_prompt">Planifier, demander, créer…</string>
+    <string name="home_quick_compose_camera_capture">Prendre une photo</string>
     <string name="home_more">Plus</string>
+    <string name="home_connections">Connexions</string>
     <string name="home_new_thread">Nouveau fil</string>
     <string name="home_project">Projet</string>
+    <string name="home_project_host">%1$s — %2$s</string>
     <string name="home_agent_value">Agent : %1$s</string>
     <string name="home_model_value">Modèle : %1$s</string>
     <string name="home_start">Démarrer</string>
+    <string name="home_quick_compose_agent">Agent</string>
+    <string name="home_quick_compose_presentation">Présentation</string>
+    <string name="home_quick_compose_chat">Chat</string>
+    <string name="home_quick_compose_terminal">Terminal</string>
+    <string name="home_quick_compose_controls">Réglages de lancement</string>
+    <string name="home_quick_compose_worktree_title">Arbre de travail</string>
+    <string name="home_quick_compose_current_branch">Branche du projet</string>
+    <string name="home_quick_compose_project_default">Utiliser la valeur par défaut du projet</string>
+    <string name="home_quick_compose_existing_worktree">Arbre de travail existant</string>
+    <string name="home_quick_compose_no_worktrees">Aucun arbre de travail existant pour ce projet.</string>
+    <string name="home_quick_compose_commands">Commandes</string>
+    <string name="home_quick_compose_no_commands">Aucune commande annoncée pour cet agent.</string>
     <string name="home_quick_compose_defaults_description">Utilise les derniers réglages d’agent et de modèle de ce projet.</string>
     <string name="home_quick_compose_unavailable">Aucun projet ne dispose encore de réglages de lancement. Démarrez d’abord un fil depuis l’ordinateur.</string>
     <string name="home_new_thread_failed">Impossible de démarrer le nouveau fil.</string>
@@ -131,4 +146,5 @@
     <!-- Local store inconsistency after failed rollback -->
     <string name="local_store_inconsistent_title">Erreur du magasin d\'identifiants</string>
     <string name="local_store_inconsistent_message">Le magasin local d\'identifiants est incohérent. Oubliez cet ordinateur et recouplez-le.</string>
+
 </resources>

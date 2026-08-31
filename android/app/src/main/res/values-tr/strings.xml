@@ -78,12 +78,27 @@
     <string name="home_no_matching_threads">Eşleşen iş parçacığı yok</string>
     <string name="home_no_matching_threads_message">Aramayı veya proje filtresini değiştirin.</string>
     <string name="home_quick_compose_prompt">Planla, sor, geliştir…</string>
+    <string name="home_quick_compose_camera_capture">Fotoğraf çek</string>
     <string name="home_more">Daha fazla</string>
+    <string name="home_connections">Bağlantılar</string>
     <string name="home_new_thread">Yeni iş parçacığı</string>
     <string name="home_project">Proje</string>
+    <string name="home_project_host">%1$s — %2$s</string>
     <string name="home_agent_value">Aracı: %1$s</string>
     <string name="home_model_value">Model: %1$s</string>
     <string name="home_start">Başlat</string>
+    <string name="home_quick_compose_agent">Aracı</string>
+    <string name="home_quick_compose_presentation">Sunum</string>
+    <string name="home_quick_compose_chat">Sohbet</string>
+    <string name="home_quick_compose_terminal">Terminal</string>
+    <string name="home_quick_compose_controls">Başlatma ayarları</string>
+    <string name="home_quick_compose_worktree_title">Çalışma ağacı</string>
+    <string name="home_quick_compose_current_branch">Proje dalı</string>
+    <string name="home_quick_compose_project_default">Proje varsayılanını kullan</string>
+    <string name="home_quick_compose_existing_worktree">Mevcut çalışma ağacı</string>
+    <string name="home_quick_compose_no_worktrees">Bu proje için mevcut çalışma ağacı yok.</string>
+    <string name="home_quick_compose_commands">Komutlar</string>
+    <string name="home_quick_compose_no_commands">Bu aracı için duyurulmuş komut yok.</string>
     <string name="home_quick_compose_defaults_description">Bu projenin en son aracı ve model ayarlarını kullanır.</string>
     <string name="home_quick_compose_unavailable">Henüz başlatma ayarı olan proje yok. Önce masaüstünden bir iş parçacığı başlatın.</string>
     <string name="home_new_thread_failed">Yeni iş parçacığı başlatılamadı.</string>
@@ -131,4 +146,5 @@
     <!-- Local store inconsistency after failed rollback -->
     <string name="local_store_inconsistent_title">Kimlik bilgisi deposu hatası</string>
     <string name="local_store_inconsistent_message">Yerel kimlik bilgisi deposu tutarsız. Bu masaüstü bilgisayarı unutun ve yeniden eşleştirin.</string>
+
 </resources>

@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">Yansıtmayı durdur</string>
     <string name="browser_mirror_empty">Açık tarayıcı sekmesi yok.</string>
     <string name="browser_mirror_stopped">Tarayıcı yansıtma durduruldu.</string>
+    <string name="browser_mirror_move_left">Sola taşı</string>
+    <string name="browser_mirror_move_right">Sağa taşı</string>
+    <string name="browser_mirror_privacy_notice">Yansıtılan sayfalar kişisel içerik gösterebilir. Görüntüler yalnızca bu cihazda kalır ve bu ekrandan ayrıldığınızda silinir.</string>
 </resources>

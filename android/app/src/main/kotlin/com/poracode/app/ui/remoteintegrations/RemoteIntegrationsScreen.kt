@@ -42,6 +42,9 @@ import com.poracode.app.R
 @Composable
 fun RemoteIntegrationsScreen(
     composition: RemoteIntegrationsComposition,
+    scheduleThreads: List<ScheduleRunThreadTarget>,
+    onOpenThread: (String) -> Unit,
+    initialSection: RemoteIntegrationsSection = RemoteIntegrationsSection.Update,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -49,11 +52,11 @@ fun RemoteIntegrationsScreen(
     val hostLabel by composition.hostLabel.collectAsStateWithLifecycle()
     val state by composition.controller.state.collectAsStateWithLifecycle()
     val access = RemoteIntegrationsAccess.from(lease)
-    var sectionName by rememberSaveable { mutableStateOf(RemoteIntegrationsSection.Update.name) }
+    var sectionName by rememberSaveable(initialSection) { mutableStateOf(initialSection.name) }
     val section = RemoteIntegrationsSection.entries.firstOrNull { it.name == sectionName }
         ?: RemoteIntegrationsSection.Update
 
-    LaunchedEffect(lease?.key) { sectionName = RemoteIntegrationsSection.Update.name }
+    LaunchedEffect(lease?.key, initialSection) { sectionName = initialSection.name }
     LaunchedEffect(section, lease?.key) {
         val allowed = when (section) {
             RemoteIntegrationsSection.Update -> access.canManageProjects
@@ -106,12 +109,18 @@ fun RemoteIntegrationsScreen(
                     Row(Modifier.fillMaxSize()) {
                         IntegrationNavigationRail(section) { sectionName = it.name }
                         VerticalDivider()
-                        SectionContent(section, access, state, composition, Modifier.weight(1f))
+                        SectionContent(
+                            section, access, state, composition, scheduleThreads,
+                            onOpenThread, Modifier.weight(1f),
+                        )
                     }
                 } else {
                     Column(Modifier.fillMaxSize()) {
                         IntegrationTabs(section) { sectionName = it.name }
-                        SectionContent(section, access, state, composition, Modifier.weight(1f))
+                        SectionContent(
+                            section, access, state, composition, scheduleThreads,
+                            onOpenThread, Modifier.weight(1f),
+                        )
                     }
                 }
             }
@@ -125,11 +134,20 @@ private fun SectionContent(
     access: RemoteIntegrationsAccess,
     state: com.poracode.app.session.remoteintegrations.RemoteIntegrationsState,
     composition: RemoteIntegrationsComposition,
+    scheduleThreads: List<ScheduleRunThreadTarget>,
+    onOpenThread: (String) -> Unit,
     modifier: Modifier,
 ) {
     when (section) {
         RemoteIntegrationsSection.Update -> RemoteUpdatePane(state, access, composition, modifier)
-        RemoteIntegrationsSection.Schedules -> RemoteSchedulesPane(state, access, composition, modifier)
+        RemoteIntegrationsSection.Schedules -> RemoteSchedulesPane(
+            state,
+            access,
+            composition,
+            scheduleThreads,
+            onOpenThread,
+            modifier,
+        )
         RemoteIntegrationsSection.PrWatches -> RemotePrWatchesPane(state, access, composition, modifier)
     }
 }

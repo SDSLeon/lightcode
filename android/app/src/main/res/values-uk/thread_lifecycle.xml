@@ -21,4 +21,7 @@
     <string name="thread_lifecycle_close">Закрити</string>
     <string name="thread_lifecycle_failure_ambiguous">Результат невідомий. Список гілок оновлюється.</string>
     <string name="thread_lifecycle_failure_generic">Не вдалося виконати дію. Оновіть список і повторіть спробу.</string>
+    <string name="archived_threads_title">Архівні треди</string>
+    <string name="archived_threads_description">Відновіть або остаточно видаліть архівні треди.</string>
+    <string name="archived_threads_empty">Архівних тредів немає</string>
 </resources>

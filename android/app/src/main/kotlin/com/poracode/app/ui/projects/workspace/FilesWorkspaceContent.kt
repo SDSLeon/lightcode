@@ -8,11 +8,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.poracode.app.session.projects.ProjectEntryMutation
 import com.poracode.app.session.projects.ProjectWorkspaceEntry
 
 @Composable
 internal fun FilesWorkspaceContent(
     entry: ProjectWorkspaceEntry,
+    rootPath: String,
     draft: String,
     dirty: Boolean,
     saveFailed: Boolean,
@@ -26,22 +28,37 @@ internal fun FilesWorkspaceContent(
     onClearSearch: () -> Unit,
     onDirectory: (String) -> Unit,
     onFile: (String) -> Unit,
+    onMutation: (ProjectEntryMutation) -> Unit,
     onDraftChange: (String) -> Unit,
     onSave: () -> Unit,
     onReload: () -> Unit,
+    onDiscard: () -> Unit,
 ) {
     val browser: @Composable (Modifier) -> Unit = { paneModifier ->
         ProjectFileBrowserPane(
-            entry, searchText, showingSearch, actions.canBrowse, actions.canSearch,
-            actions.canOpenFile, onSearchTextChange, onSearch, onClearSearch,
-            onDirectory, onFile, paneModifier,
+            entry = entry,
+            rootPath = rootPath,
+            searchText = searchText,
+            showingSearch = showingSearch,
+            canBrowse = actions.canBrowse,
+            canSearch = actions.canSearch,
+            canOpenFile = actions.canOpenFile,
+            canMutate = access.canWrite && !entry.savingFile && !entry.mutationUncertain,
+            mutating = entry.mutatingEntry,
+            onSearchTextChange = onSearchTextChange,
+            onSearch = onSearch,
+            onClearSearch = onClearSearch,
+            onOpenDirectory = onDirectory,
+            onOpenFile = onFile,
+            onMutation = onMutation,
+            modifier = paneModifier,
         )
     }
     val editor: @Composable (Modifier) -> Unit = { paneModifier ->
         ProjectFileEditorPane(
             entry.openFile, draft, dirty, entry.loadingFile, entry.savingFile,
             access.canWrite, actions.canSaveFile, actions.canOpenFile, entry.failure,
-            saveFailed, onDraftChange, onSave, onReload, paneModifier,
+            saveFailed, onDraftChange, onSave, onReload, onDiscard, paneModifier,
         )
     }
     if (expanded) {

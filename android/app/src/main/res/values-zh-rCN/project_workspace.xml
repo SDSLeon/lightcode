@@ -72,4 +72,21 @@
     <string name="workspace_permission_denied">此会话无权执行该操作。</string>
     <string name="workspace_project_changed">所选项目或桌面设备已更改。请重试。</string>
     <string name="workspace_invalid_response">桌面设备返回了无效的工作区响应。</string>
+    <string name="workspace_create_entry">创建文件或文件夹</string>
+    <string name="workspace_create_file">创建文件</string>
+    <string name="workspace_create_folder">创建文件夹</string>
+    <string name="workspace_file_actions">%1$s 的操作</string>
+    <string name="workspace_rename">重命名</string>
+    <string name="workspace_move">移动</string>
+    <string name="workspace_delete">删除</string>
+    <string name="workspace_delete_message">删除 %1$s？此操作无法撤销。</string>
+    <string name="workspace_delete_folder_message">删除 %1$s 及其所有内容？此操作无法撤销。</string>
+    <string name="workspace_mutation_uncertain">桌面端确认文件操作前连接已结束。文件夹已刷新；请检查后再尝试其他操作。</string>
+    <string name="workspace_parent_folder">目标文件夹</string>
+    <string name="workspace_entry_name">名称</string>
+    <string name="workspace_confirm">确认</string>
+    <string name="workspace_copy_relative_path">复制路径</string>
+    <string name="workspace_copy_absolute_path">复制绝对路径</string>
+    <string name="workspace_markdown_preview">预览 Markdown</string>
+    <string name="workspace_markdown_edit">编辑 Markdown</string>
 </resources>

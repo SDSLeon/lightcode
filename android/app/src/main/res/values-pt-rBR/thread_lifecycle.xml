@@ -21,4 +21,7 @@
     <string name="thread_lifecycle_close">Fechar</string>
     <string name="thread_lifecycle_failure_ambiguous">O resultado é incerto. A lista de conversas está sendo atualizada.</string>
     <string name="thread_lifecycle_failure_generic">Não foi possível concluir a ação da conversa. Atualize a lista e tente novamente.</string>
+    <string name="archived_threads_title">Threads arquivadas</string>
+    <string name="archived_threads_description">Restaure ou exclua definitivamente as threads arquivadas.</string>
+    <string name="archived_threads_empty">Nenhuma thread arquivada</string>
 </resources>

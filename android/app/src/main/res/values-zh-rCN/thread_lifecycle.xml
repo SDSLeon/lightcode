@@ -21,4 +21,7 @@
     <string name="thread_lifecycle_close">关闭</string>
     <string name="thread_lifecycle_failure_ambiguous">结果尚不确定。正在刷新线程列表。</string>
     <string name="thread_lifecycle_failure_generic">无法完成线程操作。请刷新列表后重试。</string>
+    <string name="archived_threads_title">已归档会话</string>
+    <string name="archived_threads_description">恢复或永久删除已归档的会话。</string>
+    <string name="archived_threads_empty">没有已归档的会话</string>
 </resources>

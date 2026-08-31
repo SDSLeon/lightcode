@@ -72,4 +72,21 @@
     <string name="workspace_permission_denied">Bu oturumun söz konusu işlem için izni yok.</string>
     <string name="workspace_project_changed">Seçili proje veya masaüstü değişti. Yeniden deneyin.</string>
     <string name="workspace_invalid_response">Masaüstü geçersiz bir çalışma alanı yanıtı döndürdü.</string>
+    <string name="workspace_create_entry">Dosya veya klasör oluştur</string>
+    <string name="workspace_create_file">Dosya oluştur</string>
+    <string name="workspace_create_folder">Klasör oluştur</string>
+    <string name="workspace_file_actions">%1$s için işlemler</string>
+    <string name="workspace_rename">Yeniden adlandır</string>
+    <string name="workspace_move">Taşı</string>
+    <string name="workspace_delete">Sil</string>
+    <string name="workspace_delete_message">%1$s silinsin mi? Bu işlem geri alınamaz.</string>
+    <string name="workspace_delete_folder_message">%1$s ve tüm içeriği silinsin mi? Bu işlem geri alınamaz.</string>
+    <string name="workspace_mutation_uncertain">Masaüstü dosya işlemini onaylamadan bağlantı sona erdi. Klasör yenilendi; başka bir işlem denemeden önce inceleyin.</string>
+    <string name="workspace_parent_folder">Hedef klasör</string>
+    <string name="workspace_entry_name">Ad</string>
+    <string name="workspace_confirm">Onayla</string>
+    <string name="workspace_copy_relative_path">Yolu kopyala</string>
+    <string name="workspace_copy_absolute_path">Mutlak yolu kopyala</string>
+    <string name="workspace_markdown_preview">Markdown önizleme</string>
+    <string name="workspace_markdown_edit">Markdown düzenle</string>
 </resources>

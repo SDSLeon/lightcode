@@ -65,16 +65,21 @@ class SettingsUiComposition(
     private val gateway = GeneratedSettingsSessionGateway(hostLease, provider)
     val information = SettingsHostInformationController(hostLease, gateway)
     val controller = SettingsUiController(hostLease, information, runtimeScope, statsRequest)
+    private val mutableMcpProjects = MutableStateFlow(globalMcpProjectsOf(appState.value))
+    val mcpProjects: StateFlow<List<GlobalMcpProject>> = mutableMcpProjects.asStateFlow()
+    val globalMcp = GlobalMcpSettingsController(hostLease, gateway, runtimeScope)
     private val observation = runtimeScope.launch {
         appState.collect { state ->
             val previous = hostLease.value?.key
             leaseSource.update(settingsBindingOf(state))
             mutableHost.value = settingsMetadataOf(state)
             mutableReplayCache.value = state.hostReplay
+            mutableMcpProjects.value = globalMcpProjectsOf(state)
             val current = hostLease.value?.key
             if (previous != current) {
                 if (previous != null) information.invalidate(previous)
                 controller.onLeaseChanged()
+                globalMcp.onLeaseChanged()
             }
         }
     }
@@ -83,6 +88,10 @@ class SettingsUiComposition(
         observation.cancel()
         runtimeScope.cancel()
     }
+
+    fun onForeground() = globalMcp.onForeground()
+
+    fun onBackground() = globalMcp.onBackground()
 }
 
 class SettingsUiController internal constructor(
@@ -99,9 +108,20 @@ class SettingsUiController internal constructor(
     fun refresh(pane: SettingsPane) {
         when (pane) {
             SettingsPane.Host -> Unit
-            SettingsPane.Agents -> scope.launch { refreshAgents() }
+            SettingsPane.Agents -> scope.launch { information.loadAgentStatuses() }
+            SettingsPane.Usage -> scope.launch { information.loadProviderUsage() }
             SettingsPane.Profile -> scope.launch { refreshProfile() }
-            SettingsPane.Preferences -> scope.launch { information.loadSettings() }
+            // The generation editor's provider/model/effort pickers need the installed-agent
+            // capability catalog in addition to the host settings document.
+            SettingsPane.Preferences -> scope.launch {
+                supervisorScope {
+                    val settings = async { information.loadSettings() }
+                    val agents = async { information.loadAgentStatuses() }
+                    settings.await()
+                    agents.await()
+                }
+            }
+            SettingsPane.Workspace -> scope.launch { information.loadSettings() }
         }
     }
 
@@ -155,13 +175,6 @@ class SettingsUiController internal constructor(
         profileRevision.incrementAndGet()
         settingsRevision.incrementAndGet()
         mutableMutation.value = SettingsMutationState()
-    }
-
-    private suspend fun refreshAgents() = supervisorScope {
-        val statuses = async { information.loadAgentStatuses() }
-        val usage = async { information.loadProviderUsage() }
-        statuses.await()
-        usage.await()
     }
 
     private suspend fun refreshProfile() = supervisorScope {
@@ -223,3 +236,9 @@ private fun localProfileStatsRequest(): ProfileStatsRequest {
         window = ProfileStatsWindow.ThirtyDays,
     )
 }
+
+private fun globalMcpProjectsOf(state: AppSession.UiState): List<GlobalMcpProject> =
+    state.snapshot?.projects.orEmpty()
+        .filterNot { it.disabled == true }
+        .map { GlobalMcpProject(it.id, it.name) }
+        .sortedWith(compareBy<GlobalMcpProject> { it.name.lowercase() }.thenBy { it.id })

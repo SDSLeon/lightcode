@@ -21,4 +21,7 @@
     <string name="thread_lifecycle_close">Закрыть</string>
     <string name="thread_lifecycle_failure_ambiguous">Результат неясен. Список веток обновляется.</string>
     <string name="thread_lifecycle_failure_generic">Не удалось выполнить действие. Обновите список и повторите попытку.</string>
+    <string name="archived_threads_title">Архивные треды</string>
+    <string name="archived_threads_description">Восстановите или удалите архивные треды навсегда.</string>
+    <string name="archived_threads_empty">Архивных тредов нет</string>
 </resources>

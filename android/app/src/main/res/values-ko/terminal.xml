@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="terminal_title">터미널</string>
     <string name="terminal_output_description">터미널 출력</string>
     <string name="terminal_input_label">터미널 입력</string>
     <string name="terminal_input_placeholder">명령 입력</string>
@@ -7,6 +8,17 @@
     <string name="terminal_control_c">Ctrl+C</string>
     <string name="terminal_tab">탭</string>
     <string name="terminal_close">터미널 닫기</string>
+    <string name="terminal_close_confirm_title">이 터미널을 닫으시겠습니까?</string>
+    <string name="terminal_close_confirm_message">실행 중인 프로세스가 중지됩니다. 나중에 다시 시작할 수 있습니다.</string>
+    <string name="terminal_cancel">취소</string>
+    <string name="terminal_control_modifier">Ctrl</string>
+    <string name="terminal_key_escape">Esc</string>
+    <string name="terminal_key_enter">Enter</string>
+    <string name="terminal_key_backspace">⌫</string>
+    <string name="terminal_key_arrow_left">왼쪽 화살표</string>
+    <string name="terminal_key_arrow_up">위쪽 화살표</string>
+    <string name="terminal_key_arrow_down">아래쪽 화살표</string>
+    <string name="terminal_key_arrow_right">오른쪽 화살표</string>
     <string name="terminal_reconnect">다시 연결</string>
     <string name="terminal_start">터미널 시작</string>
     <string name="terminal_start_description">이 프로젝트의 개발 터미널 시작</string>

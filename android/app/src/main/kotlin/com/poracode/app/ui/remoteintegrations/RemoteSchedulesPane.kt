@@ -11,6 +11,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
@@ -47,10 +48,13 @@ internal fun RemoteSchedulesPane(
     state: RemoteIntegrationsState,
     access: RemoteIntegrationsAccess,
     composition: RemoteIntegrationsComposition,
+    threads: List<ScheduleRunThreadTarget>,
+    onOpenThread: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var editor by remember { mutableStateOf<ScheduleEditorDraft?>(null) }
     var confirmation by remember { mutableStateOf<ScheduleConfirmation?>(null) }
+    var history by remember { mutableStateOf<ScheduledTask?>(null) }
     val loading = IntegrationSlot.Schedules in state.loading
     LazyColumn(
         modifier.fillMaxSize(),
@@ -89,10 +93,12 @@ internal fun RemoteSchedulesPane(
         items(state.schedules, key = ScheduledTask::id) { task ->
             ScheduleCard(
                 task,
-                enabled = access.canOperate && !loading,
+                actionsEnabled = access.canOperate && !loading,
+                historyEnabled = access.canRead && !loading,
                 onEdit = { editor = ScheduleEditorDraft.from(task) },
                 onRun = { confirmation = ScheduleConfirmation.Run(task) },
                 onDelete = { confirmation = ScheduleConfirmation.Delete(task) },
+                onHistory = { history = task },
             )
         }
         item {
@@ -147,15 +153,29 @@ internal fun RemoteSchedulesPane(
             },
         )
     }
+    history?.let { task ->
+        RemoteScheduleRunsSheet(
+            task = task,
+            controller = composition.scheduleRuns,
+            threads = threads,
+            onOpenThread = onOpenThread,
+            onDismiss = {
+                history = null
+                composition.scheduleRuns.clear()
+            },
+        )
+    }
 }
 
 @Composable
 private fun ScheduleCard(
     task: ScheduledTask,
-    enabled: Boolean,
+    actionsEnabled: Boolean,
+    historyEnabled: Boolean,
     onEdit: () -> Unit,
     onRun: () -> Unit,
     onDelete: () -> Unit,
+    onHistory: () -> Unit,
 ) {
     IntegrationSectionCard(task.draft.name) {
         Text(scheduleRecurrenceLabel(task.draft.recurrence))
@@ -168,13 +188,16 @@ private fun ScheduleCard(
             )
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            IconButton(onClick = onEdit, enabled = enabled) {
+            IconButton(onClick = onHistory, enabled = historyEnabled) {
+                Icon(Icons.Outlined.History, stringResource(R.string.remote_integrations_run_history))
+            }
+            IconButton(onClick = onEdit, enabled = actionsEnabled) {
                 Icon(Icons.Outlined.Edit, stringResource(R.string.remote_integrations_edit_schedule))
             }
-            IconButton(onClick = onRun, enabled = enabled) {
+            IconButton(onClick = onRun, enabled = actionsEnabled) {
                 Icon(Icons.Outlined.PlayArrow, stringResource(R.string.remote_integrations_run_now))
             }
-            IconButton(onClick = onDelete, enabled = enabled) {
+            IconButton(onClick = onDelete, enabled = actionsEnabled) {
                 Icon(Icons.Outlined.Delete, stringResource(R.string.remote_integrations_delete_schedule))
             }
         }

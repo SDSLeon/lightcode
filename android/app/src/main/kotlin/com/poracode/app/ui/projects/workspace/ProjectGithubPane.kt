@@ -10,9 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -35,7 +39,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,10 +50,9 @@ import com.poracode.app.session.projects.GithubOperationsController
 import com.poracode.app.session.projects.GithubOperationsEntry
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-private enum class GithubPaneSection { PullRequests, Actions, Repositories }
+enum class ProjectGithubSection { PullRequests, Actions, Repositories }
 
 @Composable
 internal fun ProjectGithubPane(
@@ -59,6 +61,7 @@ internal fun ProjectGithubPane(
     canRead: Boolean,
     canOperate: Boolean,
     expanded: Boolean,
+    initialSection: ProjectGithubSection = ProjectGithubSection.PullRequests,
     modifier: Modifier = Modifier,
 ) {
     val state by controller.state.collectAsStateWithLifecycle()
@@ -71,10 +74,10 @@ internal fun ProjectGithubPane(
         entry.activeMutation != null,
     )
     val scope = rememberCoroutineScope()
-    var sectionName by rememberSaveable(target.identity) {
-        mutableStateOf(GithubPaneSection.PullRequests.name)
+    var sectionName by rememberSaveable(target.identity, initialSection) {
+        mutableStateOf(initialSection.name)
     }
-    val section = GithubPaneSection.valueOf(sectionName)
+    val section = ProjectGithubSection.valueOf(sectionName)
     Column(modifier.fillMaxSize()) {
         if (entry.loading || entry.activeMutation != null) LinearProgressIndicator(Modifier.fillMaxWidth())
         if (entry.available == false) {
@@ -87,7 +90,7 @@ internal fun ProjectGithubPane(
         GithubOutcomeBanner(entry.lastOutcome)
         if (entry.failure != null) ProjectWorkspaceFailureCard(entry.failure, modifier = Modifier)
         PrimaryTabRow(section.ordinal) {
-            GithubPaneSection.entries.forEach { candidate ->
+            ProjectGithubSection.entries.forEach { candidate ->
                 Tab(
                     selected = section == candidate,
                     onClick = { sectionName = candidate.name },
@@ -97,13 +100,13 @@ internal fun ProjectGithubPane(
             }
         }
         when (section) {
-            GithubPaneSection.PullRequests -> GithubPullRequestsPane(
+            ProjectGithubSection.PullRequests -> GithubPullRequestsPane(
                 entry, target, controller, gate.canRead, gate.canMutate, expanded,
             )
-            GithubPaneSection.Actions -> GithubActionsPane(
+            ProjectGithubSection.Actions -> GithubActionsPane(
                 entry, target, controller, gate.canRead, gate.canMutate, expanded,
             )
-            GithubPaneSection.Repositories -> GithubRepositoriesPane(
+            ProjectGithubSection.Repositories -> GithubRepositoriesPane(
                 entry, target, controller, gate.canRead,
             )
         }
@@ -178,7 +181,16 @@ private fun GithubPullRequestsPane(
             canOperate && entry.activeMutation == null, modifier,
         )
     }
-    AdaptiveGithubSplit(expanded, list, detail)
+    AdaptiveGithubSplit(
+        expanded,
+        hasSelection = selectedNumber > 0,
+        onBack = {
+            selectedNumber = 0L
+            selectedBranch = ""
+        },
+        list,
+        detail,
+    )
 }
 
 @Composable
@@ -228,12 +240,8 @@ private fun GithubPullRequestDetail(
     enabled: Boolean,
     modifier: Modifier,
 ) {
-    if (number <= 0) {
-        Text(stringResource(R.string.github_select_pr), modifier.padding(24.dp))
-        return
-    }
     val scope = rememberCoroutineScope()
-    var comment by rememberSaveable(target.identity, number) { mutableStateOf("") }
+    var sheetName by rememberSaveable(target.identity, number) { mutableStateOf("") }
     val mutate: (GithubProcedure, Map<String, JsonElement>) -> Unit = { procedure, fields ->
         scope.launch {
             controller.execute(
@@ -246,41 +254,39 @@ private fun GithubPullRequestDetail(
             )
         }
     }
-    LazyColumn(modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item("title") {
-            Text(stringResource(R.string.github_pr_number, number), style = MaterialTheme.typography.titleLarge)
-            Text(branch, style = MaterialTheme.typography.bodySmall)
+    Column(modifier.fillMaxSize()) {
+        GithubPullRequestDetailPane(entry, number, branch, Modifier.weight(1f).fillMaxWidth())
+        if (number > 0) {
+            HorizontalDivider()
+            Column(Modifier.padding(12.dp)) {
+                GithubActionButtons(
+                    enabled,
+                    listOf(
+                        R.string.github_submit_review to {
+                            sheetName = PullRequestActionSheet.Review.name
+                        },
+                        R.string.github_post_comment to {
+                            sheetName = PullRequestActionSheet.Comment.name
+                        },
+                        R.string.github_merge to { sheetName = PullRequestActionSheet.Merge.name },
+                        R.string.github_ready to { mutate(GithubProcedure.MarkPrReady, emptyMap()) },
+                        R.string.github_update_branch to {
+                            mutate(GithubProcedure.UpdatePrBranch, emptyMap())
+                        },
+                        R.string.github_reopen to { mutate(GithubProcedure.ReopenPr, emptyMap()) },
+                        R.string.github_close to { mutate(GithubProcedure.ClosePr, emptyMap()) },
+                    ),
+                )
+            }
         }
-        item("mutations") {
-            GithubActionButtons(
-                enabled,
-                listOf(
-                    R.string.github_ready to { mutate(GithubProcedure.MarkPrReady, emptyMap()) },
-                    R.string.github_update_branch to { mutate(GithubProcedure.UpdatePrBranch, emptyMap()) },
-                    R.string.github_reopen to { mutate(GithubProcedure.ReopenPr, emptyMap()) },
-                    R.string.github_close to { mutate(GithubProcedure.ClosePr, emptyMap()) },
-                    R.string.github_merge to { mutate(GithubProcedure.MergePr, emptyMap()) },
-                    R.string.github_approve to {
-                        mutate(GithubProcedure.SubmitPrReview, mapOf("decision" to JsonPrimitive("approve")))
-                    },
-                ),
-            )
-            OutlinedTextField(
-                comment,
-                { comment = it },
-                label = { Text(stringResource(R.string.github_comment)) },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Button(
-                onClick = { mutate(GithubProcedure.PostPrComment, mapOf("body" to JsonPrimitive(comment.trim()))) },
-                enabled = enabled && comment.isNotBlank(),
-            ) { Text(stringResource(R.string.github_post_comment)) }
-        }
-        githubJsonSection(R.string.github_details, entry.prDetails, "details")
-        githubJsonSection(R.string.github_checks, entry.prChecks, "checks")
-        githubJsonSection(R.string.github_files, entry.prFiles, "files")
-        githubJsonSection(R.string.github_reviews, entry.prReviews, null)
-        githubJsonSection(R.string.github_diff, entry.prDiff, "diff", monospace = true)
+    }
+    if (sheetName.isNotEmpty()) {
+        PullRequestActionSheetHost(
+            sheet = PullRequestActionSheet.valueOf(sheetName),
+            enabled = enabled,
+            onDismiss = { sheetName = "" },
+            onSubmit = mutate,
+        )
     }
 }
 
@@ -335,7 +341,16 @@ private fun GithubActionsPane(
             canOperate && entry.activeMutation == null, modifier,
         )
     }
-    AdaptiveGithubSplit(expanded, list, detail)
+    AdaptiveGithubSplit(
+        expanded,
+        hasSelection = workflowId > 0 || runId > 0,
+        onBack = {
+            workflowId = 0L
+            runId = 0L
+        },
+        list,
+        detail,
+    )
 }
 
 @Composable
@@ -400,28 +415,11 @@ internal fun GithubActionButtons(
     }
 }
 
-internal fun androidx.compose.foundation.lazy.LazyListScope.githubJsonSection(
-    title: Int,
-    value: JsonElement?,
-    child: String?,
-    monospace: Boolean = false,
-) {
-    if (value == null) return
-    item("json-$title") {
-        Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
-        val content = (if (child == null) value else (value as? JsonObject)?.get(child))
-            ?.toString().orEmpty().take(MAX_GITHUB_TEXT)
-        Text(
-            content,
-            fontFamily = if (monospace) FontFamily.Monospace else null,
-            style = MaterialTheme.typography.bodySmall,
-        )
-    }
-}
-
 @Composable
 private fun AdaptiveGithubSplit(
     expanded: Boolean,
+    hasSelection: Boolean,
+    onBack: () -> Unit,
     list: @Composable (Modifier) -> Unit,
     detail: @Composable (Modifier) -> Unit,
 ) {
@@ -431,20 +429,26 @@ private fun AdaptiveGithubSplit(
             VerticalDivider()
             detail(Modifier.weight(1f).fillMaxSize())
         }
-    } else {
+    } else if (hasSelection) {
         Column(Modifier.fillMaxSize()) {
-            list(Modifier.weight(0.45f).fillMaxWidth())
-            HorizontalDivider()
-            detail(Modifier.weight(0.55f).fillMaxWidth())
+            IconButton(onClick = onBack) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = stringResource(R.string.github_back_to_list),
+                )
+            }
+            detail(Modifier.weight(1f).fillMaxWidth())
         }
+    } else {
+        list(Modifier.fillMaxSize())
     }
 }
 
 @Composable
-private fun githubSectionLabel(section: GithubPaneSection) = stringResource(
+private fun githubSectionLabel(section: ProjectGithubSection) = stringResource(
     when (section) {
-        GithubPaneSection.PullRequests -> R.string.github_pull_requests
-        GithubPaneSection.Actions -> R.string.github_actions
-        GithubPaneSection.Repositories -> R.string.github_repositories
+        ProjectGithubSection.PullRequests -> R.string.github_pull_requests
+        ProjectGithubSection.Actions -> R.string.github_actions
+        ProjectGithubSection.Repositories -> R.string.github_repositories
     },
 )

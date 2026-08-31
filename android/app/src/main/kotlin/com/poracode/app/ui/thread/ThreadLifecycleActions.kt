@@ -38,12 +38,17 @@ fun ThreadLifecycleActions(
     projectLocation: ProjectLocation,
     controller: ThreadLifecycleController,
     enabled: Boolean,
+    onThreadRemoved: () -> Unit,
 ) {
     val controllerState by controller.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var expanded by rememberSaveable(thread.id) { mutableStateOf(false) }
     var dialog by remember(thread.id) { mutableStateOf<ThreadActionDialog?>(null) }
     var failure by remember(thread.id) { mutableStateOf<ThreadOperationFailure?>(null) }
+    fun select(action: () -> Unit) {
+        expanded = false
+        action()
+    }
 
     IconButton(
         onClick = { expanded = true },
@@ -56,28 +61,36 @@ fun ThreadLifecycleActions(
     }
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
         actionItem(R.string.thread_lifecycle_rename) {
-            dialog = ThreadActionDialog.Rename(thread.title)
+            select { dialog = ThreadActionDialog.Rename(thread.title) }
         }
         actionItem(R.string.thread_lifecycle_relaunch) {
-            dialog = ThreadActionDialog.Relaunch("")
+            select { dialog = ThreadActionDialog.Relaunch("") }
         }
         actionItem(
             if (thread.isStarred) R.string.thread_lifecycle_unpin else R.string.thread_lifecycle_pin,
         ) {
-            launch(scope, { failure = it }) {
-                controller.execute(ThreadLifecycleCommand.SetStarred(thread.id, !thread.isStarred))
+            select {
+                launch(scope, { failure = it }) {
+                    controller.execute(
+                        ThreadLifecycleCommand.SetStarred(thread.id, !thread.isStarred),
+                    )
+                }
             }
         }
         actionItem(
             if (thread.isDone) R.string.thread_lifecycle_not_done else R.string.thread_lifecycle_done,
         ) {
-            launch(scope, { failure = it }) {
-                controller.execute(ThreadLifecycleCommand.SetDone(thread.id, !thread.isDone))
+            select {
+                launch(scope, { failure = it }) {
+                    controller.execute(ThreadLifecycleCommand.SetDone(thread.id, !thread.isDone))
+                }
             }
         }
         actionItem(R.string.thread_lifecycle_acknowledge) {
-            launch(scope, { failure = it }) {
-                controller.execute(ThreadLifecycleCommand.Acknowledge(thread.id))
+            select {
+                launch(scope, { failure = it }) {
+                    controller.execute(ThreadLifecycleCommand.Acknowledge(thread.id))
+                }
             }
         }
         actionItem(
@@ -87,15 +100,19 @@ fun ThreadLifecycleActions(
                 R.string.thread_lifecycle_archive
             },
         ) {
-            if (thread.isArchived) {
-                launch(scope, { failure = it }) {
-                    controller.execute(ThreadLifecycleCommand.Unarchive(thread.id))
+            select {
+                if (thread.isArchived) {
+                    launch(scope, { failure = it }) {
+                        controller.execute(ThreadLifecycleCommand.Unarchive(thread.id))
+                    }
+                } else {
+                    dialog = ThreadActionDialog.Archive
                 }
-            } else {
-                dialog = ThreadActionDialog.Archive
             }
         }
-        actionItem(R.string.thread_lifecycle_delete) { dialog = ThreadActionDialog.Delete }
+        actionItem(R.string.thread_lifecycle_delete) {
+            select { dialog = ThreadActionDialog.Delete }
+        }
     }
 
     when (val current = dialog) {
@@ -136,7 +153,7 @@ fun ThreadLifecycleActions(
             onDismiss = { dialog = null },
             onConfirm = {
                 dialog = null
-                launch(scope, { failure = it }) {
+                launch(scope, { failure = it }, onThreadRemoved) {
                     controller.execute(ThreadLifecycleCommand.Archive(thread.id))
                 }
             },
@@ -148,7 +165,9 @@ fun ThreadLifecycleActions(
             onConfirm = {
                 dialog = null
                 controller.requestDestructive(ThreadLifecycleCommand.Delete(thread.id))
-                launch(scope, { failure = it }) { controller.confirmDestructive() }
+                launch(scope, { failure = it }, onThreadRemoved) {
+                    controller.confirmDestructive()
+                }
             },
         )
         null -> Unit
@@ -226,11 +245,13 @@ private fun ConfirmationDialog(
 private fun launch(
     scope: CoroutineScope,
     onFailure: (ThreadOperationFailure) -> Unit,
+    onSuccess: () -> Unit = {},
     action: suspend () -> ThreadOperationResult<*>,
 ) {
     scope.launch {
         when (val result = action()) {
             is ThreadOperationResult.Failed -> onFailure(result.failure)
+            is ThreadOperationResult.Success -> onSuccess()
             else -> Unit
         }
     }

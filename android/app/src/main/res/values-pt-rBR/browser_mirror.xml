@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">Parar espelhamento</string>
     <string name="browser_mirror_empty">Nenhuma aba do navegador está aberta.</string>
     <string name="browser_mirror_stopped">O espelhamento do navegador está parado.</string>
+    <string name="browser_mirror_move_left">Mover para a esquerda</string>
+    <string name="browser_mirror_move_right">Mover para a direita</string>
+    <string name="browser_mirror_privacy_notice">As páginas espelhadas podem exibir conteúdo pessoal. As imagens permanecem neste dispositivo e são apagadas quando você sai desta tela.</string>
 </resources>

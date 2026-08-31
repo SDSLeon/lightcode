@@ -20,7 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -29,55 +29,63 @@ import com.poracode.app.R
 import com.poracode.app.protocol.settingsintegrations.SkillOwner
 import com.poracode.app.session.settingsintegrations.SettingsIntegrationsState
 
-private enum class IntegrationPage { Skills, Mcp }
+internal enum class SettingsIntegrationsPage { Skills, Mcp }
 
 @Composable
-fun SettingsIntegrationsScreen(
+internal fun SettingsIntegrationsScreen(
     state: SettingsIntegrationsState,
     access: SettingsIntegrationsAccess,
     globalOwner: SkillOwner,
     projectOwner: SkillOwner?,
     callbacks: SettingsIntegrationsCallbacks,
+    initialPage: SettingsIntegrationsPage = SettingsIntegrationsPage.Skills,
+    lockProjectOwner: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    var page by remember { mutableStateOf(IntegrationPage.Skills) }
+    var page by rememberSaveable(initialPage) { mutableStateOf(initialPage) }
     BoxWithConstraints(modifier.fillMaxSize()) {
         val expanded = maxWidth >= 840.dp
         if (expanded) {
             Row(Modifier.fillMaxSize()) {
                 NavigationRail {
                     NavigationRailItem(
-                        selected = page == IntegrationPage.Skills,
-                        onClick = { page = IntegrationPage.Skills },
+                        selected = page == SettingsIntegrationsPage.Skills,
+                        onClick = { page = SettingsIntegrationsPage.Skills },
                         icon = { Icon(Icons.Outlined.Extension, null) },
                         label = { Text(stringResource(R.string.settings_integrations_skills)) },
                     )
                     NavigationRailItem(
-                        selected = page == IntegrationPage.Mcp,
-                        onClick = { page = IntegrationPage.Mcp },
+                        selected = page == SettingsIntegrationsPage.Mcp,
+                        onClick = { page = SettingsIntegrationsPage.Mcp },
                         icon = { Icon(Icons.Outlined.SettingsEthernet, null) },
                         label = { Text(stringResource(R.string.settings_integrations_mcp)) },
                     )
                 }
-                Content(page, state, access, globalOwner, projectOwner, callbacks, Modifier.weight(1f))
+                Content(
+                    page, state, access, globalOwner, projectOwner, callbacks,
+                    lockProjectOwner, Modifier.weight(1f),
+                )
             }
         } else {
             Column(Modifier.fillMaxSize()) {
                 PrimaryTabRow(selectedTabIndex = page.ordinal) {
                     Tab(
-                        selected = page == IntegrationPage.Skills,
-                        onClick = { page = IntegrationPage.Skills },
+                        selected = page == SettingsIntegrationsPage.Skills,
+                        onClick = { page = SettingsIntegrationsPage.Skills },
                         text = { Text(stringResource(R.string.settings_integrations_skills)) },
                         icon = { Icon(Icons.Outlined.Extension, null) },
                     )
                     Tab(
-                        selected = page == IntegrationPage.Mcp,
-                        onClick = { page = IntegrationPage.Mcp },
+                        selected = page == SettingsIntegrationsPage.Mcp,
+                        onClick = { page = SettingsIntegrationsPage.Mcp },
                         text = { Text(stringResource(R.string.settings_integrations_mcp)) },
                         icon = { Icon(Icons.Outlined.SettingsEthernet, null) },
                     )
                 }
-                Content(page, state, access, globalOwner, projectOwner, callbacks, Modifier.weight(1f))
+                Content(
+                    page, state, access, globalOwner, projectOwner, callbacks,
+                    lockProjectOwner, Modifier.weight(1f),
+                )
             }
         }
     }
@@ -85,22 +93,24 @@ fun SettingsIntegrationsScreen(
 
 @Composable
 private fun Content(
-    page: IntegrationPage,
+    page: SettingsIntegrationsPage,
     state: SettingsIntegrationsState,
     access: SettingsIntegrationsAccess,
     globalOwner: SkillOwner,
     projectOwner: SkillOwner?,
     callbacks: SettingsIntegrationsCallbacks,
+    lockProjectOwner: Boolean,
     modifier: Modifier,
 ) {
     Column(modifier.fillMaxSize()) {
         AccessBanner(access)
         when (page) {
-            IntegrationPage.Skills -> SkillsSettingsPane(
+            SettingsIntegrationsPage.Skills -> SkillsSettingsPane(
                 state, access, globalOwner, projectOwner, callbacks, Modifier.weight(1f),
             )
-            IntegrationPage.Mcp -> McpSettingsPane(
-                state, access, globalOwner, projectOwner, callbacks, Modifier.weight(1f),
+            SettingsIntegrationsPage.Mcp -> McpSettingsPane(
+                state, access, globalOwner, projectOwner, callbacks,
+                lockProjectOwner, Modifier.weight(1f),
             )
         }
     }

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +23,8 @@ import com.poracode.app.model.RemoteProject
 import com.poracode.app.model.displayPath
 import com.poracode.app.session.projects.ProjectHostLease
 import com.poracode.app.session.projects.ProjectSessionRuntime
+import com.poracode.app.ui.settings.GlobalMcpSettingsController
+import com.poracode.app.ui.settingsintegrations.SettingsIntegrationsPage
 
 @Composable
 internal fun ProjectDetailPane(
@@ -33,7 +34,17 @@ internal fun ProjectDetailPane(
     identity: ProjectIdentity,
     access: ProjectUiAccess,
     commandBusy: Boolean,
+    inheritedSettings: ProjectInheritedSettings,
+    canOpenTerminal: Boolean,
+    page: ProjectSettingsPage,
+    synced: Boolean,
+    onSetSynced: (Boolean) -> Unit,
+    onOpenPage: (ProjectSettingsPage) -> Unit,
+    onOpenIntegrations: (SettingsIntegrationsPage) -> Unit,
+    mcpController: GlobalMcpSettingsController,
     onOpenWorkspace: () -> Unit,
+    onOpenTerminal: () -> Unit,
+    onOpenAdvanced: () -> Unit,
     onRemoved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -71,31 +82,61 @@ internal fun ProjectDetailPane(
                 }
             }
         }
-        item(key = "workspace-${identity.connectionId.value}:${identity.projectId}") {
-            OutlinedButton(
-                onClick = onOpenWorkspace,
-                enabled = access.canRead,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.workspace_title))
+        item(key = "page-${page.name}-${identity.connectionId.value}:${identity.projectId}") {
+            when (page) {
+                ProjectSettingsPage.Index -> ProjectSettingsIndex(
+                    onOpenPage = onOpenPage,
+                    onOpenSkills = { onOpenIntegrations(SettingsIntegrationsPage.Skills) },
+                    onOpenWorkspace = onOpenWorkspace,
+                    onOpenTerminal = onOpenTerminal,
+                    onOpenAdvanced = onOpenAdvanced,
+                    workspaceEnabled = access.canRead,
+                    terminalEnabled = access.canOperate && canOpenTerminal,
+                )
+                ProjectSettingsPage.General -> ProjectGeneralSection(
+                    runtime = runtime,
+                    lease = lease,
+                    project = project,
+                    identity = identity,
+                    access = access,
+                    commandBusy = commandBusy,
+                    synced = synced,
+                    onSetSynced = onSetSynced,
+                    onRemoved = onRemoved,
+                )
+                ProjectSettingsPage.Worktrees -> ProjectWorktreeSettingsSection(
+                    runtime = runtime,
+                    project = project,
+                    identity = identity,
+                    access = access,
+                    commandBusy = commandBusy,
+                    inheritedSettings = inheritedSettings,
+                )
+                ProjectSettingsPage.Actions -> ProjectActionsSettingsSection(
+                    runtime = runtime,
+                    project = project,
+                    identity = identity,
+                    access = access,
+                    commandBusy = commandBusy,
+                )
+                ProjectSettingsPage.Mcp -> ProjectMcpSection(
+                    runtime = runtime,
+                    identity = identity,
+                    access = access,
+                    commandBusy = commandBusy,
+                    onDiscover = { onOpenIntegrations(SettingsIntegrationsPage.Mcp) },
+                    mcpController = mcpController,
+                )
+                ProjectSettingsPage.Search -> ProjectSearchSettingsSection(
+                    runtime = runtime,
+                    project = project,
+                    identity = identity,
+                    access = access,
+                    commandBusy = commandBusy,
+                    inheritedSettings = inheritedSettings,
+                )
+                ProjectSettingsPage.Notes -> ProjectNotesSection(runtime, identity, access)
             }
-        }
-        item(key = "general-${identity.connectionId.value}:${identity.projectId}") {
-            ProjectGeneralSection(
-                runtime = runtime,
-                lease = lease,
-                project = project,
-                identity = identity,
-                access = access,
-                commandBusy = commandBusy,
-                onRemoved = onRemoved,
-            )
-        }
-        item(key = "notes-${identity.connectionId.value}:${identity.projectId}") {
-            ProjectNotesSection(runtime, identity, access)
-        }
-        item(key = "mcp-${identity.connectionId.value}:${identity.projectId}") {
-            ProjectMcpSection(runtime, identity, access, commandBusy)
         }
         item { Spacer(Modifier.height(32.dp)) }
     }

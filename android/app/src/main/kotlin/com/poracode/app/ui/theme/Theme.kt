@@ -8,6 +8,8 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
@@ -43,10 +45,13 @@ private val PoracodeLight = lightColorScheme(
     error = Color(0xFFBA1A1A),
 )
 
+val LocalChatTextSizeSp = staticCompositionLocalOf { 14 }
+
 @Composable
 fun PoracodeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
+    chatTextSizeSp: Int = 14,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
@@ -58,8 +63,10 @@ fun PoracodeTheme(
         else -> PoracodeLight
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content,
-    )
+    CompositionLocalProvider(LocalChatTextSizeSp provides chatTextSizeSp) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            content = content,
+        )
+    }
 }

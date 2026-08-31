@@ -72,4 +72,21 @@
     <string name="workspace_permission_denied">Esta sesión no tiene permiso para esa acción.</string>
     <string name="workspace_project_changed">El proyecto o escritorio seleccionado cambió. Inténtalo de nuevo.</string>
     <string name="workspace_invalid_response">El escritorio devolvió una respuesta de espacio de trabajo no válida.</string>
+    <string name="workspace_create_entry">Crear archivo o carpeta</string>
+    <string name="workspace_create_file">Crear archivo</string>
+    <string name="workspace_create_folder">Crear carpeta</string>
+    <string name="workspace_file_actions">Acciones para %1$s</string>
+    <string name="workspace_rename">Cambiar nombre</string>
+    <string name="workspace_move">Mover</string>
+    <string name="workspace_delete">Eliminar</string>
+    <string name="workspace_delete_message">¿Eliminar %1$s? Esta acción no se puede deshacer.</string>
+    <string name="workspace_delete_folder_message">¿Eliminar %1$s y todo su contenido? Esta acción no se puede deshacer.</string>
+    <string name="workspace_mutation_uncertain">La conexión terminó antes de que el escritorio confirmara la acción del archivo. La carpeta se actualizó; revísala antes de intentar otra acción.</string>
+    <string name="workspace_parent_folder">Carpeta de destino</string>
+    <string name="workspace_entry_name">Nombre</string>
+    <string name="workspace_confirm">Confirmar</string>
+    <string name="workspace_copy_relative_path">Copiar ruta</string>
+    <string name="workspace_copy_absolute_path">Copiar ruta absoluta</string>
+    <string name="workspace_markdown_preview">Vista previa de Markdown</string>
+    <string name="workspace_markdown_edit">Editar Markdown</string>
 </resources>

@@ -89,7 +89,7 @@ private enum class CameraPermissionStatus {
  * pairing path as a pasted link — every downstream consent gate still fires.
  */
 @Composable
-internal fun PairingScanScreen(
+fun PairingScanScreen(
     onDismiss: () -> Unit,
     onUseLinkInstead: () -> Unit,
     onPairingLinkScanned: (String) -> Unit,
