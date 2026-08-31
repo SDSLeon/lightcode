@@ -148,6 +148,11 @@ export function androidInstallArguments() {
   return ["--console=plain", ":app:installDebug"];
 }
 
+/** Quote one argument for the POSIX shell used behind `adb shell`. */
+export function androidShellQuote(value) {
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
 /**
  * Serial, debounced native reload queue. Changes arriving during a build are
  * collapsed into one follow-up build instead of starting concurrent compilers.

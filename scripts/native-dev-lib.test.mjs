@@ -5,6 +5,7 @@ import {
   NativeReloadQueue,
   allChangedPathsHaveExtension,
   androidInstallArguments,
+  androidShellQuote,
   assertIosSimulatorSigning,
   childEnvironment,
   exactToolVersion,
@@ -153,6 +154,14 @@ await test("parses only online adb devices", () => {
     "",
   ].join("\n");
   assert.deepEqual(parseAdbDevices(output), ["emulator-5554"]);
+});
+
+await test("quotes pairing URLs for the remote adb shell", () => {
+  assert.equal(
+    androidShellQuote("poracode://pair?host=http%3A%2F%2F127.0.0.1&token=x#fragment"),
+    "'poracode://pair?host=http%3A%2F%2F127.0.0.1&token=x#fragment'",
+  );
+  assert.equal(androidShellQuote("a'b"), "'a'\\''b'");
 });
 
 await test("recognizes a headless emulator process for one exact AVD", () => {
