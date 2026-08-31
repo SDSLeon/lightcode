@@ -12,6 +12,7 @@ import {
   DEFAULT_TERMINAL_SIZE,
   emptyMcpLaunchSnapshot,
   type Project,
+  type ProjectLocation,
   type RemoteThreadCommand,
   type StartThreadPayload,
   type StartThreadResult,
@@ -98,6 +99,7 @@ export async function runRemoteProcedure(
   const parsedPayload = ipcProcedureMap[name].payloadSchema.parse(payload) as IpcProcedurePayload<
     typeof name
   >;
+  assertRegisteredProjectEntryLocation(procedure, parsedPayload);
   assertRemoteGitMutationExperimentSafe(procedure, parsedPayload);
   const resultSchema = ipcProcedureMap[name].resultSchema;
   if (!resultSchema) {
@@ -117,6 +119,77 @@ export async function runRemoteProcedure(
       500,
     );
   }
+}
+
+const PROJECT_ENTRY_PROCEDURES = new Set([
+  "createProjectEntry",
+  "renameProjectEntry",
+  "moveProjectEntry",
+  "deleteProjectEntry",
+]);
+
+function assertRegisteredProjectEntryLocation(procedure: string, payload: unknown): void {
+  if (!PROJECT_ENTRY_PROCEDURES.has(procedure)) return;
+  const location = (payload as { projectLocation?: ProjectLocation }).projectLocation;
+  if (!location) {
+    throw new RemoteHttpError(
+      "project_location_not_registered",
+      "Project location is missing.",
+      403,
+    );
+  }
+  let projects: Project[];
+  let threads: Thread[];
+  try {
+    projects = dbGetProjects();
+    threads = dbGetThreads();
+  } catch {
+    throw new RemoteHttpError(
+      "project_registry_unavailable",
+      "Project ownership could not be verified.",
+      503,
+    );
+  }
+  const projectById = new Map(projects.map((project) => [project.id, project]));
+  const registered = projects.some((project) => sameProjectLocation(project.location, location));
+  const ownedWorktree = threads.some((thread) => {
+    const project = projectById.get(thread.projectId);
+    return Boolean(
+      project &&
+      thread.worktreePath &&
+      sameProjectLocation(buildWorktreeLocation(project.location, thread.worktreePath), location),
+    );
+  });
+  if (!registered && !ownedWorktree) {
+    throw new RemoteHttpError(
+      "project_location_not_registered",
+      "Project location is not registered on this desktop.",
+      403,
+    );
+  }
+}
+
+function sameProjectLocation(left: ProjectLocation, right: ProjectLocation): boolean {
+  if (left.kind !== right.kind || left.remoteServerId !== right.remoteServerId) return false;
+  if (left.kind === "wsl" && right.kind === "wsl") {
+    return (
+      left.distro.toLowerCase() === right.distro.toLowerCase() &&
+      normalizeOwnedPath(left.linuxPath, false) === normalizeOwnedPath(right.linuxPath, false)
+    );
+  }
+  if (left.kind === "windows" && right.kind === "windows") {
+    return normalizeOwnedPath(left.path, true) === normalizeOwnedPath(right.path, true);
+  }
+  return (
+    left.kind === "posix" &&
+    right.kind === "posix" &&
+    normalizeOwnedPath(left.path, false) === normalizeOwnedPath(right.path, false)
+  );
+}
+
+function normalizeOwnedPath(path: string, caseInsensitive: boolean): string {
+  const normalized = path.replace(/\\/gu, "/").replace(/\/+$/u, "") || "/";
+  return caseInsensitive ? normalized.toLowerCase() : normalized;
 }
 
 /**

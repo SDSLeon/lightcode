@@ -1,5 +1,5 @@
 import type { Dirent, Stats } from "node:fs";
-import { readdir, readFile, rename, rm, stat, writeFile, mkdir } from "node:fs/promises";
+import { cp, lstat, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, posix, relative, resolve } from "node:path";
 import type {
@@ -775,6 +775,7 @@ export class ProjectTreeService {
     if (!path) {
       throw new Error("A new entry must have a path.");
     }
+    await this.assertSafeMutationPath(payload.projectLocation, path, false);
 
     if (payload.projectLocation.kind === "wsl") {
       const wslClient = this.requireWslClient();
@@ -797,19 +798,26 @@ export class ProjectTreeService {
     if (payload.type === "directory") {
       await mkdir(fullPath);
     } else {
-      await writeFile(fullPath, "");
+      await writeFile(fullPath, "", { flag: "wx" });
     }
     this.invalidateCaches(payload.projectLocation);
   }
 
   async renameProjectEntry(payload: RenameProjectEntryPayload): Promise<void> {
     const path = normalizeRelativePath(payload.path);
+    if (!path) {
+      throw new Error("The project root cannot be renamed.");
+    }
     const nextName = validateEntryName(payload.nextName);
     const nextPath = joinRelativePath(getParentRelativePath(path), nextName);
     if (nextPath === path) return;
 
+    await this.assertSafeMutationPath(payload.projectLocation, path, true);
+    await this.assertSafeMutationPath(payload.projectLocation, nextPath, false);
+    await this.assertEntryMissing(payload.projectLocation, nextPath);
+
     if (payload.projectLocation.kind === "wsl") {
-      await this.requireWslClient().rename(
+      await this.requireWslClient().moveNoReplace(
         payload.projectLocation,
         joinProjectPosixPath(payload.projectLocation, path),
         joinProjectPosixPath(payload.projectLocation, nextPath),
@@ -818,10 +826,7 @@ export class ProjectTreeService {
       return;
     }
 
-    await rename(
-      this.resolveEntryPath(payload.projectLocation, path),
-      this.resolveEntryPath(payload.projectLocation, nextPath),
-    );
+    await this.moveNativeEntryNoReplace(payload.projectLocation, path, nextPath);
     this.invalidateCaches(payload.projectLocation);
   }
 
@@ -838,6 +843,10 @@ export class ProjectTreeService {
     const nextPath = joinRelativePath(nextParentPath, currentName);
     if (nextPath === path) return;
 
+    await this.assertSafeMutationPath(payload.projectLocation, path, true);
+    await this.assertSafeMutationPath(payload.projectLocation, nextPath, false);
+    await this.assertEntryMissing(payload.projectLocation, nextPath);
+
     if (payload.projectLocation.kind === "wsl") {
       const wslClient = this.requireWslClient();
       const stats = await wslClient.stat(payload.projectLocation, [
@@ -850,7 +859,7 @@ export class ProjectTreeService {
       ) {
         throw new Error("Folders cannot be moved into themselves.");
       }
-      await wslClient.rename(
+      await wslClient.moveNoReplace(
         payload.projectLocation,
         joinProjectPosixPath(payload.projectLocation, path),
         joinProjectPosixPath(payload.projectLocation, nextPath),
@@ -870,12 +879,16 @@ export class ProjectTreeService {
       throw new Error("Folders cannot be moved into themselves.");
     }
 
-    await rename(sourceFullPath, this.resolveEntryPath(payload.projectLocation, nextPath));
+    await this.moveNativeEntryNoReplace(payload.projectLocation, path, nextPath, sourceFullPath);
     this.invalidateCaches(payload.projectLocation);
   }
 
   async deleteProjectEntry(payload: DeleteProjectEntryPayload): Promise<void> {
     const path = normalizeRelativePath(payload.path);
+    if (!path) {
+      throw new Error("The project root cannot be deleted.");
+    }
+    await this.assertSafeMutationPath(payload.projectLocation, path, true);
 
     if (payload.projectLocation.kind === "wsl") {
       await this.requireWslClient().rm(
@@ -892,6 +905,70 @@ export class ProjectTreeService {
       force: false,
     });
     this.invalidateCaches(payload.projectLocation);
+  }
+
+  private async assertEntryMissing(location: ProjectLocation, path: string): Promise<void> {
+    if (location.kind === "wsl") {
+      const absolute = joinProjectPosixPath(location, path);
+      const result = (await this.requireWslClient().stat(location, [absolute])).stats[0];
+      if (result?.exists) {
+        throw new Error(`An entry already exists at ${path}.`);
+      }
+      if (!result || result.code !== "ENOENT") {
+        throw new Error(`Unable to verify the destination ${path}.`);
+      }
+      return;
+    }
+
+    try {
+      await lstat(this.resolveEntryPath(location, path));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+      throw error;
+    }
+    throw new Error(`An entry already exists at ${path}.`);
+  }
+
+  private async assertSafeMutationPath(
+    location: ProjectLocation,
+    path: string,
+    includeTarget: boolean,
+  ): Promise<void> {
+    if (location.kind === "wsl") return;
+    const root = resolve(getProjectFsPath(location));
+    const parts = normalizeRelativePath(path).split("/").filter(Boolean);
+    const checked = includeTarget ? parts : parts.slice(0, -1);
+    let current = root;
+    for (const part of checked) {
+      current = resolve(current, part);
+      try {
+        if ((await lstat(current)).isSymbolicLink()) {
+          throw new Error("Symbolic links are not allowed for project mutations.");
+        }
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+        throw error;
+      }
+    }
+  }
+
+  private async moveNativeEntryNoReplace(
+    location: ProjectLocation,
+    sourcePath: string,
+    destinationPath: string,
+    resolvedSource?: string,
+  ): Promise<void> {
+    const source = resolvedSource ?? this.resolveEntryPath(location, sourcePath);
+    const destination = this.resolveEntryPath(location, destinationPath);
+    await cp(source, destination, {
+      recursive: true,
+      force: false,
+      errorOnExist: true,
+      preserveTimestamps: true,
+      dereference: false,
+      verbatimSymlinks: true,
+    });
+    await rm(source, { recursive: true, force: false });
   }
 
   private resolveEntryPath(location: ProjectLocation, path: string): string {

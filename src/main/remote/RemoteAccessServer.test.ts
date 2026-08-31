@@ -2213,6 +2213,9 @@ describe("RemoteAccessServer", () => {
   });
 
   it("allows paired clients to search, list, read, write, and mutate project files through the remote bridge", async () => {
+    vi.mocked(dbGetProjects).mockReturnValue([
+      createTestProject({ location: { kind: "posix", path: "/tmp/example" } }),
+    ]);
     const callSupervisor = vi.fn<RemoteAccessServerOptions["callSupervisor"]>(async (name) => {
       if (name === "searchProjectFiles") {
         return {
@@ -2434,6 +2437,42 @@ describe("RemoteAccessServer", () => {
       projectLocation: { kind: "posix", path: "/tmp/example" },
       path: "src/renamed.ts",
     });
+  });
+
+  it("rejects project entry mutations for unregistered caller-supplied roots", async () => {
+    vi.mocked(dbGetProjects).mockReturnValue([createTestProject()]);
+    const callSupervisor = vi.fn<RemoteAccessServerOptions["callSupervisor"]>();
+    const server = new RemoteAccessServer({
+      appVersion: "1.0.0",
+      identity: { desktopId: "desktop-test", label: "Test Desktop" },
+      host: "127.0.0.1",
+      port: 0,
+      callSupervisor,
+    });
+    servers.push(server);
+    const info = await server.start();
+    const token = await issueAccessToken(info, ["session:operate"]);
+
+    const response = await fetch(new URL("/api/git/call", info.httpBaseUrl), {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        procedure: "deleteProjectEntry",
+        payload: {
+          projectLocation: { kind: "posix", path: "/arbitrary/host/path" },
+          path: "secrets",
+        },
+      }),
+    });
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "project_location_not_registered" },
+    });
+    expect(callSupervisor).not.toHaveBeenCalled();
   });
 
   it("rejects readAbsoluteFile for tokens without projects:manage (arbitrary host file read)", async () => {

@@ -220,7 +220,12 @@ export function isValidMcpServerName(name: string): boolean {
 export function isValidMcpServerUrl(value: string): boolean {
   try {
     const url = new URL(value.trim());
-    return url.protocol === "http:" || url.protocol === "https:";
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      url.username === "" &&
+      url.password === "" &&
+      url.hash === ""
+    );
   } catch {
     return false;
   }

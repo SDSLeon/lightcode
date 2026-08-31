@@ -1454,12 +1454,13 @@ function normalizeSharedSettingsStateImpl(value: unknown): {
   settings: SharedSettings;
   acpAliasMigrated: boolean;
 } {
+  const migratedValue = sanitizeLegacyMcpServerUrls(value);
   const normalized = normalizeObjectFromSchema(
     sharedSettingsSchema.shape,
     defaultSharedSettings,
-    value,
+    migratedValue,
   );
-  const parsed = z.record(z.string(), z.unknown()).safeParse(value);
+  const parsed = z.record(z.string(), z.unknown()).safeParse(migratedValue);
   if (!parsed.success) return { settings: normalized, acpAliasMigrated: false };
 
   const hasAutomationMode = prAutomationModeSchema.safeParse(
@@ -1507,6 +1508,44 @@ function normalizeSharedSettingsStateImpl(value: unknown): {
       },
     }),
   );
+}
+
+/**
+ * Older unversioned settings accepted URL userinfo and fragments for HTTP/SSE
+ * MCP transports. Strip those credential-bearing components before the
+ * stricter schema parses the list so one legacy entry does not reset all MCP
+ * servers to the default empty list.
+ */
+function sanitizeLegacyMcpServerUrls(value: unknown): unknown {
+  const root = z.record(z.string(), z.unknown()).safeParse(value);
+  if (!root.success || !Array.isArray(root.data.mcpServers)) return value;
+  return {
+    ...root.data,
+    mcpServers: root.data.mcpServers.map((entry) => {
+      const server = z.record(z.string(), z.unknown()).safeParse(entry);
+      if (!server.success) return entry;
+      const transport = z.record(z.string(), z.unknown()).safeParse(server.data.transport);
+      if (
+        !transport.success ||
+        (transport.data.type !== "http" && transport.data.type !== "sse") ||
+        typeof transport.data.url !== "string"
+      ) {
+        return entry;
+      }
+      try {
+        const url = new URL(transport.data.url);
+        url.username = "";
+        url.password = "";
+        url.hash = "";
+        return {
+          ...server.data,
+          transport: { ...transport.data, url: url.toString() },
+        };
+      } catch {
+        return entry;
+      }
+    }),
+  };
 }
 
 export function normalizeSharedSettings(value: unknown): SharedSettings {

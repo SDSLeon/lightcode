@@ -6,6 +6,7 @@ import {
   discoverExternalMcpServersPayloadSchema,
   isReservedMcpServerName,
   isValidMcpServerName,
+  isValidMcpServerUrl,
   mcpExternalServerCandidateSchema,
   mcpServerSchema,
   mergeMcpServers,
@@ -59,6 +60,12 @@ describe("mcpServerSchema", () => {
         transport: { type: "http", url: "https://example.test/mcp" },
       }).success,
     ).toBe(false);
+  });
+
+  it("rejects URL credentials and fragments at the MCP transport boundary", () => {
+    expect(isValidMcpServerUrl("https://example.test/mcp?version=1")).toBe(true);
+    expect(isValidMcpServerUrl("https://user:password@example.test/mcp")).toBe(false);
+    expect(isValidMcpServerUrl("https://example.test/mcp#token=secret")).toBe(false);
   });
 
   it("accepts a sparse built-in disable map", () => {

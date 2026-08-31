@@ -939,6 +939,22 @@ describe("Poracode app control tools — settings", () => {
     expect(stdioServer?.transport.args).toEqual(["--api-key=«redacted»", "--verbose"]);
   });
 
+  it("get_settings strips legacy MCP URL credentials and fragments", async () => {
+    const settings = settingsWithSecret();
+    const transport = settings.mcpServers[0]?.transport;
+    if (transport?.type !== "http") throw new Error("expected HTTP fixture");
+    transport.url = "https://user:password@example.test/mcp?token=secret#access-token";
+    const { ctx } = context({ settings });
+    const result = (await dispatchTool("get_settings", { section: "mcpServers" }, ctx)) as {
+      value: Array<{ transport: { url?: string } }>;
+    };
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain("user");
+    expect(serialized).not.toContain("password");
+    expect(serialized).not.toContain("access-token");
+    expect(result.value[0]?.transport.url).toBe("https://example.test/mcp?token=«redacted»");
+  });
+
   it("get_settings section=mcpServers returns the same redacted servers", async () => {
     const { ctx } = context({ settings: settingsWithSecret() });
     const result = (await dispatchTool("get_settings", { section: "mcpServers" }, ctx)) as {
