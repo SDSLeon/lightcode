@@ -7,6 +7,8 @@ import com.poracode.app.model.settings.ProfileDevicesSnapshot
 import com.poracode.app.model.settings.ProfileIdentitySnapshot
 import com.poracode.app.model.settings.ProfileTokenStatsSnapshot
 import com.poracode.app.model.settings.ProviderUsageSnapshot
+import com.poracode.app.model.settings.decodeGlobalMcpOperation
+import com.poracode.app.model.settings.decodeGlobalMcpSettings
 import kotlinx.serialization.json.JsonObject
 
 internal object SettingsRemoteV3Adapters {
@@ -17,4 +19,8 @@ internal object SettingsRemoteV3Adapters {
     fun profileTokenStats(value: JsonObject) = ProfileTokenStatsSnapshot(value)
     fun profileIdentity(value: JsonObject) = ProfileIdentitySnapshot(value)
     fun settings(value: JsonObject) = HostSettingsSnapshot(value)
+    fun globalMcpSettings(value: JsonObject) = value.decodeGlobalMcpSettings().let { response ->
+        response.copy(servers = GlobalMcpRedaction.requireSafe(response.servers))
+    }
+    fun globalMcpOperation(value: JsonObject) = value.decodeGlobalMcpOperation()
 }

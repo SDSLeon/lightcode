@@ -5,6 +5,7 @@ import com.poracode.app.model.remoteintegrations.PrWatch
 import com.poracode.app.model.remoteintegrations.PrWatchDraft
 import com.poracode.app.model.remoteintegrations.PrWatchKey
 import com.poracode.app.model.remoteintegrations.ScheduleDraft
+import com.poracode.app.model.remoteintegrations.ScheduleRun
 import com.poracode.app.model.remoteintegrations.ScheduledTask
 import com.poracode.app.session.remoteintegrations.IntegrationHostLease
 
@@ -20,6 +21,7 @@ interface RemoteIntegrationsGateway {
     suspend fun checkHostUpdate(): HostUpdateState
     suspend fun installHostUpdate()
     suspend fun schedules(): List<ScheduledTask>
+    suspend fun scheduleRuns(id: String): List<ScheduleRun>
     suspend fun commandSchedule(command: ScheduleCommand): List<ScheduledTask>
     suspend fun prWatch(key: PrWatchKey): PrWatch?
     suspend fun checkPrWatch(key: PrWatchKey)

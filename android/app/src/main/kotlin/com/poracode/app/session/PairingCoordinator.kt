@@ -50,17 +50,16 @@ class PairingCoordinator(
     )
 
     fun handleIncomingPairingUrl(raw: String, external: Boolean) {
-        val route = PairingUrl.parseDeepLink(raw)
-        val endpoint: String
-        val credential: String
-        if (route != null) {
-            endpoint = route.endpoint
-            credential = route.token
-        } else {
-            val parts = PairingUrl.parseParts(raw) ?: return
-            endpoint = PairingUrl.normalizeEndpoint(raw)
-            credential = parts.token
-        }
+        val route = runCatching {
+            PairingUrl.parseDeepLink(raw) ?: PairingUrl.parseParts(raw)?.let { parts ->
+                PairingUrl.DeepLinkRoute(
+                    endpoint = PairingUrl.normalizeEndpoint(raw),
+                    token = parts.token,
+                )
+            }
+        }.getOrNull() ?: return
+        val endpoint = route.endpoint
+        val credential = route.token
         val fingerprint = SessionPolicies.pairingFingerprint(endpoint, credential)
         if (PairingIntentDecisions.shouldSkipDuplicateFingerprint(
                 fingerprint,

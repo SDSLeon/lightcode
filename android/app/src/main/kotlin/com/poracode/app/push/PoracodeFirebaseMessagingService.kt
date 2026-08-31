@@ -24,8 +24,12 @@ class PoracodeFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
-        val runtime = (application as PoracodeApplication).push
+        val app = application as PoracodeApplication
+        val runtime = app.push
         if (!runtime.isForeground) return
+        val settings = app.deviceSettings.state.value
+        val category = remoteNotificationCategory(message.data["category"])
+        if (!settings.allowsForegroundNotification(category)) return
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
                 this,
                 PushPermissionPolicy.PERMISSION,
@@ -33,7 +37,11 @@ class PoracodeFirebaseMessagingService : FirebaseMessagingService() {
         ) return
         val parsed = PushPayloadParser.parse(message.data)
         val route = (parsed as? PushPayloadParseResult.Routed)?.route
-        val silent = message.notification?.channelId == PushChannels.STATUS_ID ||
+        if (route != null && !(application as PoracodeApplication).session.shouldPresentPush(route)) {
+            return
+        }
+        val silent = !settings.notificationSoundEnabled ||
+            message.notification?.channelId == PushChannels.STATUS_ID ||
             message.data["silent"] == "true"
         val tag = route?.let(PushCollapseIdentity::routed) ?: GENERIC_TAG
         val intent = Intent(this, MainActivity::class.java).apply {

@@ -17,6 +17,10 @@ class RichChatMediaController(
     private val gateway: RichChatSessionGateway,
     private val lifecycle: ForegroundOperationRegistry,
 ) {
+    val isReadyForUpload: Boolean
+        get() = lifecycle.isForeground &&
+            session.currentLease(RichChatCapability.Operate).second == null
+
     suspend fun uploadAttachment(
         name: String,
         contentType: String,
@@ -48,6 +52,47 @@ class RichChatMediaController(
             RichChatOperationResult.Failed(RichChatOperationFailure.Backgrounded)
         } catch (error: Exception) {
             if (!canPublish(lease)) return RichChatOperationResult.Stale
+            RichChatOperationResult.Failed(
+                error.asRichChatFailure(RichChatCapability.Operate, true),
+            )
+        }
+    }
+
+    /** Uploads media for a preallocated thread before it becomes the selected chat. */
+    suspend fun uploadAttachmentForThread(
+        threadId: String,
+        name: String,
+        contentType: String,
+        body: AttachmentUploadBody,
+    ): RichChatOperationResult<String> {
+        val decision = RichAttachmentPolicy.evaluate(name, body.contentLength)
+        if (threadId.isBlank() || !decision.accepted || contentType.isBlank() ||
+            '\r' in contentType || '\n' in contentType
+        ) {
+            return RichChatOperationResult.Failed(RichChatOperationFailure.InvalidRequest)
+        }
+        if (!lifecycle.isForeground) {
+            return RichChatOperationResult.Failed(RichChatOperationFailure.Backgrounded)
+        }
+        val (host, failure) = session.currentLease(RichChatCapability.Operate)
+        if (failure != null || host == null) {
+            return RichChatOperationResult.Failed(checkNotNull(failure))
+        }
+        return try {
+            lifecycle.run { token ->
+                val path = gateway.uploadAttachment(host, threadId, name, contentType, body)
+                if (session.isCurrent(host) && lifecycle.isCurrent(token)) {
+                    RichChatOperationResult.Success(path)
+                } else {
+                    RichChatOperationResult.Stale
+                }
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: RichChatBackgroundException) {
+            RichChatOperationResult.Failed(RichChatOperationFailure.Backgrounded)
+        } catch (error: Exception) {
+            if (!session.isCurrent(host)) return RichChatOperationResult.Stale
             RichChatOperationResult.Failed(
                 error.asRichChatFailure(RichChatCapability.Operate, true),
             )

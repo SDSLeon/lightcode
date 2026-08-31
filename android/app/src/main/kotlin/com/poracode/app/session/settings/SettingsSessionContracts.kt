@@ -4,6 +4,10 @@ import com.poracode.app.model.ClientConnectionId
 import com.poracode.app.model.settings.AgentStatusesSnapshot
 import com.poracode.app.model.settings.HostSettingsPatch
 import com.poracode.app.model.settings.HostSettingsSnapshot
+import com.poracode.app.model.settings.GlobalMcpSettingsCommand
+import com.poracode.app.model.settings.GlobalMcpSettingsOperation
+import com.poracode.app.model.settings.GlobalMcpSettingsOperationResult
+import com.poracode.app.model.settings.GlobalMcpSettingsResponse
 import com.poracode.app.model.settings.ProfileCoreStatsSnapshot
 import com.poracode.app.model.settings.ProfileDevicesSnapshot
 import com.poracode.app.model.settings.ProfileIdentityRequest
@@ -33,6 +37,7 @@ data class SettingsSessionKey(
 enum class SettingsCapability(val scope: String) {
     Read("session:read"),
     Operate("session:operate"),
+    ProjectsManage("projects:manage"),
 }
 
 sealed interface SettingsOperationFailure {
@@ -93,6 +98,16 @@ interface SettingsSessionGateway {
         lease: SettingsHostLease,
         patch: HostSettingsPatch,
     ): HostSettingsSnapshot
+
+    suspend fun readGlobalMcpSettings(lease: SettingsHostLease): GlobalMcpSettingsResponse
+    suspend fun commandGlobalMcpSettings(
+        lease: SettingsHostLease,
+        command: GlobalMcpSettingsCommand,
+    ): GlobalMcpSettingsResponse
+    suspend fun operateGlobalMcpSettings(
+        lease: SettingsHostLease,
+        operation: GlobalMcpSettingsOperation,
+    ): GlobalMcpSettingsOperationResult
 }
 
 internal fun StateFlow<SettingsHostLease?>.currentSettingsLease(

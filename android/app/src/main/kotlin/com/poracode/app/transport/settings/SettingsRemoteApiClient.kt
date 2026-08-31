@@ -3,6 +3,10 @@ package com.poracode.app.transport.settings
 import com.poracode.app.model.settings.AgentStatusesSnapshot
 import com.poracode.app.model.settings.HostSettingsPatch
 import com.poracode.app.model.settings.HostSettingsSnapshot
+import com.poracode.app.model.settings.GlobalMcpSettingsCommand
+import com.poracode.app.model.settings.GlobalMcpSettingsOperation
+import com.poracode.app.model.settings.GlobalMcpSettingsOperationResult
+import com.poracode.app.model.settings.GlobalMcpSettingsResponse
 import com.poracode.app.model.settings.ProfileCoreStatsSnapshot
 import com.poracode.app.model.settings.ProfileDevicesSnapshot
 import com.poracode.app.model.settings.ProfileIdentityRequest
@@ -90,6 +94,30 @@ class SettingsRemoteApiClient private constructor(
         GeneratedRemoteV3SettingsContract.settingsWriteRequest(patch.wireObject.toString()),
         GeneratedRemoteV3SettingsContract::settingsWriteResponse,
         SettingsRemoteV3Adapters::settings,
+    )
+
+    override suspend fun readGlobalMcpSettings(): GlobalMcpSettingsResponse = get(
+        SettingsRouteId.McpSettingsRead,
+        GeneratedRemoteV3SettingsContract::mcpSettingsReadResponse,
+        SettingsRemoteV3Adapters::globalMcpSettings,
+    )
+
+    override suspend fun commandGlobalMcpSettings(
+        command: GlobalMcpSettingsCommand,
+    ): GlobalMcpSettingsResponse = post(
+        SettingsRouteId.McpSettingsCommand,
+        GeneratedRemoteV3SettingsContract.mcpSettingsCommandRequest(command.wireObject().toString()),
+        GeneratedRemoteV3SettingsContract::mcpSettingsCommandResponse,
+        SettingsRemoteV3Adapters::globalMcpSettings,
+    )
+
+    override suspend fun operateGlobalMcpSettings(
+        operation: GlobalMcpSettingsOperation,
+    ): GlobalMcpSettingsOperationResult = post(
+        SettingsRouteId.McpSettingsOperation,
+        GeneratedRemoteV3SettingsContract.mcpSettingsOperationRequest(operation.wireObject().toString()),
+        GeneratedRemoteV3SettingsContract::mcpSettingsOperationResponse,
+        SettingsRemoteV3Adapters::globalMcpOperation,
     )
 
     private suspend fun <T> get(

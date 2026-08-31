@@ -11,6 +11,8 @@ import com.poracode.app.model.ProjectPatch
 import com.poracode.app.model.ProjectScripts
 import com.poracode.app.model.RemoteProject
 import com.poracode.app.model.UpdateProject
+import com.poracode.app.model.RelocateProject
+import com.poracode.app.model.RemoveProject
 import com.poracode.app.model.identityOn
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CancellationException
@@ -90,8 +92,29 @@ class ProjectCatalogController(
         ?.project
 
     suspend fun execute(command: ProjectCommand): ProjectCommandOutcome {
+        return executeExpected(null, command)
+    }
+
+    /** Project-row mutation guarded by its full host/project identity. */
+    suspend fun execute(
+        identity: ProjectIdentity,
+        command: ProjectCommand,
+    ): ProjectCommandOutcome {
+        if (!command.targets(identity.projectId)) {
+            return ProjectCommandOutcome.Rejected(ProjectOperationFailure.InvalidProjectIdentity)
+        }
+        return executeExpected(identity, command)
+    }
+
+    private suspend fun executeExpected(
+        expected: ProjectIdentity?,
+        command: ProjectCommand,
+    ): ProjectCommandOutcome {
         val (captured, gateFailure) = session.currentLease(ProjectCapability.Manage)
         if (captured == null) return ProjectCommandOutcome.Rejected(requireNotNull(gateFailure))
+        if (expected != null && captured.connectionId != expected.connectionId) {
+            return ProjectCommandOutcome.Rejected(ProjectOperationFailure.InvalidProjectIdentity)
+        }
         if (gateFailure != null) {
             recordFailure(captured, gateFailure)
             return ProjectCommandOutcome.Rejected(gateFailure)
@@ -236,3 +259,10 @@ private fun List<RemoteProject>.entriesFor(lease: ProjectHostLease): List<Catalo
 
 private fun ProjectCommand.needsSetupDetection(): Boolean =
     this is AddExistingProject || this is CreateProject || this is CloneProject
+
+private fun ProjectCommand.targets(projectId: String): Boolean = when (this) {
+    is UpdateProject -> this.projectId == projectId
+    is RelocateProject -> this.projectId == projectId
+    is RemoveProject -> this.projectId == projectId
+    else -> false
+}

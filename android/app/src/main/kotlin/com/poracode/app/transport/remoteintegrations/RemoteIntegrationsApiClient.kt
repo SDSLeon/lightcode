@@ -5,6 +5,7 @@ import com.poracode.app.model.remoteintegrations.PrWatch
 import com.poracode.app.model.remoteintegrations.PrWatchDraft
 import com.poracode.app.model.remoteintegrations.PrWatchKey
 import com.poracode.app.model.remoteintegrations.ScheduledTask
+import com.poracode.app.model.remoteintegrations.ScheduleRun
 import com.poracode.app.protocol.remoteintegrations.IntegrationRouteId
 import com.poracode.app.protocol.remoteintegrations.RemoteV3IntegrationsContract
 import com.poracode.app.transport.ForegroundNetworkGate
@@ -59,6 +60,21 @@ class RemoteIntegrationsApiClient private constructor(
                 read(IntegrationRouteId.SchedulesRead),
             ),
         )
+
+    override suspend fun scheduleRuns(id: String): List<ScheduleRun> {
+        val query = RemoteV3IntegrationsContract.scheduleRunsQuery(
+            buildJsonObject { put("id", id) }.toString(),
+        )
+        val route = RemoteV3IntegrationsContract.route(IntegrationRouteId.ScheduleRunsRead)
+        check(route.method == "GET" && route.bodyKind == "empty")
+        val raw = http.requestText(
+            route.path,
+            query = listOf("id" to query.getValue("id").jsonPrimitive.content),
+        )
+        return RemoteIntegrationAdapters.scheduleRuns(
+            RemoteV3IntegrationsContract.scheduleRunsResponse(raw),
+        )
+    }
 
     override suspend fun commandSchedule(command: ScheduleCommand): List<ScheduledTask> {
         val body = buildJsonObject {

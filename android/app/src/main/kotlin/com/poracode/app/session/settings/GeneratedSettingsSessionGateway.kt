@@ -4,6 +4,10 @@ import com.poracode.app.model.RemoteClientException
 import com.poracode.app.model.settings.AgentStatusesSnapshot
 import com.poracode.app.model.settings.HostSettingsPatch
 import com.poracode.app.model.settings.HostSettingsSnapshot
+import com.poracode.app.model.settings.GlobalMcpSettingsCommand
+import com.poracode.app.model.settings.GlobalMcpSettingsOperation
+import com.poracode.app.model.settings.GlobalMcpSettingsOperationResult
+import com.poracode.app.model.settings.GlobalMcpSettingsResponse
 import com.poracode.app.model.settings.ProfileCoreStatsSnapshot
 import com.poracode.app.model.settings.ProfileDevicesSnapshot
 import com.poracode.app.model.settings.ProfileIdentityRequest
@@ -61,6 +65,28 @@ class GeneratedSettingsSessionGateway(
     ): HostSettingsSnapshot = invoke(lease, SettingsCapability.Operate, true) {
         writeSettings(patch)
     }
+
+    override suspend fun readGlobalMcpSettings(
+        lease: SettingsHostLease,
+    ): GlobalMcpSettingsResponse = invoke(lease, SettingsCapability.ProjectsManage, false) {
+        readGlobalMcpSettings()
+    }
+
+    override suspend fun commandGlobalMcpSettings(
+        lease: SettingsHostLease,
+        command: GlobalMcpSettingsCommand,
+    ): GlobalMcpSettingsResponse = invoke(lease, SettingsCapability.ProjectsManage, true) {
+        commandGlobalMcpSettings(command)
+    }
+
+    override suspend fun operateGlobalMcpSettings(
+        lease: SettingsHostLease,
+        operation: GlobalMcpSettingsOperation,
+    ): GlobalMcpSettingsOperationResult = invoke(
+        lease,
+        SettingsCapability.ProjectsManage,
+        true,
+    ) { operateGlobalMcpSettings(operation) }
 
     private suspend fun <T> invoke(
         lease: SettingsHostLease,
@@ -128,4 +154,10 @@ private val SAFE_SETTINGS_ERROR_CODES = setOf(
     "response_too_large",
     "request_failed",
     "not_modified",
+    "mcp_redaction_without_existing_secret",
+    "mcp_duplicate_name",
+    "mcp_duplicate_id",
+    "mcp_same_scope",
+    "mcp_project_not_found",
+    "mcp_server_not_found",
 )

@@ -5,6 +5,8 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 sealed interface RichPromptSegment {
     data class Text(val content: String) : RichPromptSegment
@@ -31,6 +33,58 @@ sealed interface RichPromptSegment {
 
     data class Mcp(val id: String, val name: String) : RichPromptSegment
     data class Thread(val threadId: String, val title: String) : RichPromptSegment
+}
+
+/** Encodes the canonical prompt-segment vocabulary shared by all native clients. */
+fun RichPromptSegment.toJsonObject(): JsonObject = buildJsonObject {
+    when (val segment = this@toJsonObject) {
+        is RichPromptSegment.Text -> {
+            put("kind", "text")
+            put("content", segment.content)
+        }
+        is RichPromptSegment.File -> {
+            put("kind", "file")
+            put("path", segment.path)
+        }
+        is RichPromptSegment.Attachment -> {
+            put("kind", "attachment")
+            put("path", segment.path)
+            segment.mimeType?.let { put("mimeType", it) }
+        }
+        is RichPromptSegment.DiffComment -> {
+            put("kind", "diff_comment")
+            put("path", segment.path)
+            put("lineNumber", segment.lineNumber)
+            put("side", segment.side.wireName)
+            put("staged", segment.staged)
+            put("body", segment.body)
+        }
+        is RichPromptSegment.Skill -> {
+            put("kind", "skill")
+            put("name", segment.name)
+            segment.path?.let { put("path", it) }
+            put("invocation", segment.invocation)
+            put("provider", segment.provider)
+            put("scope", segment.scope)
+            segment.pluginId?.let { put("pluginId", it) }
+            segment.pluginName?.let { put("pluginName", it) }
+        }
+        is RichPromptSegment.Mcp -> {
+            put("kind", "mcp")
+            put("id", segment.id)
+            put("name", segment.name)
+        }
+        is RichPromptSegment.Thread -> {
+            put("kind", "thread")
+            put("threadId", segment.threadId)
+            put("title", segment.title)
+        }
+    }
+}
+
+fun Iterable<RichPromptSegment>.toJsonArrayOrNull(): JsonArray? {
+    val values = map(RichPromptSegment::toJsonObject).toList()
+    return values.takeIf(List<JsonObject>::isNotEmpty)?.let(::JsonArray)
 }
 
 data class RichPendingSteer(

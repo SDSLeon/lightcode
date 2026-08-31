@@ -400,8 +400,12 @@
           ]
         },
         "android": {
-          "disposition": "planned",
-          "evidence": []
+          "disposition": "implemented",
+          "evidence": [
+            "android/app/src/main/kotlin/com/poracode/app/protocol/settings/GeneratedRemoteV3SettingsContract.kt",
+            "android/app/src/main/kotlin/com/poracode/app/ui/settings/GlobalMcpSettingsController.kt",
+            "android/app/src/main/kotlin/com/poracode/app/ui/settings/GlobalMcpSettingsPane.kt"
+          ]
         }
       },
       {
@@ -418,8 +422,12 @@
           ]
         },
         "android": {
-          "disposition": "planned",
-          "evidence": []
+          "disposition": "implemented",
+          "evidence": [
+            "android/app/src/main/kotlin/com/poracode/app/transport/settings/SettingsRemoteApiClient.kt",
+            "android/app/src/main/kotlin/com/poracode/app/ui/settings/GlobalMcpSettingsController.kt",
+            "android/app/src/main/kotlin/com/poracode/app/ui/settings/GlobalMcpSettingsPane.kt"
+          ]
         }
       },
       {
@@ -435,8 +443,12 @@
           ]
         },
         "android": {
-          "disposition": "planned",
-          "evidence": []
+          "disposition": "implemented",
+          "evidence": [
+            "android/app/src/main/kotlin/com/poracode/app/transport/settings/SettingsRemoteApiClient.kt",
+            "android/app/src/main/kotlin/com/poracode/app/ui/settings/GlobalMcpSettingsController.kt",
+            "android/app/src/main/kotlin/com/poracode/app/ui/settings/GlobalMcpSettingsPane.kt"
+          ]
         }
       },
       {
@@ -482,7 +494,7 @@
       {
         "id": "schedule-runs-read",
         "batch": "settings-integrations",
-        "note": "iOS exposes native run history and linked thread navigation. Android bindings are generated; its native UI remains planned.",
+        "note": "Both native clients expose schedule run history and same-host linked thread navigation.",
         "ios": {
           "disposition": "implemented",
           "evidence": [
@@ -492,8 +504,12 @@
           ]
         },
         "android": {
-          "disposition": "planned",
-          "evidence": []
+          "disposition": "implemented",
+          "evidence": [
+            "android/app/src/main/kotlin/com/poracode/app/protocol/remoteintegrations/RemoteV3IntegrationsContract.kt",
+            "android/app/src/main/kotlin/com/poracode/app/session/remoteintegrations/ScheduleRunsController.kt",
+            "android/app/src/main/kotlin/com/poracode/app/ui/remoteintegrations/RemoteScheduleRunsSheet.kt"
+          ]
         }
       },
       {
@@ -3483,7 +3499,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3503,7 +3519,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3523,7 +3539,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3543,7 +3559,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3725,7 +3741,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3745,14 +3761,14 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
       {
         "id": "remote-user-notification",
         "batch": "push-system",
-        "note": "Host-owned notification classification. iOS strictly validates the sequenced event, suppresses historical replay and the active thread, presents a native foreground material banner, and deduplicates racing routed APNs delivery. Android still relies on push and does not apply this event.",
+        "note": "Host-owned notification classification. Both native clients strictly validate the sequenced event, suppress historical replay and the active thread, present a native foreground banner, and deduplicate racing routed push delivery.",
         "ios": {
           "disposition": "implemented",
           "evidence": [
@@ -3763,8 +3779,13 @@
           ]
         },
         "android": {
-          "disposition": "planned",
-          "evidence": []
+          "disposition": "implemented",
+          "evidence": [
+            "android/app/src/main/kotlin/com/poracode/app/push/RemoteUserNotificationPresentation.kt",
+            "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
+            "android/app/src/main/kotlin/com/poracode/app/ui/home/RemoteUserNotificationBanner.kt",
+            "android/app/src/main/kotlin/com/poracode/app/push/PoracodeFirebaseMessagingService.kt"
+          ]
         }
       }
     ],
@@ -3785,7 +3806,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3805,7 +3826,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3825,7 +3846,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3845,7 +3866,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3865,7 +3886,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3885,7 +3906,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3905,7 +3926,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -3925,7 +3946,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       },
@@ -4045,7 +4066,7 @@
           "evidence": [
             "android/app/src/main/kotlin/com/poracode/app/protocol/RuntimeEventReducer.kt",
             "android/app/src/main/kotlin/com/poracode/app/session/SessionEventRouter.kt",
-            "android/app/src/main/kotlin/com/poracode/app/ui/thread/ThreadDetailScreen.kt"
+            "android/app/src/main/kotlin/com/poracode/app/ui/richchat/RichChatThreadScreen.kt"
           ]
         }
       }

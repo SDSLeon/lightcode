@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-enum class HostOperationKind { Add, Select, Remove }
+enum class HostOperationKind { Add, Select, Remove, Rename }
 
 data class HostOperationReceipt(val id: Long, val kind: HostOperationKind)
 
@@ -54,6 +54,7 @@ class HostCatalog(
     private val mutex = Mutex()
     private val receiptClock = AtomicLong(0)
     @Volatile private var currentReceipt: HostOperationReceipt? = null
+    @Volatile private var currentMetadataReceipt: HostOperationReceipt? = null
     private val receiptFile = File(registry.directory, LegacyHostImport.RECEIPT_FILE)
     private val tombstoneFile = File(registry.directory, LegacyHostImport.TOMBSTONE_FILE)
 
@@ -63,7 +64,14 @@ class HostCatalog(
     /** Synchronous ownership receipt. A later UI action invalidates older unapplied work. */
     fun begin(kind: HostOperationKind): HostOperationReceipt {
         val receipt = HostOperationReceipt(receiptClock.incrementAndGet(), kind)
-        currentReceipt = receipt
+        if (kind == HostOperationKind.Rename) {
+            currentMetadataReceipt = receipt
+        } else {
+            currentReceipt = receipt
+            if (kind == HostOperationKind.Add || kind == HostOperationKind.Remove) {
+                currentMetadataReceipt = null
+            }
+        }
         return receipt
     }
 
@@ -111,13 +119,23 @@ class HostCatalog(
         if (document.host(record.connectionId) != null) {
             throw HostCatalogException("Host connection id collision")
         }
-        val hosts = document.hosts + record
-        val next = document.copy(hosts = hosts).touching(record.connectionId, clock())
+        // Re-pairing a known endpoint refreshes the existing entry instead of
+        // stacking a duplicate row with a stale token.
+        val replaced = document.hosts.firstOrNull { it.httpBaseUrl == record.httpBaseUrl }
+        val effective = replaced?.let { record.copy(connectionId = it.connectionId) } ?: record
+        val hosts = if (replaced != null) {
+            document.hosts.map {
+                if (it.connectionId == replaced.connectionId) effective else it
+            }
+        } else {
+            document.hosts + effective
+        }
+        val next = document.copy(hosts = hosts).touching(effective.connectionId, clock())
         TransactionPlan(
             kind = HostTransactionJournal.Kind.Add,
-            connectionId = record.connectionId,
+            connectionId = effective.connectionId,
             document = next,
-            targetVaultAccount = HostVault.account(record.connectionId),
+            targetVaultAccount = HostVault.account(effective.connectionId),
             targetVaultBytes = token.toByteArray(Charsets.UTF_8),
         )
     }
@@ -161,6 +179,26 @@ class HostCatalog(
         )
     }
 
+    suspend fun rename(
+        connectionId: ClientConnectionId,
+        label: String,
+        owning: HostOperationReceipt,
+    ): HostMutationResult = mutate(owning, HostOperationKind.Rename) { document ->
+        val normalized = label.trim()
+        require(normalized.isNotEmpty()) { "Host label must not be blank" }
+        require(normalized.length <= MAX_HOST_LABEL_LENGTH) { "Host label is too long" }
+        if (document.host(connectionId) == null) throw HostCatalogException("Unknown host")
+        TransactionPlan(
+            kind = HostTransactionJournal.Kind.Rename,
+            connectionId = connectionId,
+            document = document.copy(
+                hosts = document.hosts.map { host ->
+                    if (host.connectionId == connectionId) host.copy(label = normalized) else host
+                },
+            ),
+        )
+    }
+
     fun rawRegistryForTests(): ByteArray? = registry.raw()
     fun rawJournalForTests(): ByteArray? = vault.rawEncrypted(HostVault.JOURNAL_ACCOUNT)
     fun rawVaultForTests(id: ClientConnectionId): ByteArray? = vault.rawEncrypted(HostVault.account(id))
@@ -183,7 +221,12 @@ class HostCatalog(
         build: suspend (HostRegistryDocument) -> TransactionPlan,
     ): HostMutationResult = mutex.withLock {
         recoverLocked()
-        if (currentReceipt != owning || owning.kind != expected) {
+        val current = if (expected == HostOperationKind.Rename) {
+            currentMetadataReceipt
+        } else {
+            currentReceipt
+        }
+        if (current != owning || owning.kind != expected) {
             return@withLock HostMutationResult.RejectedBeforeApply
         }
         val plan = build(registry.load() ?: HostRegistryDocument())
@@ -201,7 +244,12 @@ class HostCatalog(
         crashIf(CrashStage.AfterIntent)
         applyJournalLocked(journal)
         deleteJournal()
-        if (currentReceipt == owning) HostMutationResult.Applied
+        val remainsCurrent = if (expected == HostOperationKind.Rename) {
+            currentMetadataReceipt == owning
+        } else {
+            currentReceipt == owning
+        }
+        if (remainsCurrent) HostMutationResult.Applied
         else HostMutationResult.AppliedSuperseded
     }
 
@@ -323,4 +371,8 @@ class HostCatalog(
 
     private fun ByteArray?.contentEqualsNullable(other: ByteArray): Boolean =
         this != null && contentEquals(other)
+
+    companion object {
+        const val MAX_HOST_LABEL_LENGTH = 80
+    }
 }

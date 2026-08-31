@@ -21,6 +21,8 @@ import com.poracode.remote.v3.generated.routeU2EPrU2DWatchU2DUpsertU2EResponse
 import com.poracode.remote.v3.generated.routeU2ESchedulesU2DCommandU2ERequest
 import com.poracode.remote.v3.generated.routeU2ESchedulesU2DCommandU2EResponse
 import com.poracode.remote.v3.generated.routeU2ESchedulesU2DReadU2EResponse
+import com.poracode.remote.v3.generated.routeU2EScheduleU2DRunsU2DReadU2EQuery
+import com.poracode.remote.v3.generated.routeU2EScheduleU2DRunsU2DReadU2EResponse
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
@@ -30,6 +32,7 @@ enum class IntegrationRouteId(val wireId: String) {
     HostUpdateInstall("host-update-install"),
     SchedulesRead("schedules-read"),
     SchedulesCommand("schedules-command"),
+    ScheduleRunsRead("schedule-runs-read"),
     PrWatchRead("pr-watch-read"),
     PrWatchCheck("pr-watch-check"),
     PrWatchAgentSync("pr-watch-agent-sync"),
@@ -97,6 +100,16 @@ object RemoteV3IntegrationsContract {
 
     fun scheduleCommandResponse(raw: String): JsonObject = canonicalObject(
         RemoteRootCodecs.routeU2ESchedulesU2DCommandU2EResponse,
+        raw,
+    )
+
+    fun scheduleRunsQuery(raw: String): JsonObject = canonicalObject(
+        RemoteRootCodecs.routeU2EScheduleU2DRunsU2DReadU2EQuery,
+        raw,
+    )
+
+    fun scheduleRunsResponse(raw: String): JsonObject = canonicalObject(
+        RemoteRootCodecs.routeU2EScheduleU2DRunsU2DReadU2EResponse,
         raw,
     )
 

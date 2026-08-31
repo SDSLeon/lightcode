@@ -13,6 +13,11 @@ interface MultiHostCredentialRepository : SessionCredentialRepository {
     fun beginHostOperation(kind: HostOperationKind): HostOperationReceipt
     suspend fun selectHost(id: ClientConnectionId, owning: HostOperationReceipt): HostMutationResult
     suspend fun removeHost(id: ClientConnectionId, owning: HostOperationReceipt): HostMutationResult
+    suspend fun renameHost(
+        id: ClientConnectionId,
+        label: String,
+        owning: HostOperationReceipt,
+    ): HostMutationResult = HostMutationResult.RejectedBeforeApply
 }
 
 /** Adapts the selected catalog host to the existing single-session runtime boundary. */
@@ -94,6 +99,12 @@ class HostCatalogCredentialRepository(
         id: ClientConnectionId,
         owning: HostOperationReceipt,
     ): HostMutationResult = catalog.remove(id, owning)
+
+    override suspend fun renameHost(
+        id: ClientConnectionId,
+        label: String,
+        owning: HostOperationReceipt,
+    ): HostMutationResult = catalog.rename(id, label, owning)
 
     override fun hasPendingClearMarker(): Boolean = catalog.rawJournalForTests() != null
     override fun hasV2DocumentForTests(): Boolean = catalog.rawRegistryForTests() != null

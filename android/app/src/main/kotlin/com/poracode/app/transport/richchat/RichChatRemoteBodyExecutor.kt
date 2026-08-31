@@ -4,6 +4,7 @@ import com.poracode.app.model.RemoteClientException
 import com.poracode.app.transport.RemoteApiClient
 import com.poracode.app.transport.RemoteBinaryResponse
 import kotlinx.coroutines.CancellationException
+import java.io.IOException
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
@@ -96,6 +97,10 @@ private class StreamingAttachmentRequestBody(
     override fun contentLength(): Long = upload.contentLength
 
     override fun writeTo(sink: BufferedSink) {
-        upload.writeBoundedTo(sink)
+        try {
+            upload.writeBoundedTo(sink)
+        } catch (error: RichChatInvalidRequestException) {
+            throw IOException(error.message, error)
+        }
     }
 }

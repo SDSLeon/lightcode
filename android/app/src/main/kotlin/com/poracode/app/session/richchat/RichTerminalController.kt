@@ -7,10 +7,8 @@ import com.poracode.app.chat.TerminalCursorState
 import com.poracode.app.model.terminal.TerminalConnectionPhase
 import com.poracode.app.model.terminal.TerminalConnectionFailure
 import com.poracode.app.model.terminal.TerminalConnectionStatus
-import com.poracode.app.model.terminal.TerminalDimensions
 import com.poracode.app.model.terminal.TerminalProcessState
 import com.poracode.app.model.terminal.TerminalServerFrame
-import com.poracode.app.model.terminal.TerminalWatchError
 import com.poracode.app.transport.richchat.TerminalStartInput
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
@@ -20,30 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-
-data class RichTerminalLease(
-    val host: RichChatHostLease,
-    val terminalId: String,
-    val generation: Long,
-) {
-    init {
-        require(terminalId.isNotEmpty()) { "terminalId must not be empty" }
-    }
-}
-
-data class RichTerminalState(
-    val lease: RichTerminalLease? = null,
-    val cursor: TerminalCursorState? = null,
-    val watching: Boolean = false,
-    val activeOperations: Set<String> = emptySet(),
-    val failure: RichChatOperationFailure? = null,
-    val needsAuthoritativeRefresh: Boolean = false,
-    val connection: TerminalConnectionStatus = TerminalConnectionStatus(),
-    val processState: TerminalProcessState? = null,
-    val exitCode: Int? = null,
-    val dimensions: TerminalDimensions? = null,
-    val watchError: TerminalWatchError? = null,
-)
 
 /** Terminal state machine with explicit terminal generation, watch id, and cursor ownership. */
 class RichTerminalController(
@@ -59,6 +33,7 @@ class RichTerminalController(
     private var generation = 0L
     private var operationEpoch = 0L
     private val currentEpochByKind = mutableMapOf<String, Long>()
+    private val detachedCleanup = RichTerminalDetachedCleanup(session, gateway, lifecycle)
 
     suspend fun start(input: TerminalStartInput): RichChatOperationResult<RichTerminalLease> {
         val host = prepareHost(RichChatCapability.TerminalOperate) ?: return currentRejection()
@@ -106,19 +81,31 @@ class RichTerminalController(
         return watch(terminalId, watchId)
     }
 
-    suspend fun unwatch(): RichChatOperationResult<Unit> {
-        val current = mutableState.value.lease
-            ?: return RichChatOperationResult.Success(Unit)
+    suspend fun unwatch(): RichChatOperationResult<Unit> =
+        mutableState.value.lease?.let { unwatch(it) } ?: RichChatOperationResult.Success(Unit)
+
+    suspend fun unwatch(expected: RichTerminalLease): RichChatOperationResult<Unit> {
+        val current = mutableState.value.lease ?: return RichChatOperationResult.Stale
+        if (current != expected) return RichChatOperationResult.Stale
         val host = prepareHost(RichChatCapability.TerminalRead) ?: return currentRejection()
-        if (current.host.key != host.key) return RichChatOperationResult.Stale
-        val token = capture(current, OP_UNWATCH)
+        if (expected.host.key != host.key) return RichChatOperationResult.Stale
+        val token = capture(expected, OP_UNWATCH)
         return run(token, RichChatCapability.TerminalRead, false) {
-            gateway.unwatchTerminal(host, current.terminalId)
+            gateway.unwatchTerminal(host, expected.terminalId)
             if (!canPublish(token)) return@run RichChatOperationResult.Stale
-            mutableState.update { it.copy(cursor = null, watching = false, activeOperations = emptySet()) }
+            mutableState.update {
+                if (it.lease != expected) it else it.copy(
+                    cursor = null,
+                    watching = false,
+                    activeOperations = emptySet(),
+                )
+            }
             RichChatOperationResult.Success(Unit)
         }
     }
+
+    suspend fun unwatchDetached(expected: RichTerminalLease): RichChatOperationResult<Unit> =
+        detachedCleanup.unwatch(expected)
 
     fun applyFrame(source: RichTerminalLease, frame: TerminalCursorFrame): Boolean {
         val current = mutableState.value
@@ -274,6 +261,13 @@ class RichTerminalController(
     fun clearTerminal() {
         bumpGenerationAndEpoch()
         mutableState.value = RichTerminalState()
+    }
+
+    @Synchronized
+    fun clearTerminalIfCurrent(expected: RichTerminalLease): Boolean {
+        if (mutableState.value.lease != expected) return false
+        clearTerminal()
+        return true
     }
 
     /**

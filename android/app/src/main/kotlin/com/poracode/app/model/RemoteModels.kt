@@ -3,6 +3,7 @@ package com.poracode.app.model
 import com.poracode.app.protocol.GeneratedRemoteV3Contract
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import com.poracode.app.push.RemoteUserNotificationEvent
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -111,6 +112,23 @@ data class RemoteProject(
     val createdAt: String,
 )
 
+/** Provider-neutral slash command metadata advertised by a host thread. */
+@Serializable
+data class RemoteSlashCommand(
+    val id: String,
+    val label: String,
+    val description: String? = null,
+    val argumentHint: String? = null,
+    val section: String? = null,
+    val skillName: String? = null,
+    val skillPath: String? = null,
+    val skillInvocation: String? = null,
+    val skillProvider: String? = null,
+    val skillScope: String? = null,
+    val pluginId: String? = null,
+    val pluginName: String? = null,
+)
+
 @Serializable
 data class RemoteThread(
     val id: String,
@@ -136,6 +154,7 @@ data class RemoteThread(
     val lastTurnStartedAt: String? = null,
     val lastTurnEndedAt: String? = null,
     val errorMessage: String? = null,
+    val slashCommands: List<RemoteSlashCommand>? = null,
     val parentThreadId: String? = null,
 ) {
     val isArchived: Boolean get() = archived == true
@@ -240,6 +259,13 @@ sealed class RemoteWebSocketServerMessage {
                         ?: throw RemoteClientException.invalidResponse("event missing seq")
                     val event = obj["event"]
                         ?: throw RemoteClientException.invalidResponse("event missing event")
+                    try {
+                        RemoteUserNotificationEvent.validateKnown(event)
+                    } catch (_: Exception) {
+                        throw RemoteClientException.invalidResponse(
+                            "Malformed remote user notification event",
+                        )
+                    }
                     Event(seq, event)
                 }
                 "resync-required" -> {
