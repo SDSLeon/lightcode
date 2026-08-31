@@ -118,6 +118,39 @@ jobs:
           grep -Eq 'targetSdk = 37' android/app/build.gradle.kts
           grep -Eq 'minSdk = 26' android/app/build.gradle.kts
 
+      - name: Validate Android Firebase configuration
+        shell: bash
+        env:
+          ANDROID_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          set -euo pipefail
+          if test -z "$ANDROID_GOOGLE_SERVICES_JSON_BASE64"; then
+            echo "Missing mobile-android Firebase secret: ANDROID_GOOGLE_SERVICES_JSON_BASE64" >&2
+            exit 1
+          fi
+
+      - name: Decode the Android Firebase configuration
+        shell: bash
+        env:
+          ANDROID_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$ANDROID_GOOGLE_SERVICES_JSON_BASE64" \
+            | base64 --decode > android/app/google-services.json
+          node <<'NODE'
+          const fs = require("node:fs");
+          const config = JSON.parse(fs.readFileSync("android/app/google-services.json", "utf8"));
+          const clients = Array.isArray(config.client) ? config.client : [];
+          const matchesPackage = clients.some(
+            (client) => client?.client_info?.android_client_info?.package_name ===
+              "com.lightcodeapp.mobile",
+          );
+          if (!matchesPackage) {
+            throw new Error("google-services.json does not contain com.lightcodeapp.mobile");
+          }
+          NODE
+
       - name: Run Android release gates
         working-directory: android
         run: ./gradlew clean testDebugUnitTest lintRelease --no-daemon --stacktrace
@@ -213,7 +246,9 @@ jobs:
       - name: Remove signing material
         if: ${{ always() }}
         shell: bash
-        run: rm -f "$RUNNER_TEMP/poracode-release.keystore"
+        run: |
+          rm -f "$RUNNER_TEMP/poracode-release.keystore"
+          rm -f android/app/google-services.json
 
   ios:
     name: iOS native archive and TestFlight

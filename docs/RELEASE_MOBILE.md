@@ -81,16 +81,17 @@ inside either native app.
 requires:
 
 - synchronized remote-v3 generated artifacts and contract fixtures;
-- 791 Android JVM unit tests, debug APK assembly, and lint against API 37;
+- 910 Android JVM unit tests, debug APK assembly, and lint against API 37;
 - 9 connected instrumentation tests, install, and cold launch on an Android
   17/API 37 emulator;
-- iOS `AppTests` (952 tests) on an iOS 26.5 simulator under Xcode 26.6; and
+- a dedicated minimum-SDK launch test on an Android 8/API 26 emulator;
+- iOS `AppTests` (1,148 passed, 1 skipped) on an iOS 26.5 simulator under Xcode 26.6; and
 - the host-side native wire lab plus a real production headless-host smoke test.
 
-The Android emulator job runs the native `androidTest` suite, including API 37
+The Android emulator jobs run the native `androidTest` suite, including API 37
 `ACCESS_LOCAL_NETWORK` and `POST_NOTIFICATIONS` runtime-permission deny, grant,
-and revoke flows and push-extra consumption, then verifies install and cold
-launch. These gates consume a fresh checkout of the committed corpus; the
+and revoke flows and push-extra consumption, plus a separate API 26 pairing-entry
+launch test. They verify install and cold launch. These gates consume a fresh checkout of the committed corpus; the
 current working tree's native sources are not covered until they are committed.
 The native wire lab still does not drive complete SwiftUI or Compose feature
 journeys. Treat real-host native UI coverage as a separate release gate.
@@ -112,8 +113,8 @@ xcodebuild test \
 ## Final native release evidence
 
 The final iOS run used Xcode 26.6 build 17F113 and an iOS 26.5 simulator, with
-the deployment floor still at iOS 17. The complete `AppTests` run executed 952
-tests: 952 passed, 0 failed, and 0 skipped. A separate generic iOS device build
+the deployment floor still at iOS 17. The complete `AppTests` run executed 1,149
+tests: 1,148 passed, 0 failed, and 1 skipped. A separate generic iOS device build
 with signing disabled succeeded; this was a compile/build check, not a physical-
 device test. The secure real-SwiftUI journey ran one XCUITest in 63.5 seconds:
 1 passed, 0 failed, and 0 skipped. Across two harness hosts it recorded exactly
@@ -122,9 +123,11 @@ one send and one interrupt, 3 snapshots, 3 histories, WebSocket cursors
 and no send or interrupt. Secret scans were clean.
 
 The final Android run used an Android 17/API 37 emulator, with `minSdk = 26`.
-The complete JVM suite executed 791 tests: 791 passed, 0 failed, and 0 skipped.
+The complete JVM suite executed 910 tests: 910 passed, 0 failed, and 0 skipped.
 `compileDebugKotlin`, `compileDebugAndroidTestKotlin`, and `lintDebug` passed.
 Connected instrumentation executed 9 tests: 9 passed, 0 failed, and 0 skipped.
+The separate Android 8/API 26 minimum-SDK launch test also passed: 1 passed,
+0 failed, and 0 skipped.
 The real native journey recorded exactly one send, one interrupt, 3 snapshots,
 4 histories, and 3 WebSocket connections with cursors `0 -> 8 -> 8`; it
 observed one `resync-required` and no collision-host operations. The journey
@@ -166,15 +169,17 @@ derives a monotonic build number from the GitHub run number and attempt.
 
 The `mobile-android` environment:
 
-1. installs Android 17/API 37 and checks `compileSdk = 37`, `targetSdk = 37`, and
+1. installs Android 17/API 37, validates the Firebase client for
+   `com.lightcodeapp.mobile`, and checks `compileSdk = 37`, `targetSdk = 37`, and
    `minSdk = 26`;
-2. runs the 791 JVM unit tests and release lint;
+2. runs the 910 JVM unit tests and release lint;
 3. builds a signed release AAB (the PR gate separately assembles a debug APK)
    and SHA-256 checksum; and
 4. uploads the bundle as release evidence for 30 days.
 
-Required signing secrets are:
+Required Android release secrets are:
 
+- `ANDROID_GOOGLE_SERVICES_JSON_BASE64`
 - `ANDROID_KEYSTORE_BASE64`
 - `ANDROID_KEYSTORE_PASSWORD`
 - `ANDROID_KEY_ALIAS`
@@ -191,7 +196,8 @@ The `mobile-ios` environment:
 
 1. selects Xcode 26.6 and verifies both iOS 26.5 SDKs plus the iOS 17 deployment
    floor;
-2. runs the 952 `AppTests` on an iOS 26.5 simulator;
+2. runs the `AppTests` suite on an iOS 26.5 simulator (1,148 passed and 1 skipped
+   in the final local evidence run);
 3. archives and exports the native `App` scheme with automatic signing;
 4. uploads the IPA, checksum, and dSYMs as release evidence; and
 5. uploads the IPA to TestFlight.
@@ -203,8 +209,8 @@ Required secrets are:
 - `APP_STORE_CONNECT_PRIVATE_KEY`
 - `PORACODE_MOBILE_APPLE_TEAM_ID` (or the fallback `APPLE_TEAM_ID`)
 
-The workflow deletes decoded Android and Apple signing material from its runner
-after use.
+The workflow deletes the decoded Android Firebase configuration, Android
+keystore, and Apple signing material from its runner after use.
 
 ## Verified links and hosted PWA
 
