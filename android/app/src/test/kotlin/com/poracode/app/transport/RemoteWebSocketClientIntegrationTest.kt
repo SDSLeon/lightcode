@@ -8,6 +8,7 @@ import com.poracode.app.model.RemoteShellSnapshot
 import com.poracode.app.model.RemoteThreadSnapshot
 import com.poracode.app.model.ThreadConfig
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -485,7 +486,9 @@ class RemoteWebSocketClientIntegrationTest {
 
     @Test
     fun interestsFlushAfterReadyNotBefore() {
-        val received = mutableListOf<String>()
+        // MockWebServer invokes the listener on its socket thread while the test
+        // asserts on the JUnit worker. Keep the observation collection race-free.
+        val received = CopyOnWriteArrayList<String>()
         val ready = CountDownLatch(1)
         server.enqueue(
             MockResponse().withWebSocketUpgrade(

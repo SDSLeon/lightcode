@@ -57,6 +57,10 @@ class RichChatResourceTest {
             "rich_chat_activity_group" to listOf("%1\$d"),
             "rich_chat_item_description" to listOf("%1\$s", "%2\$s"),
             "rich_chat_checkpoint_summary" to listOf("%1\$s", "%2\$d"),
+            "rich_chat_composer_controls_summary" to listOf("%1\$s"),
+            "rich_chat_activity_count" to listOf("%1\$d"),
+            "rich_chat_plan_step_description" to listOf("%1\$s", "%2\$s"),
+            "rich_chat_remove_context" to listOf("%1\$s"),
         )
     }
 }

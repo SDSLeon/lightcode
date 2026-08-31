@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.core.content.ContextCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -328,7 +329,10 @@ class Android37WireLabJourneyInstrumentedTest {
         // PHASE 10 — disconnect returns the app to pairing.
         // The pairing heading is the Pora·code wordmark now, so the landing assertion
         // anchors on the hero subtitle instead of a translated title string.
-        compose.onNodeWithContentDescription(context.getString(R.string.disconnect)).performClick()
+        compose.onNodeWithContentDescription(context.getString(R.string.home_more)).performClick()
+        compose.onNodeWithText(context.getString(R.string.disconnect))
+            .performScrollTo()
+            .performClick()
         waitForText(context.getString(R.string.pair_instructions), 20_000L)
     }
 

@@ -33,6 +33,7 @@ class RemoteIntegrationsApiClientTest {
             IntegrationRouteId.HostUpdateInstall to "projects:manage",
             IntegrationRouteId.SchedulesRead to "session:read",
             IntegrationRouteId.SchedulesCommand to "session:operate",
+            IntegrationRouteId.ScheduleRunsRead to "session:read",
             IntegrationRouteId.PrWatchRead to "session:read",
             IntegrationRouteId.PrWatchCheck to "session:operate",
             IntegrationRouteId.PrWatchAgentSync to "session:operate",
@@ -45,12 +46,14 @@ class RemoteIntegrationsApiClientTest {
     }
 
     @Test
-    fun callsAllTenRoutesWithExactWireShapesAndBearer() = runBlocking {
+    fun callsAllElevenRoutesWithExactWireShapesAndBearer() = runBlocking {
         val fixture = fixture()
         val server = MockWebServer()
         listOf(
             fixture.getValue("host").toString(), fixture.getValue("host").toString(), "{}",
-            fixture.getValue("schedules").toString(), fixture.getValue("schedules").toString(),
+            fixture.getValue("schedules").toString(),
+            """{"runs":[{"id":"995f9ee6-83de-44da-a90a-4f4e3425bbac","scheduleId":"d2ac39e9-14ac-4776-9279-37a1e455a5db","threadId":"085f4c5f-b8cf-407e-ae52-f53dbfb34fcb","startedAt":"2026-07-10T12:00:00.000Z","completedAt":null,"status":"running","summary":null,"error":"hidden"}]}""",
+            fixture.getValue("schedules").toString(),
             fixture.getValue("watch").toString(), "{\"ok\":true}",
             "{\"ok\":true}", fixture.getValue("watch").toString(), "{\"ok\":true}",
         ).forEachIndexed { index, body ->
@@ -60,7 +63,10 @@ class RemoteIntegrationsApiClientTest {
         try {
             val client = client(server)
             client.hostUpdate(); client.checkHostUpdate(); client.installHostUpdate()
-            client.schedules(); client.commandSchedule(ScheduleCommand.Create(schedule()))
+            client.schedules()
+            val runs = client.scheduleRuns("d2ac39e9-14ac-4776-9279-37a1e455a5db")
+            assertEquals(true, runs.single().hasError)
+            client.commandSchedule(ScheduleCommand.Create(schedule()))
             val key = PrWatchKey("project one", 42)
             client.prWatch(key); client.checkPrWatch(key)
             client.upsertPrWatch(watch(key)); client.deletePrWatch(key)
@@ -69,6 +75,7 @@ class RemoteIntegrationsApiClientTest {
                 "POST" to "/prefix/api/host-update/check",
                 "POST" to "/prefix/api/host-update/install",
                 "GET" to "/prefix/api/schedules",
+                "GET" to "/prefix/api/schedules/runs",
                 "POST" to "/prefix/api/schedules/command",
                 "GET" to "/prefix/api/pr-watches",
                 "POST" to "/prefix/api/pr-watches/check",
@@ -81,9 +88,16 @@ class RemoteIntegrationsApiClientTest {
                 assertEquals(expectedRequest.first, request.method)
                 assertEquals(expectedRequest.second, request.requestUrl!!.encodedPath)
                 assertEquals("Bearer secret", request.getHeader("Authorization"))
-                if (index == 5) assertEquals("project one", request.requestUrl!!.queryParameter("projectId"))
+                if (index == 4) assertEquals(
+                    "d2ac39e9-14ac-4776-9279-37a1e455a5db",
+                    request.requestUrl!!.queryParameter("id"),
+                )
+                if (index == 6) assertEquals(
+                    "project one",
+                    request.requestUrl!!.queryParameter("projectId"),
+                )
             }
-            assertEquals(10, server.requestCount)
+            assertEquals(11, server.requestCount)
         } finally { server.shutdown() }
     }
 

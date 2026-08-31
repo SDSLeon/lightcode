@@ -65,6 +65,14 @@ class ProjectWorkspaceUiLogicTest {
         assertFalse(
             projectWorkspaceActions(
                 access,
+                ProjectWorkspaceEntry(mutatingEntry = true),
+                dirty = false,
+                diffLoading = false,
+            ).canOpenFile,
+        )
+        assertFalse(
+            projectWorkspaceActions(
+                access,
                 ProjectWorkspaceEntry(openFile = file(ProjectFileReadStatus.Binary, null)),
                 dirty = true,
                 diffLoading = false,

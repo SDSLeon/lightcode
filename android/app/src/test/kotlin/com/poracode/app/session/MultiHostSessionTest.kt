@@ -3,7 +3,9 @@ package com.poracode.app.session
 import com.poracode.app.model.ClientConnectionId
 import com.poracode.app.model.CompositeRemoteId
 import com.poracode.app.model.ConnectionProfile
+import com.poracode.app.model.HostCatalogSnapshot
 import com.poracode.app.model.HostRecord
+import com.poracode.app.model.HostRegistryDocument
 import com.poracode.app.model.PosixProjectLocation
 import com.poracode.app.model.RemoteProject
 import com.poracode.app.model.RemoteShellSnapshot
@@ -17,12 +19,15 @@ import com.poracode.app.storage.InMemorySessionCredentialRepository
 import com.poracode.app.storage.LegacyHostImport
 import com.poracode.app.storage.LegacyHostSource
 import com.poracode.app.storage.LegacySourceBytes
+import com.poracode.app.storage.MultiHostCredentialRepository
 import com.poracode.app.storage.SessionCredentials
 import com.poracode.app.transport.ForegroundNetworkGate
 import java.io.File
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -171,6 +176,172 @@ class MultiHostSessionTest {
     }
 
     @Test
+    fun corruptMultihostRegistrySurfacesRecoveryStateDuringBootstrap() = runTest {
+        val directory = temporary.newFolder("corrupt-bootstrap")
+        val registry = HostRegistryStore(File(directory, "hosts"))
+        registry.writeExact("not-json".toByteArray())
+        val repository = HostCatalogCredentialRepository(
+            HostCatalog(
+                registry = registry,
+                vault = InMemoryHostVault(),
+                legacySource = EmptyLegacySource,
+            ),
+        )
+        val session = AppSession(
+            credentials = repository,
+            scope = this,
+            apiFactory = { endpoint, token -> FakeApiGateway(endpoint, token) },
+            socketFactory = { FakeSocket() },
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+            networkGate = ForegroundNetworkGate(),
+        )
+
+        session.bootstrap()
+        advanceUntilIdle()
+
+        assertEquals(AppSession.Phase.LocalStoreInconsistent, session.state.value.phase)
+    }
+
+    @Test
+    fun hostSwitchDoesNotPublishNewOwnerBeforeItsCredentialsAreReady() = runTest {
+        val catalog = HostCatalog(
+            registry = HostRegistryStore(File(temporary.newFolder("switch-catalog"), "hosts")),
+            vault = InMemoryHostVault(),
+            legacySource = EmptyLegacySource,
+        )
+        val first = HostRecord(id(1), profile(1), 1_001L)
+        val second = HostRecord(id(2), profile(2), 1_002L)
+        catalog.add(first, "token-1", catalog.begin(HostOperationKind.Add))
+        catalog.add(second, "token-2", catalog.begin(HostOperationKind.Add))
+        catalog.select(first.connectionId, catalog.begin(HostOperationKind.Select))
+        val delegate = HostCatalogCredentialRepository(catalog)
+        val credentialsReached = CompletableDeferred<Unit>()
+        val releaseCredentials = CompletableDeferred<Unit>()
+        val repository = object : MultiHostCredentialRepository by delegate {
+            override suspend fun credentialsFor(id: ClientConnectionId): SessionCredentials? {
+                if (id == second.connectionId) {
+                    credentialsReached.complete(Unit)
+                    releaseCredentials.await()
+                }
+                return delegate.credentialsFor(id)
+            }
+        }
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val session = AppSession(
+            credentials = repository,
+            scope = this,
+            apiFactory = { endpoint, token -> FakeApiGateway(endpoint, token) },
+            socketFactory = { FakeSocket() },
+            ioDispatcher = dispatcher,
+            networkGate = ForegroundNetworkGate(),
+        )
+        session.bootstrap()
+        advanceUntilIdle()
+        val firstSnapshot = requireNotNull(session.state.value.snapshot)
+        assertEquals(first.connectionId, session.state.value.hostCatalog.selectedConnectionId)
+
+        session.selectHost(second.connectionId)
+        runCurrent()
+
+        assertTrue(credentialsReached.isCompleted)
+        assertEquals(first.connectionId, session.state.value.hostCatalog.selectedConnectionId)
+        assertSame(firstSnapshot, session.state.value.snapshot)
+
+        session.renameHost(first.connectionId, "Renamed first")
+        runCurrent()
+
+        assertEquals(first.connectionId, session.state.value.hostCatalog.selectedConnectionId)
+        assertEquals("Renamed first", session.state.value.hostCatalog.hosts
+            .first { it.connectionId == first.connectionId }.label)
+        assertEquals("Renamed first", session.state.value.profile?.label)
+        assertSame(firstSnapshot, session.state.value.snapshot)
+
+        releaseCredentials.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(second.connectionId, session.state.value.hostCatalog.selectedConnectionId)
+        assertEquals(second.desktopId, session.state.value.profile?.desktopId)
+    }
+
+    @Test
+    fun secondaryHostStatusIsLeaseGuardedAndClearedOnBackground() = runTest {
+        val catalog = HostCatalog(
+            registry = HostRegistryStore(File(temporary.newFolder("status-catalog"), "hosts")),
+            vault = InMemoryHostVault(),
+            legacySource = EmptyLegacySource,
+        )
+        val first = HostRecord(id(1), profile(1), 1_001L)
+        val second = HostRecord(id(2), profile(2), 1_002L)
+        catalog.add(first, "token-1", catalog.begin(HostOperationKind.Add))
+        catalog.add(second, "token-2", catalog.begin(HostOperationKind.Add))
+        catalog.select(first.connectionId, catalog.begin(HostOperationKind.Select))
+        val sockets = FakeSocketFactory()
+        val session = AppSession(
+            credentials = HostCatalogCredentialRepository(catalog),
+            scope = this,
+            apiFactory = { endpoint, token -> FakeApiGateway(endpoint, token) },
+            socketFactory = { sockets.create() },
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+            networkGate = ForegroundNetworkGate(),
+        )
+
+        session.bootstrap()
+        advanceUntilIdle()
+        session.onAppForeground()
+        advanceUntilIdle()
+
+        assertEquals(
+            com.poracode.app.transport.RemoteWebSocketClient.ConnectionState.Online,
+            session.state.value.hostCatalog.connectionStates[second.connectionId],
+        )
+        val secondarySocket = sockets.sockets.last()
+
+        session.onAppBackground()
+        advanceUntilIdle()
+        assertTrue(session.state.value.hostCatalog.connectionStates.isEmpty())
+
+        secondarySocket.emitState(
+            com.poracode.app.transport.RemoteWebSocketClient.ConnectionState.Online,
+        )
+        assertTrue(session.state.value.hostCatalog.connectionStates.isEmpty())
+    }
+
+    @Test
+    fun hostSelectionStorageFailureSurfacesRecoveryInsteadOfEscapingCoroutine() = runTest {
+        val catalog = HostCatalog(
+            registry = HostRegistryStore(File(temporary.newFolder("select-failure"), "hosts")),
+            vault = InMemoryHostVault(),
+            legacySource = EmptyLegacySource,
+        )
+        val first = HostRecord(id(1), profile(1), 1_001L)
+        val second = HostRecord(id(2), profile(2), 1_002L)
+        catalog.add(first, "token-1", catalog.begin(HostOperationKind.Add))
+        catalog.add(second, "token-2", catalog.begin(HostOperationKind.Add))
+        catalog.select(first.connectionId, catalog.begin(HostOperationKind.Select))
+        val delegate = HostCatalogCredentialRepository(catalog)
+        val repository = object : MultiHostCredentialRepository by delegate {
+            override suspend fun selectHost(
+                id: ClientConnectionId,
+                owning: com.poracode.app.storage.HostOperationReceipt,
+            ): com.poracode.app.storage.HostMutationResult = error("storage failed")
+        }
+        val session = AppSession(
+            credentials = repository,
+            scope = this,
+            apiFactory = { endpoint, token -> FakeApiGateway(endpoint, token) },
+            socketFactory = { FakeSocket() },
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+            networkGate = ForegroundNetworkGate(),
+        )
+        session.bootstrap()
+        advanceUntilIdle()
+
+        session.selectHost(second.connectionId)
+        advanceUntilIdle()
+
+        assertEquals(AppSession.Phase.LocalStoreInconsistent, session.state.value.phase)
+    }
+
+    @Test
     fun permissionRevokeBlocksForegroundResumeUntilGrant() = runTest {
         var permission = true
         val credentials = InMemorySessionCredentialRepository().apply {
@@ -210,6 +381,44 @@ class MultiHostSessionTest {
         assertEquals(AppSession.Phase.Ready, session.state.value.phase)
         assertTrue(before.destroyed)
         assertTrue(requireNotNull(session.socketForTests()) !== before)
+    }
+
+    @Test
+    fun legacyDuplicateEndpointsCollapseToMostRecentRow() {
+        val stale = HostRecord(id(1), profile(1), 1_001L)
+        val fresh = HostRecord(id(2), profile(1).copy(label = "Re-paired"), 1_500L)
+        val other = HostRecord(id(3), profile(2), 1_200L)
+        val snapshot = HostCatalogSnapshot(
+            HostRegistryDocument(
+                selectedConnectionId = id(2),
+                lru = listOf(id(2), id(3), id(1)),
+                hosts = listOf(stale, fresh, other),
+            ),
+            registryExists = true,
+        )
+
+        val compacted = compactHostsByEndpoint(snapshot)
+
+        assertEquals(listOf(id(2), id(3)), compacted.hosts.map { it.connectionId })
+        assertEquals("Re-paired", compacted.hosts.first().label)
+        assertEquals(listOf(id(2), id(3)), compacted.lru)
+        assertEquals(id(2), compacted.selectedConnectionId)
+    }
+
+    @Test
+    fun distinctEndpointsPassThroughCompactionUnchanged() {
+        val first = HostRecord(id(1), profile(1), 1_001L)
+        val second = HostRecord(id(2), profile(2), 1_002L)
+        val snapshot = HostCatalogSnapshot(
+            HostRegistryDocument(
+                selectedConnectionId = id(1),
+                lru = listOf(id(1), id(2)),
+                hosts = listOf(first, second),
+            ),
+            registryExists = true,
+        )
+
+        assertSame(snapshot, compactHostsByEndpoint(snapshot))
     }
 
     private object EmptyLegacySource : LegacyHostSource {

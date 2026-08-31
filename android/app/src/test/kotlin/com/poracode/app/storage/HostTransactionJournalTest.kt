@@ -52,4 +52,22 @@ class HostTransactionJournalTest {
             HostTransactionJournal.decode(swapped.toByteArray()),
         )
     }
+
+    @Test
+    fun versionOneJournalRemainsRecoverableAfterRenameJournalUpgrade() {
+        val current = HostTransactionJournal.encode(
+            HostTransactionJournal.make(
+                operationId = 7,
+                kind = HostTransactionJournal.Kind.Select,
+                connectionId = id,
+                targetRegistryBytes = "registry".toByteArray(),
+            ),
+        ).toString(Charsets.UTF_8)
+        val versionOne = current.replace("\"version\":2", "\"version\":1")
+
+        val decoded = HostTransactionJournal.decode(versionOne.toByteArray())
+
+        assertTrue(decoded is HostTransactionJournal.Decode.Current)
+        assertEquals(1, (decoded as HostTransactionJournal.Decode.Current).record.version)
+    }
 }

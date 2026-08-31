@@ -79,6 +79,32 @@ class HostCatalogRecoveryTest {
     }
 
     @Test
+    fun renameRecoversFromEveryDurablePhaseWithoutChangingTokenOrSelection() = runTest {
+        HostCatalog.CrashStage.entries.forEachIndexed { index, stage ->
+            val fixture = fixture("rename-$index")
+            val record = host(index + 20)
+            fixture.add(record, "token-$index")
+            fixture.catalog.crashAfterStageForTests = stage
+
+            try {
+                fixture.catalog.rename(
+                    record.connectionId,
+                    "  Renamed $index  ",
+                    fixture.catalog.begin(HostOperationKind.Rename),
+                )
+                throw AssertionError("Expected rename crash at $stage")
+            } catch (_: HostCatalogException) {
+            }
+
+            val recovered = fixture.catalog.snapshot()
+            assertEquals(record.connectionId, recovered.selectedConnectionId)
+            assertEquals("Renamed $index", recovered.selected?.label)
+            assertEquals("token-$index", fixture.catalog.token(record.connectionId))
+            assertNull(fixture.catalog.rawJournalForTests())
+        }
+    }
+
+    @Test
     fun staleReceiptAndConnectionIdCollisionCannotOverwriteHost() = runTest {
         val fixture = fixture("receipts")
         val first = host(1)
@@ -99,6 +125,50 @@ class HostCatalogRecoveryTest {
         }
         assertEquals("Host 1", fixture.catalog.snapshot().selected?.label)
         assertEquals("current", fixture.catalog.token(first.connectionId))
+    }
+
+    @Test
+    fun rePairingSameEndpointReplacesTheExistingHostInPlace() = runTest {
+        val fixture = fixture("repair-same-endpoint")
+        val first = host(1)
+        fixture.add(first, "old-token")
+
+        val rePair = HostRecord(id(9), profile(1).copy(appVersion = "2.0.0"), 5_000L)
+        assertEquals(
+            HostMutationResult.Applied,
+            fixture.catalog.add(rePair, "new-token", fixture.catalog.begin(HostOperationKind.Add)),
+        )
+
+        val snapshot = fixture.catalog.snapshot()
+        assertEquals(listOf(first.connectionId), snapshot.hosts.map { it.connectionId })
+        assertEquals(first.connectionId, snapshot.selectedConnectionId)
+        assertEquals("2.0.0", snapshot.selected?.appVersion)
+        assertEquals("new-token", fixture.catalog.token(first.connectionId))
+        assertNull(fixture.catalog.token(id(9)))
+    }
+
+    @Test
+    fun metadataRenameDoesNotSupersedeAnUnappliedSelection() = runTest {
+        val fixture = fixture("rename-select-receipts")
+        val first = host(1)
+        val second = host(2)
+        fixture.add(first, "token-1")
+        fixture.add(second, "token-2")
+        val select = fixture.catalog.begin(HostOperationKind.Select)
+        val rename = fixture.catalog.begin(HostOperationKind.Rename)
+
+        assertEquals(
+            HostMutationResult.Applied,
+            fixture.catalog.select(first.connectionId, select),
+        )
+        assertEquals(
+            HostMutationResult.Applied,
+            fixture.catalog.rename(second.connectionId, "Renamed second", rename),
+        )
+
+        val snapshot = fixture.catalog.snapshot()
+        assertEquals(first.connectionId, snapshot.selectedConnectionId)
+        assertEquals("Renamed second", snapshot.document.host(second.connectionId)?.label)
     }
 
     @Test

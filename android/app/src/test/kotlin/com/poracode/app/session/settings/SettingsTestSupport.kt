@@ -4,6 +4,10 @@ import com.poracode.app.model.ClientConnectionId
 import com.poracode.app.model.settings.AgentStatusesSnapshot
 import com.poracode.app.model.settings.HostSettingsPatch
 import com.poracode.app.model.settings.HostSettingsSnapshot
+import com.poracode.app.model.settings.GlobalMcpSettingsCommand
+import com.poracode.app.model.settings.GlobalMcpSettingsOperation
+import com.poracode.app.model.settings.GlobalMcpSettingsOperationResult
+import com.poracode.app.model.settings.GlobalMcpSettingsResponse
 import com.poracode.app.model.settings.ProfileCoreStatsSnapshot
 import com.poracode.app.model.settings.ProfileDevicesSnapshot
 import com.poracode.app.model.settings.ProfileIdentityRequest
@@ -46,6 +50,7 @@ internal fun settingsSnapshot(fast: Boolean = false) = HostSettingsSnapshot(
 internal class FakeSettingsRemoteGateway : SettingsRemoteGateway {
     var settingsCalls = 0
     var writeCalls = 0
+    var mcpReadCalls = 0
     var agentHandler: suspend () -> AgentStatusesSnapshot = { agentSnapshot() }
     var readHandler: suspend () -> HostSettingsSnapshot = { settingsSnapshot() }
     var writeHandler: suspend (HostSettingsPatch) -> HostSettingsSnapshot = { settingsSnapshot(true) }
@@ -89,6 +94,15 @@ internal class FakeSettingsRemoteGateway : SettingsRemoteGateway {
             },
         )
 
+    override suspend fun readGlobalMcpSettings(): GlobalMcpSettingsResponse {
+        mcpReadCalls += 1
+        return GlobalMcpSettingsResponse(emptyList())
+    }
+    override suspend fun commandGlobalMcpSettings(command: GlobalMcpSettingsCommand) =
+        GlobalMcpSettingsResponse(emptyList())
+    override suspend fun operateGlobalMcpSettings(operation: GlobalMcpSettingsOperation) =
+        GlobalMcpSettingsOperationResult.OauthClear
+
     private fun profileBase(available: Boolean? = null): JsonObject = buildJsonObject {
         put("scope", "device")
         put("device", buildJsonObject { put("id", "device") })
@@ -102,6 +116,17 @@ internal class FakeSettingsSessionGateway : SettingsSessionGateway {
     var settingsHandler: suspend (SettingsHostLease) -> HostSettingsSnapshot = { settingsSnapshot() }
     var settingsWriteHandler: suspend (SettingsHostLease, HostSettingsPatch) -> HostSettingsSnapshot =
         { _, _ -> settingsSnapshot(true) }
+    var mcpOperationHandler: suspend (
+        SettingsHostLease,
+        GlobalMcpSettingsOperation,
+    ) -> GlobalMcpSettingsOperationResult = { _, _ -> GlobalMcpSettingsOperationResult.OauthClear }
+    var mcpReadHandler: suspend (SettingsHostLease) -> GlobalMcpSettingsResponse = {
+        GlobalMcpSettingsResponse(emptyList())
+    }
+    var mcpCommandHandler: suspend (
+        SettingsHostLease,
+        GlobalMcpSettingsCommand,
+    ) -> GlobalMcpSettingsResponse = { _, _ -> GlobalMcpSettingsResponse(emptyList()) }
 
     override suspend fun agentStatuses(lease: SettingsHostLease) = agentHandler(lease)
     override suspend fun readSettings(lease: SettingsHostLease) = settingsHandler(lease)
@@ -124,4 +149,14 @@ internal class FakeSettingsSessionGateway : SettingsSessionGateway {
         lease: SettingsHostLease,
         request: ProfileIdentityRequest,
     ) = FakeSettingsRemoteGateway().updateProfileIdentity(request)
+
+    override suspend fun readGlobalMcpSettings(lease: SettingsHostLease) = mcpReadHandler(lease)
+    override suspend fun commandGlobalMcpSettings(
+        lease: SettingsHostLease,
+        command: GlobalMcpSettingsCommand,
+    ) = mcpCommandHandler(lease, command)
+    override suspend fun operateGlobalMcpSettings(
+        lease: SettingsHostLease,
+        operation: GlobalMcpSettingsOperation,
+    ) = mcpOperationHandler(lease, operation)
 }

@@ -102,4 +102,46 @@ class RichCheckpointAndMediaControllerTest {
         assertTrue(controller.runtimeImagePlan(ref) is RichChatOperationResult.Failed)
         assertEquals(1, gateway.calls.count { it == "runtime-image" })
     }
+
+    @Test
+    fun preallocatedThreadAttachmentUsesCurrentHostWithoutASelection() = runTest {
+        val host = richLease()
+        val session = MutableStateFlow<RichChatHostLease?>(host)
+        val gateway = FakeRichChatSessionGateway()
+        val controller = RichChatMediaController(
+            session,
+            MutableStateFlow(null),
+            gateway,
+            ForegroundOperationRegistry(),
+        )
+        val body = AttachmentUploadBody.streaming(1) { it.writeByte(1) }
+
+        val result = controller.uploadAttachmentForThread(
+            "preallocated-thread",
+            "note.txt",
+            "text/plain",
+            body,
+        )
+
+        assertTrue(result is RichChatOperationResult.Success)
+        assertEquals(1, gateway.calls.count { it == "upload" })
+    }
+
+    @Test
+    fun attachmentReadinessRequiresForegroundOnlineOperateLease() {
+        val session = MutableStateFlow<RichChatHostLease?>(richLease(online = false))
+        val lifecycle = ForegroundOperationRegistry()
+        val controller = RichChatMediaController(
+            session,
+            MutableStateFlow<RichChatThreadLease?>(null),
+            FakeRichChatSessionGateway(),
+            lifecycle,
+        )
+
+        assertFalse(controller.isReadyForUpload)
+        session.value = richLease()
+        assertTrue(controller.isReadyForUpload)
+        lifecycle.enterBackground()
+        assertFalse(controller.isReadyForUpload)
+    }
 }

@@ -110,13 +110,31 @@ class SettingsUiLogicTest {
     }
 
     @Test
-    fun settingsWritesAreSparseAndProfileColorIsValidated() {
-        val baseline = SettingsPreferencesDraft(false, false, false)
+    fun settingsWritesAreSparseAndProfileColorMatchesRemoteContract() {
+        val defaultSlot = SettingsGenerationSlotDraft(
+            provider = SettingsGenerationSlotDraft.PROVIDER_AUTO,
+            model = "",
+            effort = "",
+            fast = false,
+        )
+        val defaultConflict = defaultSlot.copy(
+            presentationMode = SettingsGenerationSlotDraft.PRESENTATION_TERMINAL,
+        )
+        val defaultEnvironment = SettingsGenerationEnvironmentDraft(
+            title = defaultSlot,
+            commit = defaultSlot,
+            conflict = defaultConflict,
+        )
+        val baseline = SettingsPreferencesDraft(windows = defaultEnvironment, wsl = defaultEnvironment)
         assertNull(baseline.patchFrom(baseline))
-        val patch = baseline.copy(commitGenerationFast = true).patchFrom(baseline)!!
+        val patch = baseline.copy(
+            windows = baseline.windows.copy(commit = defaultSlot.copy(fast = true)),
+        ).patchFrom(baseline)!!
         assertEquals("HostSettingsPatch(fields=[commitGenFast])", patch.toString())
         assertTrue(SettingsIdentityDraft("Name", "handle", "#6750A4").isValid)
-        assertFalse(SettingsIdentityDraft("Name", "handle", "red").isValid)
+        assertTrue(SettingsIdentityDraft("Name", "handle", "oklch(0.6 0.14 295)").isValid)
+        assertTrue(SettingsIdentityDraft("Name", "@${"h".repeat(40)}", "red").isValid)
+        assertFalse(SettingsIdentityDraft("Name", "handle", "x".repeat(65)).isValid)
     }
 
     private fun host(id: ClientConnectionId, label: String, version: String) = HostRecord(

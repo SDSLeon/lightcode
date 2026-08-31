@@ -144,11 +144,56 @@ class ProjectWorkspaceControllerTest {
         controller.onProjectsChanged(connectionA)
         assertFalse(target.identity in controller.state.value.entries)
     }
+
+    @Test
+    fun mismatchedFileResponseIsRejectedBeforeItCanBecomeTheSaveTarget() = runTest {
+        val state = MutableStateFlow<ProjectHostLease?>(lease(connectionA, generation = 7))
+        val remote = FakeWorkspaceGateway().apply {
+            readHandler = { _, _ -> file("different-file.txt") }
+        }
+        val controller = ProjectWorkspaceController(state, remote)
+        val target = target(connectionA)
+
+        val result = controller.openFile(target, "requested-file.txt")
+
+        assertEquals(
+            ProjectOperationResult.Failed(ProjectOperationFailure.InvalidResponse),
+            result,
+        )
+        val entry = controller.state.value.entries.getValue(target.identity)
+        assertNull(entry.openFile)
+        assertEquals(ProjectOperationFailure.InvalidResponse, entry.failure)
+        assertFalse(entry.loadingFile)
+    }
+
+    @Test
+    fun entryMutationRunsOnceClearsAffectedEditorAndRefreshesCurrentDirectory() = runTest {
+        val state = MutableStateFlow<ProjectHostLease?>(lease(connectionA, generation = 7))
+        val remote = FakeWorkspaceGateway()
+        val controller = ProjectWorkspaceController(state, remote)
+        val target = target(connectionA)
+        assertTrue(controller.loadTree(target, "src") is ProjectOperationResult.Success)
+        assertTrue(controller.openFile(target, "src/remove.txt") is ProjectOperationResult.Success)
+
+        val result = controller.mutateEntry(
+            target,
+            ProjectEntryMutation.Delete("src/remove.txt"),
+        )
+
+        assertTrue(result is ProjectOperationResult.Success)
+        assertEquals(listOf("src/remove.txt"), remote.deletedPaths)
+        assertEquals(listOf("src", "src"), remote.treePaths)
+        val entry = controller.state.value.entries.getValue(target.identity)
+        assertNull(entry.openFile)
+        assertFalse(entry.mutatingEntry)
+    }
 }
 
 private class FakeWorkspaceGateway : ProjectWorkspaceGateway {
     var writeCalls = 0
     val writeBases = mutableListOf<Double>()
+    val treePaths = mutableListOf<String>()
+    val deletedPaths = mutableListOf<String>()
     var treeHandler: suspend (ProjectWorkspaceTarget, String) -> ProjectTreeResult =
         { _, path -> ProjectTreeResult(path, emptyList()) }
     var readHandler: suspend (ProjectWorkspaceTarget, String) -> ProjectFileReadResult =
@@ -164,7 +209,10 @@ private class FakeWorkspaceGateway : ProjectWorkspaceGateway {
         lease: ProjectHostLease,
         target: ProjectWorkspaceTarget,
         directoryPath: String,
-    ) = treeHandler(target, directoryPath)
+    ): ProjectTreeResult {
+        treePaths += directoryPath
+        return treeHandler(target, directoryPath)
+    }
 
     override suspend fun searchFiles(
         lease: ProjectHostLease,
@@ -197,6 +245,14 @@ private class FakeWorkspaceGateway : ProjectWorkspaceGateway {
     ): ProjectFileWriteResult {
         writeCalls += 1
         return writeHandler(target, path, content, baseModifiedAtMs)
+    }
+
+    override suspend fun deleteEntry(
+        lease: ProjectHostLease,
+        target: ProjectWorkspaceTarget,
+        path: String,
+    ) {
+        deletedPaths += path
     }
 
     override suspend fun gitStatus(

@@ -11,7 +11,7 @@ class ProjectUiResourceTest {
     fun projectResourcesAreCompleteInEverySupportedLocale() {
         val root = projectFile("app/src/main/res")
         val source = names(root.resolve("values/projects.xml"))
-        assertEquals(85, source.size)
+        assertEquals(123, source.size)
         val locales = listOf(
             "de", "es", "fr", "ja", "ko", "pl", "pt-rBR", "ru", "tr", "uk", "vi", "zh-rCN",
         )
@@ -54,6 +54,10 @@ class ProjectUiResourceTest {
             "projects_relocate_confirm_message",
             "projects_disable_confirm_title",
             "projects_remove_confirm_title",
+            "projects_action_icon_value",
+            "projects_run_action",
+            "projects_worktree_inherited_value",
+            "projects_search_inherited_value",
         )
     }
 }

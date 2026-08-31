@@ -17,6 +17,17 @@ import org.junit.Test
 
 class SettingsIntegrationsCompositionTest {
     @Test
+    fun initialProjectRouteRequiresTheExactOwningHost() {
+        val identity = com.poracode.app.model.ProjectIdentity(HOST_A, "same")
+
+        assertEquals(
+            "same",
+            initialSettingsIntegrationsProjectId(HOST_A, identity, listOf("same")),
+        )
+        assertNull(initialSettingsIntegrationsProjectId(HOST_B, identity, listOf("same")))
+        assertNull(initialSettingsIntegrationsProjectId(HOST_A, identity, emptyList()))
+    }
+    @Test
     fun projectSelectionAndRelocationAdvanceExactWorkLease() {
         val state = readyState(HOST_A, project("project", "/one"))
         val source = SettingsIntegrationsLeaseSource(state)

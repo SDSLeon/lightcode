@@ -150,4 +150,11 @@ private object NoopSettingsGateway : SettingsRemoteGateway {
     override suspend fun updateProfileIdentity(request: com.poracode.app.model.settings.ProfileIdentityRequest) = error("unused")
     override suspend fun readSettings() = error("unused")
     override suspend fun writeSettings(patch: com.poracode.app.model.settings.HostSettingsPatch) = error("unused")
+    override suspend fun readGlobalMcpSettings() = error("unused")
+    override suspend fun commandGlobalMcpSettings(
+        command: com.poracode.app.model.settings.GlobalMcpSettingsCommand,
+    ) = error("unused")
+    override suspend fun operateGlobalMcpSettings(
+        operation: com.poracode.app.model.settings.GlobalMcpSettingsOperation,
+    ) = error("unused")
 }

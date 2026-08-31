@@ -13,7 +13,7 @@ import org.junit.Test
 
 class GeneratedRemoteV3SettingsContractTest {
     @Test
-    fun metadataFacadeCoversExactEightRoutesAndScopes() {
+    fun metadataFacadeCoversExactElevenRoutesAndScopes() {
         val actual = SettingsRouteId.entries.associateWith {
             GeneratedRemoteV3SettingsContract.route(it)
         }
@@ -26,15 +26,40 @@ class GeneratedRemoteV3SettingsContractTest {
         assertEquals("/api/settings", actual.getValue(SettingsRouteId.SettingsRead).path)
         assertEquals("/api/settings", actual.getValue(SettingsRouteId.SettingsWrite).path)
         assertEquals(
+            "/api/settings/mcp-servers",
+            actual.getValue(SettingsRouteId.McpSettingsRead).path,
+        )
+        assertEquals(
+            "/api/settings/mcp-servers/command",
+            actual.getValue(SettingsRouteId.McpSettingsCommand).path,
+        )
+        assertEquals(
+            "/api/settings/mcp-servers/operation",
+            actual.getValue(SettingsRouteId.McpSettingsOperation).path,
+        )
+        assertEquals(
             setOf("session:read"),
-            actual.filterKeys {
-                it !in setOf(SettingsRouteId.ProfileIdentity, SettingsRouteId.SettingsWrite)
-            }.values.map { it.requiredScope }.toSet(),
+            listOf(
+                SettingsRouteId.AgentStatuses,
+                SettingsRouteId.ProviderUsage,
+                SettingsRouteId.ProfileDevices,
+                SettingsRouteId.ProfileCoreStats,
+                SettingsRouteId.ProfileTokenStats,
+                SettingsRouteId.SettingsRead,
+            ).map { actual.getValue(it).requiredScope }.toSet(),
         )
         assertEquals(
             setOf("session:operate"),
             listOf(SettingsRouteId.ProfileIdentity, SettingsRouteId.SettingsWrite)
                 .map { actual.getValue(it).requiredScope }.toSet(),
+        )
+        assertEquals(
+            setOf("projects:manage"),
+            listOf(
+                SettingsRouteId.McpSettingsRead,
+                SettingsRouteId.McpSettingsCommand,
+                SettingsRouteId.McpSettingsOperation,
+            ).map { actual.getValue(it).requiredScope }.toSet(),
         )
     }
 

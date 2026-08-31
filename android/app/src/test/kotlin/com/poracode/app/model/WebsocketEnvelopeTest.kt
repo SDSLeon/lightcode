@@ -54,4 +54,15 @@ class WebsocketEnvelopeTest {
         }.exceptionOrNull()
         assertTrue(thrown is RemoteClientException)
     }
+
+    @Test
+    fun rejectsMalformedKnownNotificationBeforeEventDelivery() {
+        val thrown = runCatching {
+            RemoteWebSocketServerMessage.decode(
+                """{"type":"event","seq":9,"event":{"type":"remote-user-notification","threadId":"t1","category":"unexpected","projectName":"Project","threadTitle":"Thread","status":"idle"}}""",
+            )
+        }.exceptionOrNull()
+
+        assertTrue(thrown is RemoteClientException)
+    }
 }
