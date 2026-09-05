@@ -266,29 +266,29 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.1.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       '@xterm/addon-clipboard':
-        specifier: 0.3.0-beta.219
-        version: 0.3.0-beta.219(@xterm/xterm@6.1.0-beta.219)
+        specifier: 0.3.0-beta.302
+        version: 0.3.0-beta.302(@xterm/xterm@6.1.0-beta.303)
       '@xterm/addon-fit':
-        specifier: 0.12.0-beta.219
-        version: 0.12.0-beta.219(@xterm/xterm@6.1.0-beta.219)
+        specifier: 0.12.0-beta.300
+        version: 0.12.0-beta.300(@xterm/xterm@6.1.0-beta.303)
       '@xterm/addon-image':
-        specifier: 0.10.0-beta.219
-        version: 0.10.0-beta.219(@xterm/xterm@6.1.0-beta.219)
+        specifier: 0.10.0-beta.300
+        version: 0.10.0-beta.300(@xterm/xterm@6.1.0-beta.303)
       '@xterm/addon-search':
-        specifier: 0.17.0-beta.219
-        version: 0.17.0-beta.219(@xterm/xterm@6.1.0-beta.219)
+        specifier: 0.17.0-beta.300
+        version: 0.17.0-beta.300(@xterm/xterm@6.1.0-beta.303)
       '@xterm/addon-unicode11':
-        specifier: 0.10.0-beta.219
-        version: 0.10.0-beta.219(@xterm/xterm@6.1.0-beta.219)
+        specifier: 0.10.0-beta.300
+        version: 0.10.0-beta.300(@xterm/xterm@6.1.0-beta.303)
       '@xterm/addon-web-links':
-        specifier: 0.13.0-beta.219
-        version: 0.13.0-beta.219(@xterm/xterm@6.1.0-beta.219)
+        specifier: 0.13.0-beta.300
+        version: 0.13.0-beta.300(@xterm/xterm@6.1.0-beta.303)
       '@xterm/addon-webgl':
-        specifier: 0.20.0-beta.218
-        version: 0.20.0-beta.218(@xterm/xterm@6.1.0-beta.219)
+        specifier: 0.20.0-beta.299
+        version: 0.20.0-beta.299(@xterm/xterm@6.1.0-beta.303)
       '@xterm/xterm':
-        specifier: 6.1.0-beta.219
-        version: 6.1.0-beta.219
+        specifier: 6.1.0-beta.303
+        version: 6.1.0-beta.303
       better-sqlite3:
         specifier: 13.0.3
         version: 13.0.3
@@ -3552,43 +3552,43 @@ packages:
     resolution: {integrity: sha512-5AXjrcMClTryPe9LgZrygpB1lj7s0S9E0+W+AHaVKAVyHanafK86iPSvG5xHVSp/jC+VH1UXu0TAEmY279xH7A==}
     engines: {node: '>=14.6'}
 
-  '@xterm/addon-clipboard@0.3.0-beta.219':
-    resolution: {integrity: sha512-KKN1BFJJbHoKKd1YZaq5Fjn85hv6/nu7Sbsobd0rhK0Ei6UBCaX+Q7xO+CtxatcOT/zaRGcCFsRvwSv92Hmk0w==}
+  '@xterm/addon-clipboard@0.3.0-beta.302':
+    resolution: {integrity: sha512-KRH/7iyVE97zNjIhZI674uY62cuekMofSLOxG1TkOdSCofxvgOgbPL6C7R3BrWSG7MX28tM7TzqfdSKKqG2U7g==}
     peerDependencies:
-      '@xterm/xterm': ^6.1.0-beta.219
+      '@xterm/xterm': ^6.1.0-beta.303
 
-  '@xterm/addon-fit@0.12.0-beta.219':
-    resolution: {integrity: sha512-ve9MP+xSfkcFG+l4GoWHurO+r97vh2U52J392Is246Cd2/EWkE9Q/KwpLqEdILTBQl7XVwTuuJzNv9IfndfnfQ==}
+  '@xterm/addon-fit@0.12.0-beta.300':
+    resolution: {integrity: sha512-geBeBBKqHe0Dmf+rT79wU/rglFJFja1QmKfcgmnQQhJTvAlrP+yHT2s+yy5PBeP8CtGPDvh5UcoWmunR9fBCuQ==}
     peerDependencies:
-      '@xterm/xterm': ^6.1.0-beta.219
+      '@xterm/xterm': ^6.1.0-beta.303
 
-  '@xterm/addon-image@0.10.0-beta.219':
-    resolution: {integrity: sha512-qt/khIK4YB/uFPi/D03hrqr1ftqswBJ4C5Kid2cBUUJgDxxyRwNqNidRcdYa9/g9W5CqOR98EJv9cMGdRBrlmg==}
+  '@xterm/addon-image@0.10.0-beta.300':
+    resolution: {integrity: sha512-eF19wskh7io1KIFMHkJW0yMSTrDdvALp0ZjI4A27czpdTLquyB8LN0w+wNnpOU7D+B4CZp/8LxNta/LGMRIdCg==}
     peerDependencies:
-      '@xterm/xterm': ^6.1.0-beta.219
+      '@xterm/xterm': ^6.1.0-beta.303
 
-  '@xterm/addon-search@0.17.0-beta.219':
-    resolution: {integrity: sha512-Qx65+aPPZlvzqccTE1FTtsTrWYIjf4/1XWD6TsLiIWl2IwGId76Ja9Q01YYYpPf7E3dzqWIw6zMeM+cHyg39XA==}
+  '@xterm/addon-search@0.17.0-beta.300':
+    resolution: {integrity: sha512-D3kPBm0qB+AWP+qzgq7JUSCMZOjYxAX9g+bbmLiCBKhgt6dWk40GVG2YgFQRuS55Guj0ooVu93Y/nKEZ7jKxQQ==}
     peerDependencies:
-      '@xterm/xterm': ^6.1.0-beta.219
+      '@xterm/xterm': ^6.1.0-beta.303
 
-  '@xterm/addon-unicode11@0.10.0-beta.219':
-    resolution: {integrity: sha512-2EJjnULMg1Fk8XMS8TLb1jLNhfT7dKf/pf3AXqUdehs33mKhHxpx4nPR/Oz8NcxHtlsnVNeRXxOOIsFpela18g==}
+  '@xterm/addon-unicode11@0.10.0-beta.300':
+    resolution: {integrity: sha512-Q678teiannkxiDQtMrr/MtuYAZXc+pou7BWVlL68DTvWdYZqYVrLNjwb1E4PCzO1arEZzO9zaTOhsXfDoiz+gw==}
     peerDependencies:
-      '@xterm/xterm': ^6.1.0-beta.219
+      '@xterm/xterm': ^6.1.0-beta.303
 
-  '@xterm/addon-web-links@0.13.0-beta.219':
-    resolution: {integrity: sha512-nBKYN08FDqtXvIxMdXjj4YifY8l2EGhAWUKMy3n2LYsUvP7YhGvCbcBpwWDTt8ogB4rpXawJKIAi+SMjSkpWmw==}
+  '@xterm/addon-web-links@0.13.0-beta.300':
+    resolution: {integrity: sha512-9RsQJadgK6cRBIC+k3P9MSTbzRB+/mF229K/shxI9vAV6DYmxRSgmxSGtoOY4MHw7nHuPUC0FxH82eK+GKQPEA==}
     peerDependencies:
-      '@xterm/xterm': ^6.1.0-beta.219
+      '@xterm/xterm': ^6.1.0-beta.303
 
-  '@xterm/addon-webgl@0.20.0-beta.218':
-    resolution: {integrity: sha512-TihrC07cUULEcmLQ0Wsj8f9a6vikrWKUx7JWrFFG/Ip31uYohcHY0X46JP+WdAIzPhnE2iVr6OpJG3G5uSKE+w==}
+  '@xterm/addon-webgl@0.20.0-beta.299':
+    resolution: {integrity: sha512-Buf/Qyff1rzbYAhH3Wb96wkhH73XzQ0b0j/JZUqss0TlXmPGen1anA35jDR0FYpNCCXE41KKM39ZrQSBG2P3OQ==}
     peerDependencies:
-      '@xterm/xterm': ^6.1.0-beta.219
+      '@xterm/xterm': ^6.1.0-beta.303
 
-  '@xterm/xterm@6.1.0-beta.219':
-    resolution: {integrity: sha512-cQDv5UMEooIqjlybDPfNO0uI0sB0SWaaOxubHcFNXah8umLHR8SfKQbj5BPaa5gqoTKGYFkVdpowyhZlV+xywQ==}
+  '@xterm/xterm@6.1.0-beta.303':
+    resolution: {integrity: sha512-tqzB2bLPxbRCxQfAdP9K7v0RoS4NgqGWKHAtS4WxqOH9dFgApDojwx5WSD173OomClx40l0cpKDfERMsLPYShA==}
 
   '@yuku-codegen/binding-darwin-arm64@0.8.0':
     resolution: {integrity: sha512-7cSJH6PaKLRBdCfiB4pM6EukvgOk5xV4tyuLOIOEqrHsbnV7brtyff7CjhZbeGozdIHoOnKOi5R7rrmCWN3QSw==}
@@ -10525,35 +10525,35 @@ snapshots:
 
   '@xmldom/xmldom@0.9.12': {}
 
-  '@xterm/addon-clipboard@0.3.0-beta.219(@xterm/xterm@6.1.0-beta.219)':
+  '@xterm/addon-clipboard@0.3.0-beta.302(@xterm/xterm@6.1.0-beta.303)':
     dependencies:
-      '@xterm/xterm': 6.1.0-beta.219
+      '@xterm/xterm': 6.1.0-beta.303
 
-  '@xterm/addon-fit@0.12.0-beta.219(@xterm/xterm@6.1.0-beta.219)':
+  '@xterm/addon-fit@0.12.0-beta.300(@xterm/xterm@6.1.0-beta.303)':
     dependencies:
-      '@xterm/xterm': 6.1.0-beta.219
+      '@xterm/xterm': 6.1.0-beta.303
 
-  '@xterm/addon-image@0.10.0-beta.219(@xterm/xterm@6.1.0-beta.219)':
+  '@xterm/addon-image@0.10.0-beta.300(@xterm/xterm@6.1.0-beta.303)':
     dependencies:
-      '@xterm/xterm': 6.1.0-beta.219
+      '@xterm/xterm': 6.1.0-beta.303
 
-  '@xterm/addon-search@0.17.0-beta.219(@xterm/xterm@6.1.0-beta.219)':
+  '@xterm/addon-search@0.17.0-beta.300(@xterm/xterm@6.1.0-beta.303)':
     dependencies:
-      '@xterm/xterm': 6.1.0-beta.219
+      '@xterm/xterm': 6.1.0-beta.303
 
-  '@xterm/addon-unicode11@0.10.0-beta.219(@xterm/xterm@6.1.0-beta.219)':
+  '@xterm/addon-unicode11@0.10.0-beta.300(@xterm/xterm@6.1.0-beta.303)':
     dependencies:
-      '@xterm/xterm': 6.1.0-beta.219
+      '@xterm/xterm': 6.1.0-beta.303
 
-  '@xterm/addon-web-links@0.13.0-beta.219(@xterm/xterm@6.1.0-beta.219)':
+  '@xterm/addon-web-links@0.13.0-beta.300(@xterm/xterm@6.1.0-beta.303)':
     dependencies:
-      '@xterm/xterm': 6.1.0-beta.219
+      '@xterm/xterm': 6.1.0-beta.303
 
-  '@xterm/addon-webgl@0.20.0-beta.218(@xterm/xterm@6.1.0-beta.219)':
+  '@xterm/addon-webgl@0.20.0-beta.299(@xterm/xterm@6.1.0-beta.303)':
     dependencies:
-      '@xterm/xterm': 6.1.0-beta.219
+      '@xterm/xterm': 6.1.0-beta.303
 
-  '@xterm/xterm@6.1.0-beta.219': {}
+  '@xterm/xterm@6.1.0-beta.303': {}
 
   '@yuku-codegen/binding-darwin-arm64@0.8.0':
     optional: true
