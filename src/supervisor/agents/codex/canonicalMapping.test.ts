@@ -1045,6 +1045,27 @@ describe("mapCodexNotification — item lifecycle (item/started, item/completed)
     });
   });
 
+  it("does not report interrupted collaboration tools as successful", () => {
+    const events = mapCodexNotification(
+      "item/completed",
+      {
+        threadId: "x",
+        item: {
+          id: "wait-interrupted",
+          type: "collabAgentToolCall",
+          tool: "wait",
+          status: "interrupted",
+          agentsStates: {},
+        },
+      },
+      createCodexMapperState("t-codex"),
+    );
+    expect(events.at(-1)).toMatchObject({
+      type: "item.completed",
+      payload: { status: "error" },
+    });
+  });
+
   it("keeps Codex coordination calls out of the subagent classification", () => {
     const state = createCodexMapperState("t-codex");
     const events = mapCodexNotification(
@@ -1834,6 +1855,29 @@ describe("mapCodexNotification — streaming deltas", () => {
 });
 
 describe("mapCodexServerRequest — approvals", () => {
+  it("identifies approvals for input sent to an existing terminal", () => {
+    const event = mapCodexServerRequest(
+      "thread-1",
+      "stdin-1",
+      "item/commandExecution/requestApproval",
+      {
+        kind: "writeStdin",
+        command: "yes",
+        approvalId: "callback-1",
+      },
+    );
+    expect(event).toMatchObject({
+      requestId: "stdin-1",
+      payload: {
+        summary: "Send terminal input",
+        details: {
+          displayName: "Send terminal input",
+          input: { command: "yes", kind: "writeStdin" },
+        },
+      },
+    });
+  });
+
   it("maps command execution approvals to structured permission details", () => {
     const event = mapCodexServerRequest("thread-1", "0", "item/commandExecution/requestApproval", {
       command: "pnpm test",

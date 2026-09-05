@@ -11309,6 +11309,10 @@ msgstr "通过 Apple 推送服务发送通用文本，而非对话标题。"
 msgid "Send message"
 msgstr "发送消息"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "发送终端输入"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "将选择发送到终端。"

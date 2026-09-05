@@ -11310,6 +11310,10 @@ msgstr "대화 제목 대신 일반 텍스트를 Apple 푸시 서비스로 전�
 msgid "Send message"
 msgstr "메시지 보내기"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "터미널에 입력 보내기"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "선택 항목을 터미널로 보냈습니다."

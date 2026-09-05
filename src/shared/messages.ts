@@ -8,6 +8,7 @@
  */
 
 const messages = {
+  "supervisor.sendTerminalInput": "Send terminal input",
   // ── Git: general ──────────────────────────────────────────
   "git.commandFailed": "Git {command} failed: {detail}",
   "github.accountUnavailable":

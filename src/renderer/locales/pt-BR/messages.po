@@ -11310,6 +11310,10 @@ msgstr "Enviar texto genérico em vez dos títulos das conversas pelo serviço p
 msgid "Send message"
 msgstr "Enviar mensagem"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "Enviar entrada ao terminal"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "Seleção enviada para o terminal."
