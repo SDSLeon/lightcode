@@ -2071,4 +2071,168 @@ describe("mapCodexServerRequest — user input", () => {
       translateCodexCanonicalResponse("item/tool/requestUserInput", { questions: [] }, response),
     ).toBe(response);
   });
+
+  it("maps form-mode MCP elicitations to structured form details", () => {
+    const event = mapCodexServerRequest("thread-1", "req-1", "mcpServer/elicitation/request", {
+      threadId: "provider-thread",
+      turnId: "turn-1",
+      serverName: "docs",
+      mode: "form",
+      message: "Fill in the fields",
+      requestedSchema: { type: "object", properties: {} },
+    });
+
+    expect(event).toMatchObject({
+      type: "request.opened",
+      threadId: "thread-1",
+      requestId: "req-1",
+      requestType: "tool_user_input",
+      payload: { summary: "Fill in the fields" },
+    });
+    if (event?.type !== "request.opened") throw new Error("unexpected event");
+    expect(event.payload.details).toMatchObject({ mcpElicitation: { mode: "form" } });
+  });
+
+  it("leaves the OpenAI extended-form elicitation variant unmapped", () => {
+    // The 0.153 protocol adds the `openaiForm` elicitation mode next to the
+    // pre-existing `openai/form` variant. Both stay on the legacy
+    // server-request bus until the renderer form supports them.
+    for (const mode of ["openaiForm", "openai/form"]) {
+      expect(
+        mapCodexServerRequest("thread-1", "req-1", "mcpServer/elicitation/request", {
+          threadId: "provider-thread",
+          turnId: "turn-1",
+          serverName: "docs",
+          mode,
+          message: "Fill in the fields",
+          requestedSchema: { type: "object", properties: {} },
+        }),
+      ).toBeUndefined();
+    }
+  });
+});
+
+describe("mapCodexNotification — turn misalignment errors", () => {
+  it("surfaces the misalignment explanation when the turn message is absent", () => {
+    const state = createCodexMapperState("t-codex");
+    mapCodexNotification("turn/started", { turnId: "t-1", threadId: "x" }, state);
+    const events = mapCodexNotification(
+      "turn/completed",
+      {
+        threadId: "x",
+        turn: {
+          id: "t-1",
+          status: "failed",
+          error: {
+            codexErrorInfo: "misalignmentPolicyViolation",
+            misalignment: {
+              errorType: "self_preservation",
+              detailedExplanation: "This request was blocked by a safety check.",
+              steer: null,
+            },
+          },
+        },
+      },
+      state,
+    );
+
+    expect(events).toEqual([
+      {
+        type: "error",
+        threadId: "t-codex",
+        message: "This request was blocked by a safety check.",
+      },
+      { type: "turn.completed", threadId: "t-codex", turnId: "t-1", state: "failed" },
+    ]);
+  });
+
+  it("prefers the explicit turn message over misalignment details", () => {
+    const state = createCodexMapperState("t-codex");
+    mapCodexNotification("turn/started", { turnId: "t-1", threadId: "x" }, state);
+    const events = mapCodexNotification(
+      "turn/completed",
+      {
+        threadId: "x",
+        turn: {
+          id: "t-1",
+          status: "failed",
+          error: {
+            message: "Turn failed",
+            codexErrorInfo: "misalignmentPolicyViolation",
+            misalignment: { detailedExplanation: "Blocked by a safety check.", steer: null },
+          },
+        },
+      },
+      state,
+    );
+
+    expect(events[0]).toEqual({ type: "error", threadId: "t-codex", message: "Turn failed" });
+  });
+});
+
+describe("mapCodexNotification — 0.153 protocol items", () => {
+  it("maps functionCallOutput items to tool_call rows", () => {
+    const state = createCodexMapperState("t-codex");
+    const started = mapCodexNotification(
+      "item/started",
+      {
+        threadId: "x",
+        turnId: "t-1",
+        itemId: "fco-1",
+        item: { id: "fco-1", type: "functionCallOutput", name: "request_user_input_async" },
+      },
+      state,
+    );
+
+    expect(started[0]).toMatchObject({
+      type: "item.started",
+      itemType: "tool_call",
+      payload: { name: "request_user_input_async", status: "running" },
+    });
+
+    const completed = mapCodexNotification(
+      "item/completed",
+      {
+        threadId: "x",
+        turnId: "t-1",
+        itemId: "fco-1",
+        item: {
+          id: "fco-1",
+          type: "functionCallOutput",
+          name: "request_user_input_async",
+          output: "answered!",
+        },
+      },
+      state,
+    );
+    const done = completed.find((e) => e.type === "item.completed");
+    expect(done).toMatchObject({
+      payload: { status: "success", result: "answered!" },
+    });
+  });
+
+  it("keeps mapping agent messages that carry async questions", () => {
+    const state = createCodexMapperState("t-codex");
+    const events = mapCodexNotification(
+      "item/started",
+      {
+        threadId: "x",
+        turnId: "t-1",
+        itemId: "msg-1",
+        item: {
+          id: "msg-1",
+          type: "agentMessage",
+          text: "Working on it.",
+          questions: [{ title: "Which scope?", options: ["A", "B"] }],
+        },
+      },
+      state,
+    );
+
+    expect(events[0]).toMatchObject({
+      type: "item.started",
+      itemType: "assistant_message",
+      payload: { content: [{ kind: "text", text: "Working on it." }] },
+    });
+  });
 });
