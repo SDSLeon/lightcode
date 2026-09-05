@@ -46,7 +46,6 @@ const RUNTIME_DEPS = [
   "@sentry/electron",
   "@sentry/node",
   "better-sqlite3",
-  "drizzle-orm",
   "json5",
   "micromatch",
   "node-pty",

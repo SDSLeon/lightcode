@@ -127,7 +127,6 @@
     "@xterm/xterm": "6.1.0-beta.303",
     "better-sqlite3": "13.0.3",
     "dexie": "^4.4.5",
-    "drizzle-orm": "1.0.0-rc.4",
     "electron-updater": "^6.8.9",
     "json5": "^2.2.3",
     "jsqr": "^1.4.0",
