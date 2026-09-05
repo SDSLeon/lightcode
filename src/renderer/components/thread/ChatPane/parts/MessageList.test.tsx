@@ -205,7 +205,7 @@ describe("MessageList", () => {
     }));
   });
 
-  it("configures LegendList 3.3.3 anchoring and dynamic-size preservation", () => {
+  it("configures LegendList anchoring and dynamic-size preservation", () => {
     const onStartReached = vi.fn<() => void>();
     render(
       <MessageList
