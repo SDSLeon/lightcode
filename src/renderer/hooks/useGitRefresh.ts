@@ -51,7 +51,13 @@ export function useGitRefresh(storeHydrated: boolean) {
   const activeProjectsKey = useAppStore((state) => buildActiveProjectsKey(state.projects));
 
   useEffect(() => {
-    const activeProjects = useAppStore.getState().projects.filter((project) => !project.disabled);
+    // `activeProjectsKey` is this run's request identity: the project set
+    // below must derive from the same store snapshot, otherwise the key raced
+    // ahead and this run would watch/fetch a stale set.
+    const requestKey = activeProjectsKey;
+    const projectsSnapshot = useAppStore.getState().projects;
+    if (buildActiveProjectsKey(projectsSnapshot) !== requestKey) return;
+    const activeProjects = projectsSnapshot.filter((project) => !project.disabled);
     if (!storeHydrated) return;
     cleanupGitRefreshProjects(new Set(activeProjects.map((project) => project.id)));
     if (activeProjects.length === 0) return;

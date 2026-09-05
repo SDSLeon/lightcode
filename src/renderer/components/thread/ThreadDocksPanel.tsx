@@ -60,18 +60,27 @@ export function ThreadDocksPanel({
     if (!docksShowing) lastScrolledFocusRef.current = null;
   }, [docksShowing]);
 
+  // Whether the focused dock is currently mounted, derived from the same
+  // membership states as the section map below. A bubble click can name a dock
+  // whose members are still mounting, so the scroll re-arms on every
+  // membership change and bails until the focused dock exists.
+  const focusedDockMounted =
+    (focus === "goal" && goalDockState !== null) ||
+    (focus === "plan" && todoDockState !== null) ||
+    (focus === "agents" && summary.agentCount > 0) ||
+    (focus === "backgroundTasks" && summary.backgroundTaskCount > 0) ||
+    (focus === "images" && gallery.length > 0);
+
   // A bubble click names the active section. Scroll only when that selection
   // changes so later content updates do not fight the user's own scrolling.
-  // Dock membership can lag the selection (agents or tasks still mounting),
-  // so the counts participate too.
   useEffect(() => {
-    if (!focus || lastScrolledFocusRef.current === focus) return;
+    if (!focus || !focusedDockMounted || lastScrolledFocusRef.current === focus) return;
     const target = containerRef.current?.querySelector<HTMLElement>(`[data-dock-kind="${focus}"]`);
     if (typeof target?.scrollIntoView === "function") {
       target.scrollIntoView({ block: "start" });
       lastScrolledFocusRef.current = focus;
     }
-  }, [focus, goalDockState, todoDockState, summary.agentCount, summary.backgroundTaskCount]);
+  }, [focus, focusedDockMounted]);
 
   const content: Record<ThreadDockKind, ReactNode> = {
     goal: goalDockState ? (

@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Monitor, Settings2, Webhook } from "lucide-react";
 import { Modal } from "@heroui/react";
@@ -515,7 +515,15 @@ export function ContinueInProviderDialog(props: {
     update();
     const observer = new ResizeObserver(update);
     observer.observe(anchor);
+    // Provider/model switches above the composer can push it without resizing
+    // it — the dialog recenters around the new content, which the anchor
+    // observer cannot see — so watch the dialog box too and the panel tracks
+    // those shifts. The command count needs no dependency: the panel is
+    // portal-positioned from the anchor rect, so a longer list never moves
+    // the anchor and re-running would be a no-op (the position setter keeps
+    // identical values).
     const animatedContainer = anchor.closest(".modal__container");
+    if (animatedContainer) observer.observe(animatedContainer);
     animatedContainer?.addEventListener("animationend", update);
     window.addEventListener("resize", update);
     window.addEventListener("scroll", update, true);
@@ -525,11 +533,17 @@ export function ContinueInProviderDialog(props: {
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
     };
-  }, [filteredCommands.length, selectedKind, showCommandPanel, targetPresentationMode]);
+  }, [showCommandPanel]);
 
-  useEffect(() => {
+  // Restart keyboard navigation at the top whenever the query or the result
+  // set changes, tracked as a render snapshot instead of a sync setState in
+  // an effect.
+  const slashResetKey = `${slashQuery ?? ""}\0${filteredCommands.length}`;
+  const [prevSlashResetKey, setPrevSlashResetKey] = useState<string | null>(null);
+  if (prevSlashResetKey !== slashResetKey) {
+    setPrevSlashResetKey(slashResetKey);
     setSlashActiveIndex(0);
-  }, [slashQuery, filteredCommands.length]);
+  }
 
   // `@`-mentions for the servers the target thread will launch with. Registry
   // servers that are off can be turned on from the mention list (it patches the

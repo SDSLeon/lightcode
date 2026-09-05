@@ -23,16 +23,20 @@ describe("macOS updater manifest packaging", () => {
     rmSync(releaseDir, { recursive: true, force: true });
   });
 
-  it("restores ZIP metadata after the branded DMG pass overwrites it", () => {
-    const manifestPath = join(releaseDir, "latest-mac.yml");
-    writeFileSync(manifestPath, "path: Poracode-1.5.1-arm64.zip\n");
-    const snapshots = snapshotMacUpdaterManifests(releaseDir);
+  it.each(["latest", "nightly"])(
+    "restores %s ZIP metadata and the OS floor after the DMG pass",
+    (channel) => {
+      const manifestPath = join(releaseDir, `${channel}-mac.yml`);
+      const zipManifest = 'path: Poracode-1.5.1-arm64.zip\nminimumSystemVersion: "22.0.0"\n';
+      writeFileSync(manifestPath, zipManifest);
+      const snapshots = snapshotMacUpdaterManifests(releaseDir);
 
-    writeFileSync(manifestPath, "path: Poracode-1.5.1-arm64.dmg\n");
-    restoreMacUpdaterManifests(releaseDir, snapshots);
+      writeFileSync(manifestPath, "path: Poracode-1.5.1-arm64.dmg\n");
+      restoreMacUpdaterManifests(releaseDir, snapshots);
 
-    expect(readFileSync(manifestPath, "utf8")).toContain(".zip");
-  });
+      expect(readFileSync(manifestPath, "utf8")).toBe(zipManifest);
+    },
+  );
 
   it("preserves stable and nightly manifests without unrelated YAML files", () => {
     writeFileSync(join(releaseDir, "latest-mac.yml"), "stable");

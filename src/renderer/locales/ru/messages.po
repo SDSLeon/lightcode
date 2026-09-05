@@ -11310,6 +11310,10 @@ msgstr "Отправлять общий текст вместо названий
 msgid "Send message"
 msgstr "Отправить сообщение"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "Отправить ввод в терминал"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "Выбор отправлен в терминал."

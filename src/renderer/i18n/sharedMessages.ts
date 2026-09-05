@@ -11,6 +11,7 @@ import { i18n } from "./i18n";
  * arguments resolved with the values passed to `msg()`.
  */
 const SHARED_MESSAGE_DESCRIPTORS: Record<MessageKey, MessageDescriptor> = {
+  "supervisor.sendTerminalInput": msg({ message: "Send terminal input" }),
   "git.commandFailed": msg({ message: "Git {command} failed: {detail}" }),
   "github.accountUnavailable": msg({
     message: 'Couldn\'t access the GitHub account "{login}". Run "gh auth login" and try again.',

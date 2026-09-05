@@ -93,7 +93,10 @@ function UsageTooltipBody(props: {
 }) {
   const { id, label, snapshot, swappable } = props;
   const { t } = useLingui();
-  const now = Date.now();
+  // Snapshot once per mount: the reset/pace labels below are relative to this
+  // render's clock rather than an impure render-time read. The tooltip content
+  // remounts on every open, so the clock stays fresh per hover.
+  const [now] = useState(() => Date.now());
   const message = statusText(id, snapshot);
   const sharedReset = usesSharedWindowReset(id) ? sharedWindowResetLabel(snapshot, now) : undefined;
   return (

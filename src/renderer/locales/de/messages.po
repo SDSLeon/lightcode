@@ -11310,6 +11310,10 @@ msgstr "Sende generischen Text statt Gesprächstiteln über den Push-Dienst von 
 msgid "Send message"
 msgstr "Nachricht senden"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "Eingabe an das Terminal senden"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "Auswahl an Terminal gesendet."

@@ -160,7 +160,9 @@ export function MessageList({
   const listRef = useRef<LegendListRef | null>(null);
   const scrollElementRef = useRef<HTMLDivElement | null>(null);
   const entriesRef = useRef(entries);
-  entriesRef.current = entries;
+  useLayoutEffect(() => {
+    entriesRef.current = entries;
+  });
   const virtualSizeBoxRef = useRef<HTMLDivElement | null>(null);
   const totalSizeUnsubscribeRef = useRef<(() => void) | null>(null);
   const measurementSignatureRef = useRef<string | null>(null);
@@ -554,7 +556,9 @@ const VirtualChatListRow = memo(function VirtualChatListRow({
   // tail to mid-list; resetting its height baseline there misses completion
   // growth that lands in the same commit.
   const isLastEntryRef = useRef(isLastEntry);
-  isLastEntryRef.current = isLastEntry;
+  useLayoutEffect(() => {
+    isLastEntryRef.current = isLastEntry;
+  });
   const ref = useCallback((element: HTMLDivElement | null) => {
     rowElementRef.current = element;
   }, []);

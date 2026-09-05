@@ -11308,6 +11308,10 @@ msgstr "会話のタイトルの代わりに一般的なテキストを Apple �
 msgid "Send message"
 msgstr "メッセージを送信する"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "ターミナルに入力を送信"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "選択内容を端末に送信しました。"

@@ -11310,6 +11310,10 @@ msgstr "Gửi văn bản chung chung thay vì tiêu đề cuộc trò chuyện q
 msgid "Send message"
 msgstr "Gửi tin nhắn"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "Gửi dữ liệu vào terminal"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "Đã gửi lựa chọn đến thiết bị đầu cuối."
