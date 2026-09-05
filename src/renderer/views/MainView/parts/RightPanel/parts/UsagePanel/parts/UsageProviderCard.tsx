@@ -1,4 +1,4 @@
-import { type FormEvent } from "react";
+import { type FormEvent, useState } from "react";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { ChevronDown, ChevronRight, GripVertical, LogOut, RefreshCw } from "lucide-react";
 import { Trans, useLingui } from "@lingui/react/macro";
@@ -110,9 +110,11 @@ export function UsageProviderCard(props: {
     snapshot?.status === "ok" &&
     (snapshot.windows.length > 0 || Boolean(snapshot.cost) || Boolean(credits));
   const hasWindows = snapshot?.status === "ok" && snapshot.windows.length > 0;
-  const sharedReset = usesSharedWindowReset(id)
-    ? sharedWindowResetLabel(snapshot, Date.now())
-    : undefined;
+  // Mount-time clock for the reset label (same pattern as UsageWindowBars):
+  // impure reads can't run during render, and the card re-renders on snapshot
+  // updates anyway.
+  const [now] = useState(() => Date.now());
+  const sharedReset = usesSharedWindowReset(id) ? sharedWindowResetLabel(snapshot, now) : undefined;
   const Chevron = collapsed ? ChevronRight : ChevronDown;
 
   return (

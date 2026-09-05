@@ -117,7 +117,12 @@ export function MainView(props: {
       .catch(() => undefined);
   }, [storeHydrated, wslProjectDistrosKey, backgroundWorkReleased]);
 
-  console.log(`[renderer] +${Date.now() - loadT0}ms: rendering main UI`);
+  // Startup timing log: impure (Date.now), so it lives in an effect and runs
+  // after every commit, matching the render it reports on.
+  useEffect(() => {
+    console.log(`[renderer] +${Date.now() - loadT0}ms: rendering main UI`);
+  });
+
   return (
     <>
       <RendererRuntimeDiagnosticContextSync />
