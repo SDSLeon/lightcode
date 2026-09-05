@@ -160,11 +160,11 @@ importers:
         specifier: ^8.0.0
         version: 8.0.0
       '@capacitor/app':
-        specifier: ^8.1.0
-        version: 8.1.0(@capacitor/core@8.4.1)
+        specifier: 8.1.1
+        version: 8.1.1(@capacitor/core@8.5.0)
       '@capacitor/push-notifications':
-        specifier: ^8.1.1
-        version: 8.1.1(@capacitor/core@8.4.1)
+        specifier: 8.1.2
+        version: 8.1.2(@capacitor/core@8.5.0)
       '@chenglou/pretext':
         specifier: ^0.0.8
         version: 0.0.8
@@ -224,7 +224,7 @@ importers:
         version: 1.18.27
       '@poracode/activity-bridge':
         specifier: file:native/activity-bridge
-        version: file:native/activity-bridge(@capacitor/core@8.4.1)
+        version: file:native/activity-bridge(@capacitor/core@8.5.0)
       '@poracode/agents-usage':
         specifier: workspace:*
         version: link:packages/agents-usage
@@ -233,7 +233,7 @@ importers:
         version: link:packages/codex-protocol
       '@poracode/ssh-bridge':
         specifier: file:native/ssh-bridge
-        version: file:native/ssh-bridge(@capacitor/core@8.4.1)
+        version: file:native/ssh-bridge(@capacitor/core@8.5.0)
       '@sentry/electron':
         specifier: 7.17.0
         version: 7.17.0(@opentelemetry/core@2.8.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)
@@ -380,17 +380,17 @@ importers:
         specifier: ^7.29.7
         version: 7.29.7(supports-color@10.2.2)
       '@capacitor/android':
-        specifier: ^8.4.1
-        version: 8.4.1(@capacitor/core@8.4.1)
+        specifier: 8.5.0
+        version: 8.5.0(@capacitor/core@8.5.0)
       '@capacitor/cli':
-        specifier: ^8.4.1
-        version: 8.4.1(supports-color@10.2.2)
+        specifier: 8.5.0
+        version: 8.5.0(supports-color@10.2.2)
       '@capacitor/core':
-        specifier: ^8.4.1
-        version: 8.4.1
+        specifier: 8.5.0
+        version: 8.5.0
       '@capacitor/ios':
-        specifier: ^8.4.1
-        version: 8.4.1(@capacitor/core@8.4.1)
+        specifier: 8.5.0
+        version: 8.5.0(@capacitor/core@8.5.0)
       '@lingui/babel-plugin-lingui-macro':
         specifier: 6.6.0
         version: 6.6.0(@babel/core@7.29.7(supports-color@10.2.2))(@babel/types@7.29.7)
@@ -804,36 +804,36 @@ packages:
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
 
-  '@capacitor/android@8.4.1':
-    resolution: {integrity: sha512-igtDCJ7QQn0P2qHFD9p4KXaa6V1b2PRNt+MxjVwtjTm/BJvqmiazOJq6rPjwFSZnfHm6iFoZk8TfzHd44pyBGw==}
+  '@capacitor/android@8.5.0':
+    resolution: {integrity: sha512-Rb3prJeQiTp0pQhSSOReJuG9VgibOGMG4ECs+UhMwr6TCCHZ3NCZO811bDA0HxD0xrT/gCrJAsY5yfEATu84JQ==}
     peerDependencies:
-      '@capacitor/core': ^8.4.0
+      '@capacitor/core': ^8.5.0
 
-  '@capacitor/app@8.1.0':
-    resolution: {integrity: sha512-MlmttTOWHDedr/G4SrhNRxsXMqY+R75S4MM4eIgzsgCzOYhb/MpCkA5Q3nuOCfL1oHm26xjUzqZ5aupbOwdfYg==}
+  '@capacitor/app@8.1.1':
+    resolution: {integrity: sha512-xM2ZTX5jK60tFtmjsmJv+Cdj1Qsb6NcavkqmdEnCPQBeya9oKhamZJxYOnQNj1ZvcJM7sWfG6BEtSLx42pisbA==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
-  '@capacitor/cli@8.4.1':
-    resolution: {integrity: sha512-t7F2s7fFHCq113xgrggrmK6ctV0/8E5YfLNVLfPHp4GCTDO+tly9fZvWPf2/sOI8lMm18dLT43qbXLRTz/OZgw==}
+  '@capacitor/cli@8.5.0':
+    resolution: {integrity: sha512-rLdzMUM5QV4WITcqoWv04p32i14BXgUH2diqEH6MWQlWaJfiyNrvOyt/+d5vHAfOxOm1klBu637VDEobctlwBA==}
     engines: {node: '>=22.0.0'}
     hasBin: true
 
-  '@capacitor/core@8.4.1':
-    resolution: {integrity: sha512-xqhOGLbTAYeOWK+IDUNSjQJAPapQjRHrIcgk9PYp52or9zFTaaMko31uNi16N6W+CRJ8VrRram6fOYILkBG2Hg==}
+  '@capacitor/core@8.5.0':
+    resolution: {integrity: sha512-Ca4krtqH1hothjtBIwf2J2TW7IhYq1ujp8QeItTiJohNsqij8ja2DYYH3DU0l8RmxCWaBAFTGA2TgOgOMCSNsQ==}
 
-  '@capacitor/ios@8.4.1':
-    resolution: {integrity: sha512-EgcAk7NYheHMTyP3CUrA65qKs4D2UEAKgw44HI6Uk3dTw6KjLQkdLOQWvbeRncHaZ2gklfOojUoc5DlSw2lhYg==}
+  '@capacitor/ios@8.5.0':
+    resolution: {integrity: sha512-7k1TfohJu5BzRXc1F3g04Q8QQ0fyQgms6h1AvhnHb04VaNr9EdHOx03hL8O+OigEKMQnyJd1ZOjTPPNHCqL5Yw==}
     peerDependencies:
-      '@capacitor/core': ^8.4.0
+      '@capacitor/core': ^8.5.0
 
   '@capacitor/keyboard@8.0.5':
     resolution: {integrity: sha512-oFXygC4eKYA5l2MdpTR06L2M/4x6e2SLD5yS1T9+UBDKTkzyvhWKEhbYLUaTIBPpLKqlfGudJw1X73S1H9eUzQ==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
-  '@capacitor/push-notifications@8.1.1':
-    resolution: {integrity: sha512-WqzjPKIbYbARMN+GC0XMAJcxJpUUzqgzS/Ny8RODLrro38pQhm3GXYwX2Mwd+LZlLY39rGImkCkrKyQSNfuikA==}
+  '@capacitor/push-notifications@8.1.2':
+    resolution: {integrity: sha512-TQl4XxqJfNF+KbSYBFMXYYT5WXUaleVKXlByhh/8+KySMVNjp+l5OqAUoGe/sY1IAnGXEuUeCjA/WLZEVvGwrA==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -3917,6 +3917,13 @@ packages:
     resolution: {integrity: sha512-TNPjfTr432qx7yOjQyaXm3dSR0MH9vXp7eT1BFSl/C51g+EFnOR9hTg1IreahGBmDNCehscshe45f+C1TBZbLw==}
     engines: {node: '>=4'}
 
+  bplist-creator@0.1.0:
+    resolution: {integrity: sha512-sXaHZicyEEmY86WyueLTQesbeoH/mquvarJaQNbjuOQO+7gbFcDEWqKmcWA4cOTLzFlfgvkiVxolk1k5bBIpmg==}
+
+  bplist-parser@0.3.1:
+    resolution: {integrity: sha512-PyJxiNtA5T2PlLIeBot4lbp7rj4OadzjnMZD/G5zuBNt8ei/yCU7+wW0h2bag9vr8c+/WuRWmSxbqAl9hL1rBA==}
+    engines: {node: '>= 5.10.0'}
+
   bplist-parser@0.3.2:
     resolution: {integrity: sha512-apC2+fspHGI3mMKj+dGevkGo/tCqVB8jMb6i+OX+E29p0Iposz07fABkRIfVUPNd5A5VbuOz1bZbnmkKLYF+wQ==}
     engines: {node: '>= 5.10.0'}
@@ -6885,6 +6892,9 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
+  simple-plist@1.3.1:
+    resolution: {integrity: sha512-iMSw5i0XseMnrhtIzRb7XpQEXepa9xhWxGUojHBL43SIpQuDQkh3Wpy67ZbDzZVr6EKxvwVChnVpdl8hEVLDiw==}
+
   simple-update-notifier@2.0.0:
     resolution: {integrity: sha512-a2B9Y0KlNXl9u/vsW6sTIu9vGEpfKu2wRV6l1H3XEas/0gUIzGzBoP/IouTcUQbm9JWZLH3COxyn03TYlFax6w==}
     engines: {node: '>=10'}
@@ -6953,6 +6963,10 @@ packages:
   stdin-discarder@0.3.2:
     resolution: {integrity: sha512-eCPu1qRxPVkl5605OTWF8Wz40b4Mf45NY5LQmVPQ599knfs5QhASUm9GbJ5BDMDOXgrnh0wyEdvzmL//YMlw0A==}
     engines: {node: '>=18'}
+
+  stream-buffers@2.2.0:
+    resolution: {integrity: sha512-uyQK/mx5QjHun80FLJTfaWE7JtwfRMKBLkMne6udYOmvH0CawotVa7TfgYHzAnpphn4+TweIx1QKMnRIbipmUg==}
+    engines: {node: '>= 0.10.0'}
 
   streamdown@2.5.0:
     resolution: {integrity: sha512-/tTnURfIOxZK/pqJAxsfCvETG/XCJHoWnk3jq9xLcuz6CSpnjjuxSRBTTL4PKGhxiZQf0lqPxGhImdpwcZ2XwA==}
@@ -7319,6 +7333,11 @@ packages:
     resolution: {integrity: sha512-6ZxzVpzDXDa3bJWaHilVayA+BH/1zmxCJoVgvmqJnid/gPoKHxUrS/aC/T6LGQtNHT+XHG9fXPJB4d+IrU30Ew==}
     hasBin: true
 
+  uuid@7.0.3:
+    resolution: {integrity: sha512-DPSke0pXhTZgoF/d+WSt2QaKMCFSfx7QegxEWT+JOuHF5aWrKEn0G+ztjuJg/gG8/ItK+rbPCD/yNv8yyih6Cg==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+    hasBin: true
+
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
@@ -7546,6 +7565,10 @@ packages:
       utf-8-validate:
         optional: true
 
+  xcode@3.0.1:
+    resolution: {integrity: sha512-kCz5k7J7XbJtjABOvkc5lJmkiDh8VhjVCGNiqdKCscmVpdVUpEAyXv1xmCLkQJ5dsHqx3IPO4XW+NTDhU/fatA==}
+    engines: {node: '>=10.0.0'}
+
   xdg-basedir@3.0.0:
     resolution: {integrity: sha512-1Dly4xqlulvPD3fZUQJLY+FUIeqN3N2MM3uqe4rCJftAvOjFa3jFGfctOgluGx4ahPbUCsZkmJILiP0Vi4T6lQ==}
     engines: {node: '>=4'}
@@ -7770,11 +7793,11 @@ snapshots:
 
   '@aparajita/capacitor-secure-storage@8.0.0':
     dependencies:
-      '@capacitor/android': 8.4.1(@capacitor/core@8.4.1)
-      '@capacitor/app': 8.1.0(@capacitor/core@8.4.1)
-      '@capacitor/core': 8.4.1
-      '@capacitor/ios': 8.4.1(@capacitor/core@8.4.1)
-      '@capacitor/keyboard': 8.0.5(@capacitor/core@8.4.1)
+      '@capacitor/android': 8.5.0(@capacitor/core@8.5.0)
+      '@capacitor/app': 8.1.1(@capacitor/core@8.5.0)
+      '@capacitor/core': 8.5.0
+      '@capacitor/ios': 8.5.0(@capacitor/core@8.5.0)
+      '@capacitor/keyboard': 8.0.5(@capacitor/core@8.5.0)
 
   '@apm-js-collab/code-transformer-bundler-plugins@0.7.4':
     dependencies:
@@ -7928,15 +7951,15 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@capacitor/android@8.4.1(@capacitor/core@8.4.1)':
+  '@capacitor/android@8.5.0(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 8.4.1
+      '@capacitor/core': 8.5.0
 
-  '@capacitor/app@8.1.0(@capacitor/core@8.4.1)':
+  '@capacitor/app@8.1.1(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 8.4.1
+      '@capacitor/core': 8.5.0
 
-  '@capacitor/cli@8.4.1(supports-color@10.2.2)':
+  '@capacitor/cli@8.5.0(supports-color@10.2.2)':
     dependencies:
       '@ionic/cli-framework-output': 2.2.8(supports-color@10.2.2)
       '@ionic/utils-subprocess': 3.0.1(supports-color@10.2.2)
@@ -7954,25 +7977,26 @@ snapshots:
       semver: 7.8.5
       tar: 7.5.21
       tslib: 2.8.1
+      xcode: 3.0.1
       xml2js: 0.6.2
     transitivePeerDependencies:
       - supports-color
 
-  '@capacitor/core@8.4.1':
+  '@capacitor/core@8.5.0':
     dependencies:
       tslib: 2.8.1
 
-  '@capacitor/ios@8.4.1(@capacitor/core@8.4.1)':
+  '@capacitor/ios@8.5.0(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 8.4.1
+      '@capacitor/core': 8.5.0
 
-  '@capacitor/keyboard@8.0.5(@capacitor/core@8.4.1)':
+  '@capacitor/keyboard@8.0.5(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 8.4.1
+      '@capacitor/core': 8.5.0
 
-  '@capacitor/push-notifications@8.1.1(@capacitor/core@8.4.1)':
+  '@capacitor/push-notifications@8.1.2(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 8.4.1
+      '@capacitor/core': 8.5.0
 
   '@chenglou/pretext@0.0.8': {}
 
@@ -9153,13 +9177,13 @@ snapshots:
       tslib: 2.8.1
       webcrypto-core: 1.9.2
 
-  '@poracode/activity-bridge@file:native/activity-bridge(@capacitor/core@8.4.1)':
+  '@poracode/activity-bridge@file:native/activity-bridge(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 8.4.1
+      '@capacitor/core': 8.5.0
 
-  '@poracode/ssh-bridge@file:native/ssh-bridge(@capacitor/core@8.4.1)':
+  '@poracode/ssh-bridge@file:native/ssh-bridge(@capacitor/core@8.5.0)':
     dependencies:
-      '@capacitor/core': 8.4.1
+      '@capacitor/core': 8.5.0
 
   '@preact/signals-core@1.14.3': {}
 
@@ -10822,6 +10846,14 @@ snapshots:
       string-width: 2.1.1
       term-size: 1.2.0
       widest-line: 2.0.1
+
+  bplist-creator@0.1.0:
+    dependencies:
+      stream-buffers: 2.2.0
+
+  bplist-parser@0.3.1:
+    dependencies:
+      big-integer: 1.6.52
 
   bplist-parser@0.3.2:
     dependencies:
@@ -14264,6 +14296,12 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
+  simple-plist@1.3.1:
+    dependencies:
+      bplist-creator: 0.1.0
+      bplist-parser: 0.3.1
+      plist: 3.1.1
+
   simple-update-notifier@2.0.0:
     dependencies:
       semver: 7.8.5
@@ -14316,6 +14354,8 @@ snapshots:
   std-env@4.2.0: {}
 
   stdin-discarder@0.3.2: {}
+
+  stream-buffers@2.2.0: {}
 
   streamdown@2.5.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2):
     dependencies:
@@ -14698,6 +14738,8 @@ snapshots:
 
   uuid@14.0.1: {}
 
+  uuid@7.0.3: {}
+
   vary@1.1.2: {}
 
   verkit@0.3.0: {}
@@ -14887,6 +14929,11 @@ snapshots:
   ws@7.5.11: {}
 
   ws@8.21.0: {}
+
+  xcode@3.0.1:
+    dependencies:
+      simple-plist: 1.3.1
+      uuid: 7.0.3
 
   xdg-basedir@3.0.0: {}
 
