@@ -228,7 +228,7 @@ export class UsageLoginManager {
     }
 
     const providerLabel = usageProviderLabel(providerId);
-    clipboard.writeText(device.user_code);
+    await clipboard.writeText(device.user_code);
     panel.showUsageLoginDeviceCode({
       providerId,
       providerLabel,

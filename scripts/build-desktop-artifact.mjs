@@ -555,6 +555,9 @@ linux:
   artifactName: ${prefix}-\${version}-\${arch}.\${ext}
 
 mac:
+  minimumSystemVersion: "13.0.0"
+  releaseInfo:
+    minimumSystemVersion: "22.0.0"
   executableName: ${macExecutableName}
   target:
     - target: dmg

@@ -185,7 +185,7 @@
     "concurrently": "^10.0.3",
     "cross-env": "^10.1.0",
     "drizzle-kit": "1.0.0-rc.1",
-    "electron": "43.1.0",
+    "electron": "44.0.0",
     "electron-builder": "^26.15.3",
     "electronmon": "^2.0.4",
     "fake-indexeddb": "^6.2.5",
