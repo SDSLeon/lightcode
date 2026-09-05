@@ -194,7 +194,7 @@
     "jsdom": "^29.1.1",
     "lint-staged": "^17.0.8",
     "oxfmt": "0.65.0",
-    "oxlint": "1.76.0",
+    "oxlint": "1.80.0",
     "oxlint-tsgolint": "^7.0.2001",
     "postcss": "^8.5.16",
     "react-devtools": "^7.0.1",
