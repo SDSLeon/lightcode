@@ -50,11 +50,11 @@ describe("remote v3 native binding generator", () => {
     expect(second).toEqual(third);
     expect(first.manifest).toMatchObject({
       formatVersion: 1,
-      protocolVersion: 8,
+      protocolVersion: 9,
       bindingFormatVersion: 2,
       generatorVersion: 3,
-      sourceHash: "sha256:e3b40d8327e148e858739bf87c003376ffe60e706b7be626ab12944dfe661144",
-      manifestHash: "sha256:67c83477b74a5fb78fdefc7420c51543af13ca63c90005a46d13581dae512e96",
+      sourceHash: "sha256:19ac4727f9f36256a23a9d35740babb66a2412c1aaf3534a2b83cae859b192f3",
+      manifestHash: "sha256:17211d0f9667ac6d07ddba8bdf445f1d7ae8d7f959c3d049098021688b3a71ef",
       counts: {
         routes: 61,
         procedures: 100,
@@ -63,10 +63,10 @@ describe("remote v3 native binding generator", () => {
         webSocketClientVariants: 8,
         webSocketServerVariants: 9,
         schemaRoots: 302,
-        structuralTypes: 748,
+        structuralTypes: 754,
         semanticValidators: 16,
-        swiftFiles: 42,
-        kotlinFiles: 38,
+        swiftFiles: 43,
+        kotlinFiles: 39,
       },
     });
   });

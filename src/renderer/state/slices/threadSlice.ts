@@ -28,6 +28,7 @@ import { recordThreadStarted } from "../usageRecorder";
 import { removeKeepAliveId } from "./paneCacheSlice";
 import type { SliceCreator } from "./shared";
 import { clearRuntimeStructuralChangeHint } from "../runtimeStructuralChanges";
+import { terminateStaleSubAgentItems } from "./staleSubAgents";
 
 export interface ThreadSlice {
   threads: Thread[];
@@ -346,16 +347,59 @@ export const createThreadSlice: SliceCreator<ThreadSlice> = (set) => ({
       // Claude window rendered under a Codex thread.
       const { [threadId]: _droppedContext, ...runtimeContextByThread } =
         state.runtimeContextByThread;
+      // Background tasks belong to the abandoned session's process; the new
+      // provider reports its own set (or none).
+      const { [threadId]: _droppedBackgroundTasks, ...runtimeBackgroundTasksByThread } =
+        state.runtimeBackgroundTasksByThread;
       // A steer staged against the abandoned session has nothing left to
       // consume it; no `thread-reset` is emitted on this path to clear it.
       const { [threadId]: _droppedSteer, ...pendingSteerByThreadId } = state.pendingSteerByThreadId;
+      // The sub-agent overlay points at a `tool_call` of the session being
+      // abandoned; nothing will ever stream into it again.
+      const { [threadId]: _droppedOverlay, ...openSubAgentByThread } = state.openSubAgentByThread;
+      // The old provider's turn never closes — its session is gone — so an open
+      // turn left `true` here would keep the pane "working" under the new one.
+      const { [threadId]: _droppedOpenTurn, ...runtimeOpenTurnByThread } =
+        state.runtimeOpenTurnByThread;
+      // Custom MCP servers are named per launch; the new provider's launch
+      // records its own set.
+      const { [threadId]: _droppedMcpNames, ...mcpLaunchCustomServerNamesByThreadId } =
+        state.mcpLaunchCustomServerNamesByThreadId;
+      // Sub-agents and Crossagents runs still shown as running belong to the
+      // session being torn down; the supervisor cancels them with it, but their
+      // rows would keep spinning here and hold the composer dock open. Finalize
+      // them now, before the new provider paints anything, so every row above
+      // the divider reads as settled history. The plan and goal docks already
+      // scope themselves to the current provider era.
+      const items = state.runtimeItemsByIdByThread[threadId];
+      const settledItems = items ? terminateStaleSubAgentItems(items) : undefined;
       return {
         threads,
+        ...(settledItems
+          ? {
+              runtimeItemsByIdByThread: {
+                ...state.runtimeItemsByIdByThread,
+                [threadId]: settledItems,
+              },
+              runtimeStructuralVersionByThread: {
+                ...state.runtimeStructuralVersionByThread,
+                [threadId]: (state.runtimeStructuralVersionByThread[threadId] ?? 0) + 1,
+              },
+            }
+          : {}),
         runtimeLaunchConfigByThreadId,
         threadMentionToolsAvailableByThreadId,
         ...(state.runtimeRequestsByThread[threadId] ? { runtimeRequestsByThread } : {}),
         ...(state.runtimeContextByThread[threadId] ? { runtimeContextByThread } : {}),
+        ...(state.runtimeBackgroundTasksByThread[threadId]
+          ? { runtimeBackgroundTasksByThread }
+          : {}),
         ...(state.pendingSteerByThreadId[threadId] ? { pendingSteerByThreadId } : {}),
+        ...(threadId in state.openSubAgentByThread ? { openSubAgentByThread } : {}),
+        ...(threadId in state.runtimeOpenTurnByThread ? { runtimeOpenTurnByThread } : {}),
+        ...(threadId in state.mcpLaunchCustomServerNamesByThreadId
+          ? { mcpLaunchCustomServerNamesByThreadId }
+          : {}),
         lastRuntimeConfigByThreadId: {
           ...state.lastRuntimeConfigByThreadId,
           [threadId]: input.config,
@@ -384,6 +428,8 @@ export const createThreadSlice: SliceCreator<ThreadSlice> = (set) => ({
         state.runtimeRequestsByThread;
       const { [threadId]: _droppedContext, ...runtimeContextByThread } =
         state.runtimeContextByThread;
+      const { [threadId]: _droppedBackgroundTasks, ...runtimeBackgroundTasksByThread } =
+        state.runtimeBackgroundTasksByThread;
       const { [threadId]: _droppedVersion, ...runtimeStructuralVersionByThread } =
         state.runtimeStructuralVersionByThread;
       const { [threadId]: _droppedTurns, ...runtimeCompletedTurnsByThread } =
@@ -422,6 +468,7 @@ export const createThreadSlice: SliceCreator<ThreadSlice> = (set) => ({
         runtimeItemsByIdByThread,
         runtimeRequestsByThread,
         runtimeContextByThread,
+        runtimeBackgroundTasksByThread,
         runtimeStructuralVersionByThread,
         runtimeCompletedTurnsByThread,
         lastRuntimeConfigByThreadId,
@@ -833,15 +880,24 @@ export const createThreadSlice: SliceCreator<ThreadSlice> = (set) => ({
         state.runtimeLaunchConfigByThreadId;
       const { [threadId]: droppedMentionTools, ...threadMentionToolsAvailableByThreadId } =
         state.threadMentionToolsAvailableByThreadId;
+      // Background work dies with the agent process, and a session can exit
+      // without a draining `background_tasks.changed` (CLI crash, close,
+      // unload) — the list must not outlive it.
+      const { [threadId]: droppedBackgroundTasks, ...runtimeBackgroundTasksByThread } =
+        state.runtimeBackgroundTasksByThread;
       const launchConfigPatch = droppedLaunchConfig ? { runtimeLaunchConfigByThreadId } : undefined;
       const mentionToolsPatch = droppedMentionTools
         ? { threadMentionToolsAvailableByThreadId }
+        : undefined;
+      const backgroundTasksPatch = droppedBackgroundTasks
+        ? { runtimeBackgroundTasksByThread }
         : undefined;
       if (!changed) {
         return {
           ...(turnsChanged ? turnUpdate : {}),
           ...(launchConfigPatch ?? {}),
           ...(mentionToolsPatch ?? {}),
+          ...(backgroundTasksPatch ?? {}),
         };
       }
       return {
@@ -849,6 +905,7 @@ export const createThreadSlice: SliceCreator<ThreadSlice> = (set) => ({
         ...(turnsChanged ? turnUpdate : {}),
         ...(launchConfigPatch ?? {}),
         ...(mentionToolsPatch ?? {}),
+        ...(backgroundTasksPatch ?? {}),
       };
     }),
   touchThread: (threadId) =>

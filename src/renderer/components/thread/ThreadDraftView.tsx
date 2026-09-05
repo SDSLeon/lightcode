@@ -1169,7 +1169,6 @@ export function ThreadDraftView(props: {
   // actually supports. A persistent enable with a "none" scope must NOT set the
   // config flag — otherwise the composer would show a phantom "on" state and the
   // scope-reset effect there would fight it.
-  const hostPlatform = window.poracodeHost || window.poracode ? readBridge().platform : undefined;
   const effectiveMcp = (id: BuiltInMcpServerId, mention: boolean, scope: string) =>
     disabledBuiltInMcpServers[id] !== true &&
     (mention || (enabledMcpServers[id] === true && scope !== "none"));
@@ -1188,12 +1187,7 @@ export function ThreadDraftView(props: {
   const effectiveComputerUse = effectiveMcp(
     COMPUTER_USE_MCP_ID,
     computerUseMention,
-    getComputerUseScope(
-      selectedAgent.capabilities,
-      presentationMode,
-      project.location,
-      hostPlatform,
-    ),
+    getComputerUseScope(selectedAgent.capabilities, presentationMode, project.location),
   );
 
   return (

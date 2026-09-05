@@ -38,6 +38,7 @@ import {
   persistAcpRegistrySettingsMigrations,
   pruneWslAcpRegistryPendingDeletes,
   readAcpRegistrySettings,
+  repairAcpRegistryInstallLayouts,
   removeAcpRegistryAgent as removeAcpRegistryAgentFromRegistry,
   setAcpGenericAgentAuthAcknowledged,
   setAcpRegistryAgentAuth as setAcpRegistryAgentAuthInRegistry,
@@ -47,6 +48,7 @@ import { pruneAcpRegistryPendingDeletes } from "../agents/acpRegistryInstallDir"
 import {
   detectProbeLocation,
   readDetectedVersion,
+  resolveAgentEnvContext,
   type AgentAdapter,
   type AgentEnvContext,
 } from "../agents/base";
@@ -62,6 +64,13 @@ import type { SupervisorSharedSettingsCache } from "./supervisorSharedSettings";
 
 const FIRST_CLASS_ACP_AUTO_INSTALL_ATTEMPTS = 2;
 const FIRST_CLASS_ACP_AUTO_INSTALL_RETRY_DELAY_MS = 10_000;
+/**
+ * How long a failed sweep is left alone before a later status query may try
+ * again. Long enough that polling cannot hammer a download, short enough that a
+ * machine which was offline (or whose CDN fetch blipped) at launch reconciles
+ * without restarting the app.
+ */
+const FIRST_CLASS_ACP_AUTO_INSTALL_RETRY_COOLDOWN_MS = 15 * 60_000;
 
 export interface AgentRegistryServiceDeps {
   adapters: Map<AgentKind, AgentAdapter>;
@@ -92,11 +101,13 @@ export class AgentRegistryService {
   >();
 
   /**
-   * Registry artifacts we already tried to auto-install this session, keyed by
-   * agent id + environment. One attempt per environment per run keeps a failing
-   * download (offline, CDN error) from re-running on every status query.
+   * Auto-install sweeps run so far this session, keyed by agent id +
+   * environment. Recorded before the attempt so a status-query burst cannot
+   * start several downloads of the same artifact, and kept unresolved on
+   * failure so the next sweep past the cooldown can retry — a transient failure
+   * used to disable chat for the rest of the session.
    */
-  private readonly attemptedAcpAutoInstalls = new Set<string>();
+  private readonly acpAutoInstallSweeps = new Map<string, { at: number; installed: boolean }>();
   /** Settings files confirmed free of legacy Antigravity ACP state on disk. */
   private readonly aliasPersistCheckedPaths = new Set<string>();
 
@@ -141,10 +152,15 @@ export class AgentRegistryService {
    * removed (`acpRegistryAutoInstallOptOuts`).
    */
   private async autoInstallFirstClassAcpRuntimes(response: AgentStatusesResponse): Promise<void> {
+    const now = Date.now();
     const candidates = collectFirstClassAcpAutoInstalls({
       statuses: [...response.windows, ...response.wsl],
       firstClassRegistryIds: this.firstClassRegistryIdsByKind(),
-    }).filter((task) => !this.attemptedAcpAutoInstalls.has(acpAutoInstallKey(task)));
+    }).filter((task) => {
+      const sweep = this.acpAutoInstallSweeps.get(acpAutoInstallKey(task));
+      if (!sweep) return true;
+      return !sweep.installed && now - sweep.at >= FIRST_CLASS_ACP_AUTO_INSTALL_RETRY_COOLDOWN_MS;
+    });
     if (candidates.length === 0) return;
 
     const optedOut = new Set(
@@ -152,8 +168,14 @@ export class AgentRegistryService {
     );
     const installedKinds = new Set<AgentKind>();
     for (const task of candidates) {
-      this.attemptedAcpAutoInstalls.add(acpAutoInstallKey(task));
-      if (optedOut.has(task.agentId)) continue;
+      const sweepKey = acpAutoInstallKey(task);
+      this.acpAutoInstallSweeps.set(sweepKey, { at: Date.now(), installed: false });
+      // An opt-out is the user's decision, not a failure: settle it so the
+      // cooldown never reopens the question.
+      if (optedOut.has(task.agentId)) {
+        this.acpAutoInstallSweeps.set(sweepKey, { at: Date.now(), installed: true });
+        continue;
+      }
       for (let attempt = 1; attempt <= FIRST_CLASS_ACP_AUTO_INSTALL_ATTEMPTS; attempt += 1) {
         try {
           await installAcpRegistryAgentFromRegistry({
@@ -167,6 +189,7 @@ export class AgentRegistryService {
             respectAutoInstallOptOut: true,
           });
           installedKinds.add(task.agentKind);
+          this.acpAutoInstallSweeps.set(sweepKey, { at: Date.now(), installed: true });
           break;
         } catch (error) {
           console.warn(
@@ -183,6 +206,12 @@ export class AgentRegistryService {
             }
             await new Promise((resolve) =>
               setTimeout(resolve, FIRST_CLASS_ACP_AUTO_INSTALL_RETRY_DELAY_MS),
+            );
+          } else {
+            console.warn(
+              `[supervisor] ${task.agentId} stays uninstalled for ${task.agentKind}; retrying no sooner than ${Math.round(
+                FIRST_CLASS_ACP_AUTO_INSTALL_RETRY_COOLDOWN_MS / 60_000,
+              )} minutes from now. Its agent settings page offers a manual install.`,
             );
           }
         }
@@ -350,6 +379,23 @@ export class AgentRegistryService {
     );
   }
 
+  /**
+   * Bring already-extracted registry artifacts up to the current install
+   * layout (see `ACP_REGISTRY_INSTALL_LAYOUT_VERSION`) and refresh the affected
+   * statuses when a repair landed, so a chat runtime that failed its first
+   * probe for a layout reason recovers this session.
+   */
+  async repairAcpRegistryInstallLayoutsOnLaunch(): Promise<void> {
+    try {
+      const changed = await repairAcpRegistryInstallLayouts({
+        settingsPath: this.deps.settingsPath,
+      });
+      if (changed) await this.propagateAcpRegistryChange();
+    } catch (error) {
+      console.warn("[supervisor] launch ACP install layout repair failed", error);
+    }
+  }
+
   async listAcpRegistry(): Promise<AcpRegistryListResult> {
     const registry = await fetchAcpRegistry();
     let changed = await backfillAcpRegistryAgentIcons({
@@ -435,6 +481,7 @@ export class AgentRegistryService {
       ...(payload.wslDistro ? { wslDistro: payload.wslDistro } : {}),
       baseDir: this.deps.baseDir,
     };
+    const executionContext = await resolveAgentEnvContext(adapter, envContext);
 
     const wslDistros = payload.envKind === "wsl" && payload.wslDistro ? [payload.wslDistro] : [];
     const statuses = await this.agentStatusService.refreshAgentStatuses({
@@ -465,17 +512,17 @@ export class AgentRegistryService {
       ?.verifyBuiltInVersionChange;
     const result =
       verifyBuiltInVersionChange && status.version
-        ? await runUpdateCommandWithFallback(adapter, status, envContext, {
+        ? await runUpdateCommandWithFallback(adapter, status, executionContext, {
             verifyBuiltInSuccess: async () => {
               const refreshedVersion = await readDetectedVersion(
-                detectProbeLocation(envContext),
+                detectProbeLocation(executionContext),
                 status.executablePath,
                 ["--version"],
               );
               return refreshedVersion !== undefined && refreshedVersion !== status.version;
             },
           })
-        : await runUpdateCommandWithFallback(adapter, status, envContext);
+        : await runUpdateCommandWithFallback(adapter, status, executionContext);
     if (result.ok) {
       // Drop the cached executable path so the next detection probe runs a
       // fresh `command -v` / `where.exe`. Without this we keep returning the
@@ -565,7 +612,7 @@ export class AgentRegistryService {
       throw new Error(`Unknown agent: ${payload.agentKind}`);
     }
     const ctx = envContextFromPayload(payload.envKind, payload.wslDistro);
-    await dispatchAcpAuthenticate({
+    const executionCtx = await dispatchAcpAuthenticate({
       adapter,
       methodId: payload.methodId,
       ...(payload.envKind ? { envKind: payload.envKind } : {}),
@@ -581,17 +628,27 @@ export class AgentRegistryService {
     if (instanceId !== undefined) {
       const instance = readAcpRegistrySettings(this.deps.settingsPath).agentInstances[instanceId];
       const verified =
-        instance !== undefined && (await verifyAcpGenericAuthentication(instance, ctx));
+        instance !== undefined && (await verifyAcpGenericAuthentication(instance, executionCtx));
       if (!verified) {
-        setAcpGenericAgentAuthAcknowledged(this.deps.settingsPath, instanceId, ctx, false);
+        setAcpGenericAgentAuthAcknowledged(
+          this.deps.settingsPath,
+          instanceId,
+          executionCtx ?? ctx,
+          false,
+        );
         this.deps.sharedSettingsCache.invalidate();
         this.refreshAgentRegistryAdapters();
         void this.refreshAffectedAgentStatus(payload.agentKind);
         throw new Error(msg("acp.authenticationUnverified", { agent: adapter.label }));
       }
-      setAcpGenericAgentAuthAcknowledged(this.deps.settingsPath, instanceId, ctx, true);
+      setAcpGenericAgentAuthAcknowledged(
+        this.deps.settingsPath,
+        instanceId,
+        executionCtx ?? ctx,
+        true,
+      );
     } else {
-      const status = await adapter.detectInstall(ctx);
+      const status = await adapter.detectInstall(executionCtx);
       if (status.authState === "missing") {
         void this.refreshAffectedAgentStatus(payload.agentKind);
         throw new Error(msg("acp.authenticationUnverified", { agent: adapter.label }));
@@ -615,15 +672,21 @@ export class AgentRegistryService {
     // clear the UI state. Native adapters must not report success unless the
     // agent actually accepts the logout request.
     try {
-      await dispatchAcpLogout({
+      const executionCtx = await dispatchAcpLogout({
         adapter,
         ...(payload.envKind ? { envKind: payload.envKind } : {}),
         ...(payload.wslDistro ? { wslDistro: payload.wslDistro } : {}),
       });
+      if (instanceId !== undefined) {
+        setAcpGenericAgentAuthAcknowledged(
+          this.deps.settingsPath,
+          instanceId,
+          executionCtx ?? ctx,
+          false,
+        );
+      }
     } catch (error) {
       if (instanceId === undefined || !isUnsupportedAcpLogoutError(error)) throw error;
-    }
-    if (instanceId !== undefined) {
       setAcpGenericAgentAuthAcknowledged(this.deps.settingsPath, instanceId, ctx, false);
     }
     this.deps.sharedSettingsCache.invalidate();

@@ -33,7 +33,7 @@ export function PairingScannerOverlay(props: {
       onCancel={pairing.closeScanner}
       onPickPhoto={() => {
         pairing.closeScanner();
-        pairing.scanInputRef.current?.click();
+        pairing.clickScanInput();
       }}
       onEnterManually={() => {
         pairing.closeScanner();
@@ -289,9 +289,10 @@ export function PairingErrors({ pairing }: { readonly pairing: Pairing }) {
 /** Hidden photo picker used when live camera scanning is unavailable or unwanted. */
 export function ScanFileInput({ pairing }: { readonly pairing: Pairing }) {
   const { t } = useLingui();
+  const { attachScanInput } = pairing;
   return (
     <input
-      ref={pairing.scanInputRef}
+      ref={attachScanInput}
       className="sr-only"
       type="file"
       accept="image/*"

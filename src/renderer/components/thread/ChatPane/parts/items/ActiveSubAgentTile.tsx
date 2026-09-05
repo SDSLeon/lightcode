@@ -15,8 +15,11 @@ import {
   type ToolCallPayload,
   type WorkflowRun,
 } from "@/shared/contracts";
+import type { ThreadDocksPlacement } from "@/shared/settings";
+import { ThreadDocksPlacementToggle } from "../../../ThreadDocksPlacementToggle";
 import { deriveToolDisplay, isCrossagentTool, isWorkflowTool } from "./toolDisplay";
 import { AnimatedFraction } from "@/renderer/components/common/AnimatedNumber";
+import { PixelLoader } from "@/renderer/components/common/PixelLoader";
 import { formatTokenCount } from "@/renderer/components/thread/formatTokenCount";
 import {
   ThreadDockActionRow,
@@ -71,6 +74,10 @@ interface ActiveSubAgentTileProps {
   registrationOnly?: boolean;
   /** Restrict to these dock kinds (default: all). */
   kinds?: readonly ActiveAgentKind[];
+  /** Where the sections render; drives section chrome and the placement toggle. */
+  placement?: ThreadDocksPlacement;
+  /** Show the global placement action on the first rendered agent section. */
+  showPlacementToggle?: boolean;
 }
 
 export function ActiveSubAgentTile({
@@ -78,6 +85,8 @@ export function ActiveSubAgentTile({
   projectLocation,
   registrationOnly = false,
   kinds: kindFilter,
+  placement = "composer",
+  showPlacementToggle = false,
 }: ActiveSubAgentTileProps) {
   const dismissMany = useThreadSubAgentDockStore((s) => s.dismissMany);
   const { visibleIds, kinds } = useVisibleActiveAgents(threadId);
@@ -96,23 +105,28 @@ export function ActiveSubAgentTile({
     ));
   }
 
+  const sectionKinds = (["subagent", "crossagent", "workflow"] as const).filter(
+    (kind) =>
+      (!kindFilter || kindFilter.includes(kind)) && kinds.some((activeKind) => activeKind === kind),
+  );
+
   return (
     <>
-      {(["subagent", "crossagent", "workflow"] as const)
-        .filter((kind) => !kindFilter || kindFilter.includes(kind))
-        .map((kind) => {
-          const sectionIds = visibleIds.filter((_, index) => kinds[index] === kind);
-          return sectionIds.length > 0 ? (
-            <ActiveAgentSection
-              key={kind}
-              kind={kind}
-              threadId={threadId}
-              ids={sectionIds}
-              dismissMany={dismissMany}
-              {...(projectLocation ? { projectLocation } : {})}
-            />
-          ) : null;
-        })}
+      {sectionKinds.map((kind, index) => {
+        const sectionIds = visibleIds.filter((_, itemIndex) => kinds[itemIndex] === kind);
+        return (
+          <ActiveAgentSection
+            key={kind}
+            kind={kind}
+            threadId={threadId}
+            ids={sectionIds}
+            dismissMany={dismissMany}
+            placement={placement}
+            showPlacementToggle={showPlacementToggle && index === 0}
+            {...(projectLocation ? { projectLocation } : {})}
+          />
+        );
+      })}
     </>
   );
 }
@@ -122,12 +136,16 @@ function ActiveAgentSection({
   threadId,
   ids,
   dismissMany,
+  placement,
+  showPlacementToggle,
   projectLocation,
 }: {
   kind: "subagent" | "crossagent" | "workflow";
   threadId: string;
   ids: readonly string[];
   dismissMany: (threadId: string, itemIds: readonly string[]) => void;
+  placement: ThreadDocksPlacement;
+  showPlacementToggle: boolean;
   projectLocation?: ProjectLocation;
 }) {
   const { t } = useLingui();
@@ -156,28 +174,32 @@ function ActiveAgentSection({
         : t`Close subagents`;
 
   return (
-    <ThreadDockSection placement="composer" collapsed={false}>
+    <ThreadDockSection placement={placement} collapsed={false}>
       <ThreadDockHeader
         icon={kind === "workflow" ? GitBranch : Bot}
         title={title}
         countLabel={<AnimatedFraction value={completedCount} total={ids.length} />}
         actions={
-          <ThreadDockIconButton
-            label={closePanelLabel}
-            tooltip={closeLabel}
-            danger
-            onPress={() => dismissMany(threadId, ids)}
-          >
-            <X className="size-3.5" />
-          </ThreadDockIconButton>
+          <>
+            {showPlacementToggle ? <ThreadDocksPlacementToggle placement="composer" /> : null}
+            <ThreadDockIconButton
+              label={closePanelLabel}
+              tooltip={closeLabel}
+              danger
+              onPress={() => dismissMany(threadId, ids)}
+            >
+              <X className="size-3.5" />
+            </ThreadDockIconButton>
+          </>
         }
       />
-      <ThreadDockList placement="composer" collapsed={false} gap="1">
+      <ThreadDockList placement={placement} collapsed={false} gap="1">
         {ids.map((id) => (
           <ActiveSubAgentRow
             key={id}
             threadId={threadId}
             itemId={id}
+            placement={placement}
             {...(projectLocation ? { projectLocation } : {})}
           />
         ))}
@@ -191,11 +213,13 @@ function ActiveSubAgentRow({
   itemId,
   projectLocation,
   registrationOnly = false,
+  placement = "composer",
 }: {
   threadId: string;
   itemId: string;
   projectLocation?: ProjectLocation;
   registrationOnly?: boolean;
+  placement?: ThreadDocksPlacement;
 }) {
   const { t } = useLingui();
   const item = useAppStore(getRuntimeItemStoreSelector(threadId, itemId));
@@ -298,7 +322,7 @@ function ActiveSubAgentRow({
     <ThreadDockActionRow
       title={rowTitle}
       onClick={() => openSubAgent(threadId, item.id)}
-      className={`${isDone ? "opacity-60" : ""} ${!isDone ? "bg-accent/10" : ""}`}
+      className={`${isDone ? "opacity-60" : ""} ${!isDone && placement === "composer" ? "bg-accent/10" : ""}`}
       action={<X className="size-3" />}
       actionLabel={t`Remove ${rowTitle} from panel`}
       actionTitle={t`Remove from panel`}
@@ -307,7 +331,9 @@ function ActiveSubAgentRow({
       {isDone ? (
         <Check aria-label={t`completed`} className="size-3.5 shrink-0 text-foreground-muted" />
       ) : (
-        <Bot className="size-3.5 shrink-0 text-foreground-muted" />
+        <span className="inline-flex size-3.5 shrink-0 items-center justify-center">
+          <PixelLoader size="xxs" className="text-foreground" />
+        </span>
       )}
       <span
         className={`min-w-0 flex-1 truncate leading-5 ${isDone ? "text-foreground-muted" : "text-foreground"}`}

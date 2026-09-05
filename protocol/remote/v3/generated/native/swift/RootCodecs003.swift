@@ -21,19 +21,19 @@ public extension RemoteRootCodecs {
 }
 
 public extension RemoteRootCodecs {
-  static let routeU2EScheduleU2DRunsU2DReadU2EResponse: RemoteRootCodec<RoutescheduleU2DRunsU2DReadResponse_7b9ef525e5> = .init(id: "route.schedule-runs-read.response", schema: RemoteSchemas.schema_7b9ef525e507e915)
+  static let routeU2EScheduleU2DRunsU2DReadU2EResponse: RemoteRootCodec<RoutescheduleU2DRunsU2DReadResponse_dc9dbbe080> = .init(id: "route.schedule-runs-read.response", schema: RemoteSchemas.schema_dc9dbbe08067c690)
 }
 
 public extension RemoteRootCodecs {
-  static let routeU2ESchedulesU2DCommandU2ERequest: RemoteRootCodec<RouteschedulesU2DCommandRequest_c7d4ec01c1> = .init(id: "route.schedules-command.request", schema: RemoteSchemas.schema_c7d4ec01c19bbb3a)
+  static let routeU2ESchedulesU2DCommandU2ERequest: RemoteRootCodec<RouteschedulesU2DCommandRequest_72e4a424a2> = .init(id: "route.schedules-command.request", schema: RemoteSchemas.schema_72e4a424a2d9ffca)
 }
 
 public extension RemoteRootCodecs {
-  static let routeU2ESchedulesU2DCommandU2EResponse: RemoteRootCodec<RouteschedulesU2DCommandResponse_cfff1874b0> = .init(id: "route.schedules-command.response", schema: RemoteSchemas.schema_cfff1874b09bd142)
+  static let routeU2ESchedulesU2DCommandU2EResponse: RemoteRootCodec<RouteschedulesU2DCommandResponse_320890c24c> = .init(id: "route.schedules-command.response", schema: RemoteSchemas.schema_320890c24cdd032a)
 }
 
 public extension RemoteRootCodecs {
-  static let routeU2ESchedulesU2DReadU2EResponse: RemoteRootCodec<RouteschedulesU2DCommandResponse_cfff1874b0> = .init(id: "route.schedules-read.response", schema: RemoteSchemas.schema_cfff1874b09bd142)
+  static let routeU2ESchedulesU2DReadU2EResponse: RemoteRootCodec<RouteschedulesU2DCommandResponse_320890c24c> = .init(id: "route.schedules-read.response", schema: RemoteSchemas.schema_320890c24cdd032a)
 }
 
 public extension RemoteRootCodecs {
@@ -49,7 +49,7 @@ public extension RemoteRootCodecs {
 }
 
 public extension RemoteRootCodecs {
-  static let routeU2EShellU2DSnapshotU2EResponse: RemoteRootCodec<RouteshellU2DSnapshotResponse_5b5b57b156> = .init(id: "route.shell-snapshot.response", schema: RemoteSchemas.schema_5b5b57b156111256)
+  static let routeU2EShellU2DSnapshotU2EResponse: RemoteRootCodec<RouteshellU2DSnapshotResponse_63de465359> = .init(id: "route.shell-snapshot.response", schema: RemoteSchemas.schema_63de465359853791)
 }
 
 public extension RemoteRootCodecs {
@@ -113,7 +113,7 @@ public extension RemoteRootCodecs {
 }
 
 public extension RemoteRootCodecs {
-  static let routeU2EThreadU2DCommandU2ERequest: RemoteRootCodec<RoutethreadU2DCommandRequest_56b3320eee> = .init(id: "route.thread-command.request", schema: RemoteSchemas.schema_56b3320eee8d44fa)
+  static let routeU2EThreadU2DCommandU2ERequest: RemoteRootCodec<RoutethreadU2DCommandRequest_37bea14e33> = .init(id: "route.thread-command.request", schema: RemoteSchemas.schema_37bea14e334d43c7)
 }
 
 public extension RemoteRootCodecs {
@@ -153,7 +153,7 @@ public extension RemoteRootCodecs {
 }
 
 public extension RemoteRootCodecs {
-  static let routeU2EThreadU2DHistoryU2EResponse: RemoteRootCodec<RoutethreadU2DHistoryResponse_48cd4f8ade> = .init(id: "route.thread-history.response", schema: RemoteSchemas.schema_48cd4f8ade5622eb)
+  static let routeU2EThreadU2DHistoryU2EResponse: RemoteRootCodec<RoutethreadU2DHistoryResponse_8621b3e8b7> = .init(id: "route.thread-history.response", schema: RemoteSchemas.schema_8621b3e8b778a6f9)
 }
 
 public extension RemoteRootCodecs {
@@ -185,7 +185,7 @@ public extension RemoteRootCodecs {
 }
 
 public extension RemoteRootCodecs {
-  static let routeU2EThreadU2DSendU2ERequest: RemoteRootCodec<RoutethreadU2DSendRequest_a86d1f0a61> = .init(id: "route.thread-send.request", schema: RemoteSchemas.schema_a86d1f0a616542a8)
+  static let routeU2EThreadU2DSendU2ERequest: RemoteRootCodec<RoutethreadU2DSendRequest_e88be6f845> = .init(id: "route.thread-send.request", schema: RemoteSchemas.schema_e88be6f8457e84cc)
 }
 
 public extension RemoteRootCodecs {
@@ -193,7 +193,7 @@ public extension RemoteRootCodecs {
 }
 
 public extension RemoteRootCodecs {
-  static let routeU2EThreadU2DStartU2DExistingU2ERequest: RemoteRootCodec<RoutethreadU2DStartU2DExistingRequest_70f4d768ba> = .init(id: "route.thread-start-existing.request", schema: RemoteSchemas.schema_70f4d768ba4cb7cf)
+  static let routeU2EThreadU2DStartU2DExistingU2ERequest: RemoteRootCodec<RoutethreadU2DStartU2DExistingRequest_af6694125b> = .init(id: "route.thread-start-existing.request", schema: RemoteSchemas.schema_af6694125b1ce1b5)
 }
 
 public extension RemoteRootCodecs {
@@ -217,7 +217,7 @@ public extension RemoteRootCodecs {
 }
 
 public extension RemoteRootCodecs {
-  static let routeU2EThreadU2DSteerU2DSetU2ERequest: RemoteRootCodec<RoutethreadU2DSteerU2DSetRequest_b534ca2492> = .init(id: "route.thread-steer-set.request", schema: RemoteSchemas.schema_b534ca2492c6e7ce)
+  static let routeU2EThreadU2DSteerU2DSetU2ERequest: RemoteRootCodec<RoutethreadU2DSteerU2DSetRequest_7b88ef93ea> = .init(id: "route.thread-steer-set.request", schema: RemoteSchemas.schema_7b88ef93ea82dd5b)
 }
 
 public extension RemoteRootCodecs {

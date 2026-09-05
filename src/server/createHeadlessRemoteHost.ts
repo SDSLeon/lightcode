@@ -180,6 +180,10 @@ export async function createHeadlessRemoteHost(
       // live. Clients then try to steer a session that no longer exists.
       const interrupted = dbGetThreads().filter((thread) => isThreadTurnActive(thread.status));
       dbMarkLiveThreadsInactive();
+      // No `thread-exited` is emitted for the sessions that died with the old
+      // supervisor process, so their cached background-task levels would
+      // otherwise shadow the fresh supervisor's live reads forever.
+      serverRef?.clearBackgroundTaskLevels();
       for (const thread of interrupted) {
         const event = {
           type: "thread-state" as const,

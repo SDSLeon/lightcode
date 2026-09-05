@@ -9,6 +9,7 @@ import {
   accumulateActiveGoalAssistantSpend,
   buildClaudeQuestionAnswerEvents,
   ClaudeUsageScopeTracker,
+  completeActiveGoalOnTaskDrainEvents,
   createClaudeMapperState,
   emitActiveGoalTick,
   mapClaudeContextUsageResponse,
@@ -17,6 +18,7 @@ import {
   mapClaudeSdkMessage,
   parseClaudeQuestions,
   startClaudeTurn,
+  supportsNativeGoalFrames,
 } from "./sdkCanonicalMapping";
 
 function streamEvent(event: Record<string, unknown>): SDKMessage {
@@ -422,6 +424,21 @@ describe("sdkCanonicalMapping — prompt content", () => {
     expect(state.activeGoalItemId).toBeUndefined();
   });
 
+  it("keeps an active goal docked when the user checks status with a bare /goal", () => {
+    const state = createClaudeMapperState("thread-1");
+    startClaudeTurn(state, "turn-goal", "/goal fix the bug", undefined, "user-goal");
+
+    const statusEvents = startClaudeTurn(state, "turn-status", "/goal", undefined, "user-status");
+
+    // `/goal` with no argument is a status query — the goal stays active, so
+    // no goal item may be emitted (an objective-less item would blank the
+    // dock) and the tracking must survive.
+    expect(statusEvents).not.toContainEqual(expect.objectContaining({ itemType: "goal" }));
+    expect(state.activeGoalItemId).toBe("goal-turn-goal");
+    expect(state.activeGoalObjective).toBe("fix the bug");
+    expect(state.activeGoalStartedAtMs).toBeDefined();
+  });
+
   it("ignores session-cumulative result usage for goal token totals", () => {
     const state = createClaudeMapperState("thread-1");
     vi.useFakeTimers();
@@ -524,6 +541,282 @@ describe("sdkCanonicalMapping — prompt content", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("holds a legacy goal open across a clean turn end while a background Bash task is live", () => {
+    const state = createClaudeMapperState("thread-1");
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-05-12T10:00:00Z"));
+      startClaudeTurn(state, "turn-goal", "/goal ship it", undefined, "user-goal");
+      // Plain background Bash: `task_started` without a subagent_type never
+      // registers as a subagent; the level signal is what reports it live.
+      mapClaudeSdkMessage(
+        {
+          type: "system",
+          subtype: "background_tasks_changed",
+          session_id: "claude-session",
+          tasks: [
+            { task_id: "bash-1", task_type: "local_bash", description: "cargo test" },
+            {
+              task_id: "housekeeper",
+              task_type: "local_bash",
+              description: "chore",
+              ambient: true,
+            },
+          ],
+        } as unknown as SDKMessage,
+        state,
+      );
+      expect(state.liveBackgroundTaskIds).toEqual(new Set(["bash-1"]));
+
+      vi.setSystemTime(new Date("2026-05-12T10:37:44Z"));
+      const resultEvents = mapClaudeSdkMessage(
+        {
+          type: "result",
+          subtype: "success",
+          session_id: "claude-session",
+        } as unknown as SDKMessage,
+        state,
+      );
+
+      // The turn ended mid-work (the CLI wakes the model when the task
+      // finishes) — the goal must not complete with the command still running.
+      const resultGoalUpdate = resultEvents.find(
+        (event) => event.type === "item.updated" && event.itemId === "goal-turn-goal",
+      );
+      expect(resultGoalUpdate).toMatchObject({
+        payload: { status: "active", timeUsedSeconds: 2264 },
+      });
+      expect(state.activeGoalItemId).toBe("goal-turn-goal");
+      expect(state.pendingGoalCompletionOnTaskDrain).toBe(true);
+
+      // REPLACE semantics: the next level is the whole live set, so finishing
+      // one task while another starts must not strand the first entry.
+      mapClaudeSdkMessage(
+        {
+          type: "system",
+          subtype: "background_tasks_changed",
+          session_id: "claude-session",
+          tasks: [{ task_id: "bash-2", task_type: "local_bash", description: "next check" }],
+        } as unknown as SDKMessage,
+        state,
+      );
+      expect(state.liveBackgroundTaskIds).toEqual(new Set(["bash-2"]));
+
+      // Last task drains and the model never resumes: the held goal completes.
+      mapClaudeSdkMessage(
+        {
+          type: "system",
+          subtype: "background_tasks_changed",
+          session_id: "claude-session",
+          tasks: [],
+        } as unknown as SDKMessage,
+        state,
+      );
+      const drainEvents = completeActiveGoalOnTaskDrainEvents(state);
+      expect(drainEvents).toContainEqual(
+        expect.objectContaining({
+          type: "item.updated",
+          itemId: "goal-turn-goal",
+          payload: expect.objectContaining({ status: "complete" }),
+        }),
+      );
+      expect(state.activeGoalItemId).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("replaces the live background task set wholesale and drops malformed entries", () => {
+    const state = createClaudeMapperState("thread-1");
+    const firstEvents = mapClaudeSdkMessage(
+      {
+        type: "system",
+        subtype: "background_tasks_changed",
+        session_id: "claude-session",
+        tasks: [
+          { task_id: "task-1", task_type: "local_agent", description: "explore" },
+          { task_id: "task-2", task_type: "local_bash", description: "serve" },
+          { task_id: "task-3", task_type: "local_monitor", description: "watch build" },
+          null,
+          "not-an-object",
+          { description: "no id" },
+          { task_id: "", task_type: "local_bash", description: "empty id" },
+        ],
+      } as unknown as SDKMessage,
+      state,
+    );
+    expect(state.liveBackgroundTaskIds).toEqual(new Set(["task-1", "task-2", "task-3"]));
+    // The renderer list excludes sub-agent runs (they have their own dock) and
+    // classifies everything else by a coarse, provider-agnostic kind.
+    expect(firstEvents).toEqual([
+      {
+        type: "background_tasks.changed",
+        threadId: "thread-1",
+        tasks: [
+          { taskId: "task-2", kind: "command", description: "serve" },
+          { taskId: "task-3", kind: "other", description: "watch build" },
+        ],
+      },
+    ]);
+    expect(state.reportedBackgroundTasks).toEqual([
+      { taskId: "task-2", kind: "command", description: "serve" },
+      { taskId: "task-3", kind: "other", description: "watch build" },
+    ]);
+
+    // REPLACE, not merge: task-1 finished, task-2 still live.
+    const secondEvents = mapClaudeSdkMessage(
+      {
+        type: "system",
+        subtype: "background_tasks_changed",
+        session_id: "claude-session",
+        tasks: [{ task_id: "task-2", task_type: "local_bash", description: "serve" }],
+      } as unknown as SDKMessage,
+      state,
+    );
+    expect(state.liveBackgroundTaskIds).toEqual(new Set(["task-2"]));
+    expect(secondEvents).toEqual([
+      {
+        type: "background_tasks.changed",
+        threadId: "thread-1",
+        tasks: [{ taskId: "task-2", kind: "command", description: "serve" }],
+      },
+    ]);
+
+    // A level that only changes sub-agent membership leaves the visible list
+    // untouched and emits nothing.
+    const thirdEvents = mapClaudeSdkMessage(
+      {
+        type: "system",
+        subtype: "background_tasks_changed",
+        session_id: "claude-session",
+        tasks: [
+          { task_id: "task-2", task_type: "local_bash", description: "serve" },
+          { task_id: "task-4", task_type: "local_agent", description: "review" },
+        ],
+      } as unknown as SDKMessage,
+      state,
+    );
+    expect(thirdEvents).toEqual([]);
+
+    // Draining reports the empty list exactly once.
+    const drained = mapClaudeSdkMessage(
+      {
+        type: "system",
+        subtype: "background_tasks_changed",
+        session_id: "claude-session",
+        tasks: [],
+      } as unknown as SDKMessage,
+      state,
+    );
+    expect(drained).toEqual([
+      { type: "background_tasks.changed", threadId: "thread-1", tasks: [] },
+    ]);
+    expect(state.reportedBackgroundTasks).toEqual([]);
+    expect(
+      mapClaudeSdkMessage(
+        {
+          type: "system",
+          subtype: "background_tasks_changed",
+          session_id: "claude-session",
+          tasks: [],
+        } as unknown as SDKMessage,
+        state,
+      ),
+    ).toEqual([]);
+  });
+
+  it("detects frame-capable CLIs from the init version", () => {
+    expect(supportsNativeGoalFrames("2.1.251")).toBe(true);
+    // Boundary: the floor itself streams frames.
+    expect(supportsNativeGoalFrames("2.1.234")).toBe(true);
+    expect(supportsNativeGoalFrames("2.1.233")).toBe(false);
+    expect(supportsNativeGoalFrames("2.2.0")).toBe(true);
+    expect(supportsNativeGoalFrames("3.0.1")).toBe(true);
+    expect(supportsNativeGoalFrames("1.9.9")).toBe(false);
+    // Prerelease suffixes and decorations keep the numeric triple.
+    expect(supportsNativeGoalFrames("2.1.251-beta.1")).toBe(true);
+    expect(supportsNativeGoalFrames("2.1.251 (Claude Code)")).toBe(true);
+    // Unknown versions keep the legacy fallback.
+    expect(supportsNativeGoalFrames(undefined)).toBe(false);
+    expect(supportsNativeGoalFrames("")).toBe(false);
+    expect(supportsNativeGoalFrames("not-a-version")).toBe(false);
+    expect(supportsNativeGoalFrames(42)).toBe(false);
+  });
+
+  it("marks a /goal failed on a frame-capable CLI that never confirmed it", () => {
+    const state = createClaudeMapperState("thread-1");
+    // A frame-capable CLI emits the first `active_goal` verdict at the end of
+    // the turn that set the goal. Zero frames by a clean turn end means the
+    // CLI refused to arm it (trust/hooks gate) or the evaluator never ran.
+    state.cliReportsNativeGoalFrames = true;
+    startClaudeTurn(state, "turn-goal", "/goal ship it", undefined, "user-goal");
+
+    const resultEvents = mapClaudeSdkMessage(
+      { type: "result", subtype: "success", session_id: "claude-session" } as unknown as SDKMessage,
+      state,
+    );
+
+    const goalUpdate = resultEvents.find(
+      (event) => event.type === "item.updated" && event.itemId === "goal-turn-goal",
+    );
+    expect(goalUpdate).toMatchObject({
+      type: "item.updated",
+      itemId: "goal-turn-goal",
+      payload: {
+        action: "updated",
+        status: "failed",
+        objective: "ship it",
+        lastReason: expect.stringContaining("verdict"),
+      },
+    });
+    // The goal is resolved: no zombie tracking, no pending legacy drain.
+    expect(state.activeGoalItemId).toBeUndefined();
+    expect(state.pendingGoalCompletionOnTaskDrain).toBeUndefined();
+  });
+
+  it("keeps a frame-capable CLI's goal open across background work and never refutes at drain", () => {
+    const state = createClaudeMapperState("thread-1");
+    state.cliReportsNativeGoalFrames = true;
+    startClaudeTurn(state, "turn-goal", "/goal ship it", undefined, "user-goal");
+    mapClaudeSdkMessage(
+      {
+        type: "system",
+        subtype: "background_tasks_changed",
+        session_id: "claude-session",
+        tasks: [{ task_id: "bash-1", task_type: "local_bash", description: "cargo test" }],
+      } as unknown as SDKMessage,
+      state,
+    );
+
+    const resultEvents = mapClaudeSdkMessage(
+      { type: "result", subtype: "success", session_id: "claude-session" } as unknown as SDKMessage,
+      state,
+    );
+
+    // Evaluation is deferred while background work is live — the goal is held,
+    // not failed: the CLI evaluates at the next turn end with no work running.
+    const resultGoalUpdate = resultEvents.find(
+      (event) => event.type === "item.updated" && event.itemId === "goal-turn-goal",
+    );
+    expect(resultGoalUpdate).toMatchObject({ payload: { status: "active" } });
+    expect(state.activeGoalItemId).toBe("goal-turn-goal");
+    // The frame-capable CLI has no drain fallback: only frames resolve the goal.
+    expect(state.pendingGoalCompletionOnTaskDrain).toBeUndefined();
+
+    mapClaudeSdkMessage(
+      {
+        type: "system",
+        subtype: "background_tasks_changed",
+        session_id: "claude-session",
+        tasks: [],
+      } as unknown as SDKMessage,
+      state,
+    );
+    const drainEvents = completeActiveGoalOnTaskDrainEvents(state);
+    expect(drainEvents).toEqual([]);
+    expect(state.activeGoalItemId).toBe("goal-turn-goal");
   });
 
   it("updates the active goal from a native active_goal verdict with iterations and reason", () => {
@@ -765,7 +1058,177 @@ describe("sdkCanonicalMapping — text streaming", () => {
     expect(stop[0]).toMatchObject({ type: "item.completed" });
   });
 
-  it("does not duplicate the final assistant snapshot after streamed text completes", () => {
+  /** message_start for msg_display plus one streamed text delta ("Bonjour"). */
+  function startDisplayStream() {
+    const state = createClaudeMapperState("thread-1");
+    mapClaudeSdkMessage(
+      streamEvent({
+        type: "message_start",
+        message: { id: "msg_display", role: "assistant", content: [] },
+      }),
+      state,
+    );
+    const streamed = mapClaudeSdkMessage(
+      streamEvent({
+        type: "content_block_delta",
+        index: 1,
+        delta: { type: "text_delta", text: "Bonjour" },
+      }),
+      state,
+    );
+    const itemId = "itemId" in streamed[0]! ? streamed[0].itemId : undefined;
+    return { state, itemId };
+  }
+
+  function displaySnapshot(displayText: string): SDKMessage {
+    return {
+      type: "assistant",
+      session_id: "claude-session",
+      message: {
+        id: "msg_display",
+        role: "assistant",
+        // MessageDisplay snapshots can omit the preceding thinking block,
+        // shifting text from stream index 1 to snapshot index 0.
+        content: [{ type: "text", text: displayText }],
+      },
+    } as unknown as SDKMessage;
+  }
+
+  it.each([
+    ["replace", "Hello"],
+    ["append", "Bonjour\n\nHello"],
+  ])(
+    "updates the streamed item with a MessageDisplay %s snapshot that arrives before block completion",
+    (_mode, displayText) => {
+      const { state, itemId } = startDisplayStream();
+
+      const snapshot = mapClaudeSdkMessage(displaySnapshot(displayText), state);
+      expect(snapshot).toEqual([
+        {
+          type: "item.updated",
+          threadId: "thread-1",
+          itemId,
+          payload: {
+            content: [{ kind: "text", text: displayText }],
+            displayAuthoritative: true,
+          },
+        },
+      ]);
+
+      const completion = mapClaudeSdkMessage(
+        streamEvent({ type: "content_block_stop", index: 1 }),
+        state,
+      );
+      expect(completion).toEqual([{ type: "item.completed", threadId: "thread-1", itemId }]);
+    },
+  );
+
+  it.each([
+    ["replace", "Hello"],
+    ["append", "Bonjour\n\nHello"],
+    ["empty", ""],
+  ])(
+    "updates the already-completed streamed item with a MessageDisplay %s snapshot",
+    (_mode, displayText) => {
+      const { state, itemId } = startDisplayStream();
+      const completion = mapClaudeSdkMessage(
+        streamEvent({ type: "content_block_stop", index: 1 }),
+        state,
+      );
+      expect(completion).toEqual([{ type: "item.completed", threadId: "thread-1", itemId }]);
+
+      const snapshot = mapClaudeSdkMessage(displaySnapshot(displayText), state);
+      expect(snapshot).toEqual([
+        {
+          type: "item.updated",
+          threadId: "thread-1",
+          itemId,
+          payload: {
+            content: [{ kind: "text", text: displayText }],
+            displayAuthoritative: true,
+          },
+        },
+      ]);
+    },
+  );
+
+  it("maps multiple snapshot text blocks to streamed items by text order", () => {
+    const state = createClaudeMapperState("thread-1");
+    mapClaudeSdkMessage(
+      streamEvent({
+        type: "message_start",
+        message: { id: "msg_display", role: "assistant", content: [] },
+      }),
+      state,
+    );
+    const firstStreamed = mapClaudeSdkMessage(
+      streamEvent({
+        type: "content_block_delta",
+        index: 1,
+        delta: { type: "text_delta", text: "First raw block" },
+      }),
+      state,
+    );
+    mapClaudeSdkMessage(streamEvent({ type: "content_block_stop", index: 1 }), state);
+    const secondStreamed = mapClaudeSdkMessage(
+      streamEvent({
+        type: "content_block_delta",
+        index: 3,
+        delta: { type: "text_delta", text: "Second raw block" },
+      }),
+      state,
+    );
+    const firstItemId = "itemId" in firstStreamed[0]! ? firstStreamed[0].itemId : undefined;
+    const secondItemId = "itemId" in secondStreamed[0]! ? secondStreamed[0].itemId : undefined;
+
+    const snapshot = mapClaudeSdkMessage(
+      {
+        type: "assistant",
+        session_id: "claude-session",
+        message: {
+          id: "msg_display",
+          role: "assistant",
+          content: [
+            { type: "text", text: "First display block" },
+            { type: "text", text: "" },
+          ],
+        },
+      } as unknown as SDKMessage,
+      state,
+    );
+
+    expect(snapshot).toEqual([
+      {
+        type: "item.updated",
+        threadId: "thread-1",
+        itemId: firstItemId,
+        payload: {
+          content: [{ kind: "text", text: "First display block" }],
+          displayAuthoritative: true,
+        },
+      },
+      {
+        type: "item.updated",
+        threadId: "thread-1",
+        itemId: secondItemId,
+        payload: { content: [{ kind: "text", text: "" }], displayAuthoritative: true },
+      },
+    ]);
+    expect(snapshot.some((event) => event.type === "item.started")).toBe(false);
+  });
+
+  it("skips the snapshot update when the text matches what already streamed", () => {
+    // No MessageDisplay hook: the final snapshot repeats the streamed text
+    // byte-for-byte. Emitting it would persist every ordinary Claude turn's
+    // text twice and flag an untouched payload as display-authoritative.
+    const { state } = startDisplayStream();
+    mapClaudeSdkMessage(streamEvent({ type: "content_block_stop", index: 1 }), state);
+
+    const snapshot = mapClaudeSdkMessage(displaySnapshot("Bonjour"), state);
+    expect(snapshot).toEqual([]);
+  });
+
+  it("still drops a late snapshot whose frame was reset by a newer message", () => {
     const state = createClaudeMapperState("thread-1");
     mapClaudeSdkMessage(
       streamEvent({
@@ -778,25 +1241,39 @@ describe("sdkCanonicalMapping — text streaming", () => {
       streamEvent({
         type: "content_block_delta",
         index: 0,
-        delta: { type: "text_delta", text: "Hello" },
+        delta: { type: "text_delta", text: "Answer one" },
       }),
       state,
     );
     mapClaudeSdkMessage(streamEvent({ type: "content_block_stop", index: 0 }), state);
+    mapClaudeSdkMessage(
+      streamEvent({
+        type: "message_start",
+        message: { id: "msg_2", role: "assistant", content: [] },
+      }),
+      state,
+    );
 
-    const snapshot = mapClaudeSdkMessage(
+    const lateSnapshot = mapClaudeSdkMessage(
       {
         type: "assistant",
         session_id: "claude-session",
-        message: { id: "msg_1", role: "assistant", content: [{ type: "text", text: "Hello" }] },
+        message: {
+          id: "msg_1",
+          role: "assistant",
+          // A text that differs from what streamed proves the drop comes from
+          // the reset frame (no streamed lane remains), not the
+          // identical-snapshot skip.
+          content: [{ type: "text", text: "Rewritten answer one" }],
+        },
       } as unknown as SDKMessage,
       state,
     );
 
-    expect(snapshot).toEqual([]);
+    expect(lateSnapshot).toEqual([]);
   });
 
-  it("does not duplicate a final assistant snapshot when a replayed message_start reset the index map", () => {
+  it("keeps a streamed item available when message_start replays the same message id", () => {
     const state = createClaudeMapperState("thread-1");
     mapClaudeSdkMessage(
       streamEvent({
@@ -805,7 +1282,7 @@ describe("sdkCanonicalMapping — text streaming", () => {
       }),
       state,
     );
-    mapClaudeSdkMessage(
+    const streamed = mapClaudeSdkMessage(
       streamEvent({
         type: "content_block_delta",
         index: 0,
@@ -813,6 +1290,7 @@ describe("sdkCanonicalMapping — text streaming", () => {
       }),
       state,
     );
+    const itemId = "itemId" in streamed[0]! ? streamed[0].itemId : undefined;
     mapClaudeSdkMessage(streamEvent({ type: "content_block_stop", index: 0 }), state);
     mapClaudeSdkMessage(
       streamEvent({
@@ -826,12 +1304,26 @@ describe("sdkCanonicalMapping — text streaming", () => {
       {
         type: "assistant",
         session_id: "claude-session",
-        message: { id: "msg_1", role: "assistant", content: [{ type: "text", text: "Done" }] },
+        message: {
+          id: "msg_1",
+          role: "assistant",
+          content: [{ type: "text", text: "Displayed result" }],
+        },
       } as unknown as SDKMessage,
       state,
     );
 
-    expect(snapshot).toEqual([]);
+    expect(snapshot).toEqual([
+      {
+        type: "item.updated",
+        threadId: "thread-1",
+        itemId,
+        payload: {
+          content: [{ kind: "text", text: "Displayed result" }],
+          displayAuthoritative: true,
+        },
+      },
+    ]);
   });
 
   it("ignores a repeat content_block_start at the same index after the block already completed", () => {
@@ -2549,6 +3041,21 @@ describe("sdkCanonicalMapping — background sub-agents", () => {
       },
     } as unknown as SDKMessage;
   }
+
+  it("does not hold an Agent tool open for an ambient housekeeping task", () => {
+    const state = createClaudeMapperState("thread-1");
+    startAgentTool(state, "toolu_parent");
+    expect(
+      mapClaudeSdkMessage(
+        { ...taskStarted("toolu_parent", "general-purpose"), ambient: true } as SDKMessage,
+        state,
+      ),
+    ).toEqual([]);
+    expect(state.activeSubAgentToolToTask?.has("toolu_parent") ?? false).toBe(false);
+    expect(mapClaudeSdkMessage(launchToolResult("toolu_parent"), state)).toContainEqual(
+      expect.objectContaining({ type: "item.completed", itemId: "toolu_parent" }),
+    );
+  });
 
   it("keeps the Agent parent running after its launch tool_result when a subagent task is live", () => {
     const state = createClaudeMapperState("thread-1");

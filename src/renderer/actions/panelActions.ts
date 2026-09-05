@@ -1,4 +1,5 @@
 import type { ProjectLocation, Thread } from "@/shared/contracts";
+import type { ThreadDocksPlacement } from "@/shared/settings";
 import { toast } from "@heroui/react";
 import { friendlyError } from "@/shared/messages";
 import { readBridge } from "@/renderer/bridge";
@@ -12,6 +13,7 @@ import {
   usePanelStore,
   type PanelDockTarget,
   type RightPanelTab,
+  type ThreadDockFocus,
 } from "@/renderer/state/panelStore";
 import { remoteOwner } from "@/renderer/state/remoteProjection";
 import {
@@ -21,10 +23,6 @@ import {
 import { useSharedSettings } from "@/renderer/state/sharedSettingsStore";
 import { useUsageScopeStore } from "@/renderer/state/usageScopeStore";
 import { isCompactLayoutViewport } from "@/renderer/adaptiveLayout";
-import {
-  useThreadTodoDockStore,
-  type ThreadTodoDockPlacement,
-} from "@/renderer/state/threadTodoDockStore";
 import { buildFileEditorContext, resolveWorktreeBranch } from "@/renderer/utils/gitHelpers";
 import { closeThreads } from "@/renderer/utils/shellUtils";
 import { resolveActivePaneId } from "./currentProject";
@@ -109,6 +107,10 @@ export function openChangelogSettings(): void {
 
 export function openWorkspaceSettings(): void {
   usePanelStore.getState().openSettingsSection("workspaces");
+}
+
+export function openMcpServersSettings(): void {
+  usePanelStore.getState().openSettingsSection("mcpServers");
 }
 
 function openUsagePanelSurface(): void {
@@ -211,22 +213,37 @@ export function openProjectSettings(projectId: string): void {
   usePanelStore.getState().openProjectSettings(projectId);
 }
 
-export function moveThreadTodoDock(threadId: string, placement: ThreadTodoDockPlacement): void {
-  useThreadTodoDockStore.getState().setPlacement(threadId, placement);
+/**
+ * Switch the global docks mode. Moving to the right panel opens the Docks tab
+ * right away so the docks do not simply vanish from the composer; moving back
+ * closes that tab (its content now lives above the composer again).
+ */
+export function setThreadDocksPlacement(placement: ThreadDocksPlacement): void {
+  useSharedSettings.getState().setThreadDocksPlacement(placement);
   if (placement === "right") {
-    usePanelStore.getState().setRightPanelTab("plan");
+    usePanelStore.getState().openThreadDocksPanel();
+  } else {
+    usePanelStore.getState().setThreadDocksPanelOpen(false);
   }
 }
 
-/** Close right-panel content and return its focused Plan to the composer. */
-export function closeAllPanels(): void {
-  const appState = useAppStore.getState();
-  if (appState.view.kind === "thread") {
-    moveThreadTodoDock(
-      resolveActivePaneId(appState.view.panes, appState.focusedPaneId),
-      "composer",
-    );
+/**
+ * Composer bubble click: show the Docks tab scrolled to one dock, or hide the
+ * panel when the Docks tab is already showing. The bubbles are one group
+ * standing in for one panel, so any of them closes it — clicking Plan while
+ * Agents is showing hides the panel rather than scrolling within it.
+ */
+export function toggleThreadDocksPanel(focus: ThreadDockFocus): void {
+  const panelStore = usePanelStore.getState();
+  if (panelStore.threadDocksPanelOpen && panelStore.rightPanelTab === "docks") {
+    closeAllPanels();
+    return;
   }
+  panelStore.openThreadDocksPanel(focus);
+}
+
+/** Close right-panel content. */
+export function closeAllPanels(): void {
   // Bottom docks survive this (they are their own surface), but only while
   // there is a bottom row to hold them — drop stale slots first so they cannot
   // pin a panel's open flag from a row that no longer renders.

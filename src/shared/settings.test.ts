@@ -3,9 +3,24 @@ import {
   defaultSharedSettings,
   normalizeSharedSettings,
   normalizeSidebarShortcutOrder,
+  normalizeThreadDocksOrder,
+  reorderVisibleThreadDocks,
 } from "./settings";
 
 describe("shared settings defaults", () => {
+  it("normalizes legacy chrome_-prefixed disabled MCP tools once at load", () => {
+    const normalized = normalizeSharedSettings({
+      disabledBuiltInMcpTools: {
+        chrome: ["chrome_click", "click", "chrome_eval"],
+        browser: ["fill"],
+      },
+    });
+    expect(normalized.disabledBuiltInMcpTools).toEqual({
+      chrome: ["click", "eval"],
+      browser: ["fill"],
+    });
+  });
+
   it("preserves legacy MCP servers while stripping URL credentials and fragments", () => {
     const normalized = normalizeSharedSettings({
       mcpServers: [
@@ -32,6 +47,24 @@ describe("shared settings defaults", () => {
       "pullRequests",
       "githubActions",
     ]);
+  });
+
+  it("normalizes and reorders thread docks without moving hidden dock slots", () => {
+    expect(normalizeThreadDocksOrder(["plan", "plan"])).toEqual([
+      "plan",
+      "goal",
+      "agents",
+      "backgroundTasks",
+      "images",
+    ]);
+    expect(
+      reorderVisibleThreadDocks(
+        ["goal", "plan", "agents", "backgroundTasks", "images"],
+        ["plan", "backgroundTasks", "images"],
+        2,
+        0,
+      ),
+    ).toEqual(["goal", "images", "agents", "plan", "backgroundTasks"]);
   });
 
   it("enables notifications and displays them for visible threads by default", () => {

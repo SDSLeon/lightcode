@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useSyncExternalStore } from "react";
+import { useLayoutEffect, useState, useSyncExternalStore } from "react";
 
 let nextSheetLayerId = 0;
 let sheetLayers: number[] = [];
@@ -33,9 +33,9 @@ export function useMobileSheetLayer(active = true): {
   readonly covered: boolean;
   readonly nested: boolean;
 } {
-  const layerIdRef = useRef(0);
-  if (layerIdRef.current === 0) layerIdRef.current = ++nextSheetLayerId;
-  const layerId = layerIdRef.current;
+  // Stable per-mount layer identity without a render-time ref write: the lazy
+  // initializer mints the id once and it never changes for this hook instance.
+  const [layerId] = useState(() => ++nextSheetLayerId);
 
   const layerState = useSyncExternalStore(
     subscribeToSheetLayers,

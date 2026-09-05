@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { startThreadFromDraft } from "@/renderer/actions/threadLaunchActions";
 import { FloatingComposerDock } from "@/renderer/components/mobileComposer/FloatingComposerDock";
@@ -16,9 +16,11 @@ export function MobileQuickCompose(props: { projectId: string }) {
   );
   const draftEnvironment = useDraftEnvironment(project);
 
-  useEffect(() => {
-    if (!expanded) setProjectId(props.projectId);
-  }, [expanded, props.projectId]);
+  // While collapsed the draft tracks the selected project; while expanded the
+  // user may have switched projects inside the composer, so the sync pauses
+  // until the next collapse. Adjusted during render so the draft never paints
+  // a frame for the wrong project.
+  if (!expanded && projectId !== props.projectId) setProjectId(props.projectId);
 
   if (!project) return null;
 

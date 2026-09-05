@@ -8,6 +8,7 @@ import {
   type ControlThreadGoalPayload,
   type AgentEventEnvelope,
   type AgentKind,
+  type BackgroundTask,
   type CloseThreadPayload,
   type PromptSegment,
   type ProjectLocation,
@@ -46,6 +47,7 @@ import {
 import { ensureNodePtySpawnHelperExecutable } from "../nodePty";
 import { BufferedLogWriter } from "./bufferedLogWriter";
 import type { QueuedStructuredTurn, SessionRuntime, ShellSessionRuntime } from "./sessionTypes";
+import { effectiveProjectLocation } from "./sessionTypes";
 import { ThreadOutputPipeline, resolveThreadStatusSource } from "./threadOutputPipeline";
 import { rewriteSegmentsForWorkspace, rewriteSegmentsForWsl } from "./threadAttachments";
 
@@ -359,17 +361,18 @@ export class ThreadSessionManager {
     | undefined {
     const session = this.sessions.get(threadId);
     if (!session) return undefined;
+    const projectLocation = effectiveProjectLocation(session);
     // Children inherit the effective launch config with built-in disables applied.
     const disabledIds = session.mcpLaunchSnapshot.disabledBuiltInMcpServerIds;
     const effectiveConfig = workspaceLaunchConfig(
-      session.projectLocation,
+      projectLocation,
       session.config,
       session.adapter,
       disabledIds,
       session.mcpLaunchSnapshot.pluginBuiltInMcpServerIds,
     );
     return {
-      projectLocation: session.projectLocation,
+      projectLocation,
       config: effectiveConfig,
       mcpLaunchSnapshot: session.mcpLaunchSnapshot,
     };
@@ -380,6 +383,7 @@ export class ThreadSessionManager {
     threadId: string,
     identity: McpThreadIdentity,
     targetAgentKind: AgentKind,
+    projectLocation: ProjectLocation,
   ): Promise<{ mcpServers?: ResolvedMcpServer[] }> {
     const session = this.sessions.get(threadId);
     if (!session) return {};
@@ -387,14 +391,15 @@ export class ThreadSessionManager {
     if (!targetAdapter) return {};
     const mcpLaunchSnapshot = session.mcpLaunchSnapshot;
     const launchConfig = workspaceLaunchConfig(
-      session.projectLocation,
+      projectLocation,
       session.config,
       targetAdapter,
       mcpLaunchSnapshot.disabledBuiltInMcpServerIds,
       mcpLaunchSnapshot.pluginBuiltInMcpServerIds,
+      effectiveProjectLocation(session),
     );
     const mcpServers = await this.spawnPipeline.resolveMcpServersForLaunch({
-      location: session.projectLocation,
+      location: projectLocation,
       config: launchConfig,
       mcpLaunchSnapshot,
       identity,
@@ -432,6 +437,7 @@ export class ThreadSessionManager {
                 session.adapter,
                 session.mcpLaunchSnapshot.disabledBuiltInMcpServerIds,
                 session.mcpLaunchSnapshot.pluginBuiltInMcpServerIds,
+                effectiveProjectLocation(session),
               ),
               session.mcpLaunchSnapshot,
               session.adapter,
@@ -603,7 +609,9 @@ export class ThreadSessionManager {
       : undefined;
     const wslSegments = mentionSegments
       ? await rewriteSegmentsForWsl(mentionSegments, session.projectLocation, {
-          preserveImageAttachments: usesStructuredFlow,
+          preserveImageAttachments:
+            usesStructuredFlow &&
+            session.adapter.capabilities.readsImageAttachmentsFromHost !== false,
           preservePdfAttachments:
             usesStructuredFlow && session.adapter.capabilities.readsPdfAttachmentsFromHost === true,
         })
@@ -618,7 +626,7 @@ export class ThreadSessionManager {
         ? { ...payload.config, mode: undefined }
         : payload.config;
     const effectiveConfig = applyHomeScopePermissions(
-      session.projectLocation,
+      effectiveProjectLocation(session),
       turnConfig,
       session.adapter.capabilities,
     );
@@ -637,7 +645,7 @@ export class ThreadSessionManager {
     };
     if (session.status === "inactive") {
       // Guaranteed to have a sessionRef here — the no-ref case threw above.
-      await this.spawnPipeline.restartThread(session, turn);
+      await this.restartThreadSettlingFailure(session, turn);
       return;
     }
     if (
@@ -646,7 +654,7 @@ export class ThreadSessionManager {
       (session.status === "error" || session.status === "idle") &&
       session.sessionRef
     ) {
-      await this.spawnPipeline.restartThread(session, turn);
+      await this.restartThreadSettlingFailure(session, turn);
       return;
     }
     // Route through the structured session when either the adapter is
@@ -1247,6 +1255,10 @@ export class ThreadSessionManager {
     this.exitedShellSnapshots.delete(threadId);
   }
 
+  readThreadBackgroundTasks(threadId: string): readonly BackgroundTask[] {
+    return this.sessions.get(threadId)?.structuredSession?.getBackgroundTasks?.() ?? [];
+  }
+
   handlePtyDataForTests(session: SessionRuntime, data: string): void {
     this.outputPipeline.handlePtyData(session, data);
   }
@@ -1306,6 +1318,36 @@ export class ThreadSessionManager {
     if (!pendingStart) return undefined;
     await pendingStart;
     return this.sessions.get(threadId);
+  }
+
+  /**
+   * A failed restart must never strand the submitted turn: the renderer has
+   * already painted the user message and an optimistic working state, so a
+   * bare rejection leaves the thread "working" forever with the send lost.
+   * Settle it with a visible error item and an errored thread state, then
+   * rethrow so the caller still learns the launch failed.
+   */
+  private async restartThreadSettlingFailure(
+    session: SessionRuntime,
+    turn: QueuedStructuredTurn,
+  ): Promise<void> {
+    try {
+      await this.spawnPipeline.restartThread(session, turn);
+    } catch (error) {
+      if (this.isCurrentSession(session)) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.structuredFailureReporter.capture(session, error);
+        this.enqueueRuntimeEvent(session.threadId, {
+          type: "error",
+          threadId: session.threadId,
+          message,
+        });
+        this.outputPipeline.updateState(session, "error", "none", message, {
+          forceCloseActiveTurn: true,
+        });
+      }
+      throw error;
+    }
   }
 
   private rememberRemovedThread(threadId: string): void {

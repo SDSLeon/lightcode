@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BROWSER_NOTIFICATION_PERMISSION_CHANGED_EVENT,
   setBrowserWebPushActive,
@@ -65,13 +65,21 @@ export function usePushLifecycle(input: PushLifecycleInput): void {
   // Installed PWA Web Push registration. Permission is requested from a user
   // gesture in either the launch disclosure or settings; this effect consumes
   // a granted permission and binds the browser subscription to the paired desktop.
+  // The permission revision arrives as a counter while the connection identity
+  // stays stable — it is folded into the binding key so the effect consumes it
+  // as a genuine input instead of a trigger-only dependency.
+  const pushBindingKey = `${desktopId ?? ""}\0${endpoint ?? ""}\0${accessToken ?? ""}\0${connected}\0${notificationsEnabled}\0${browserPermissionRevision}`;
+  const activeBindingKeyRef = useRef(pushBindingKey);
   useEffect(() => {
+    activeBindingKeyRef.current = pushBindingKey;
+    const capturedKey = pushBindingKey;
+    const keyFresh = () => activeBindingKeyRef.current === capturedKey;
     if (!desktopId || !endpoint || !accessToken) return;
     let cancelled = false;
     const client = createBackgroundRemoteClient(endpoint, accessToken);
     void (async () => {
       const deviceId = await getOrCreateBrowserDeviceId();
-      if (cancelled) return;
+      if (cancelled || !keyFresh()) return;
       if (!notificationsEnabled) {
         await unregisterWebPush(client, deviceId);
         return;
@@ -91,12 +99,5 @@ export function usePushLifecycle(input: PushLifecycleInput): void {
     return () => {
       cancelled = true;
     };
-  }, [
-    browserPermissionRevision,
-    connected,
-    desktopId,
-    endpoint,
-    accessToken,
-    notificationsEnabled,
-  ]);
+  }, [pushBindingKey, connected, desktopId, endpoint, accessToken, notificationsEnabled]);
 }

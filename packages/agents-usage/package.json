@@ -14,7 +14,7 @@
     "usage"
   ],
   "license": "Apache-2.0",
-  "author": "SDSLeon",
+  "author": "Porabuild",
   "files": [
     "dist",
     "src"
@@ -49,6 +49,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "zod": "^4.4.3"
-  }
+    "zod": "^4.5.4"
+  },
+  "packageManager": "pnpm@12.2.1"
 }

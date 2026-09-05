@@ -161,22 +161,22 @@ describe("buildMentionResults", () => {
   });
 
   it("matches a stable alias while preserving the localized display name", () => {
-    const localizedTerminal: McpMentionItem = {
-      id: "app-controls",
-      name: "Терминал",
-      searchAliases: ["Terminal"],
+    const localizedServer: McpMentionItem = {
+      id: "figma-id",
+      name: "Фигма",
+      searchAliases: ["Figma"],
       icon: Monitor,
-      detail: "Терминал",
+      detail: "Фигма",
       enabled: true,
     };
 
-    expect(buildMentionResults([], "ter", [localizedTerminal])).toEqual([
+    expect(buildMentionResults([], "fig", [localizedServer])).toEqual([
       {
         type: "mcp",
-        path: "app-controls",
-        name: "Терминал",
+        path: "figma-id",
+        name: "Фигма",
         icon: Monitor,
-        detail: "Терминал",
+        detail: "Фигма",
         enabled: true,
       },
     ]);
@@ -294,6 +294,94 @@ describe("buildMentionResults", () => {
     ]);
   });
 
+  it("matches threads by worktree name and displays full worktree name in detail", () => {
+    const results = buildMentionResults(
+      [],
+      "gpu-support",
+      [],
+      [],
+      [
+        {
+          threadId: "thread-gpu",
+          title: "Add full GPU support for macOS and Linux",
+          updatedAt: "2026-08-29T00:00:00.000Z",
+          worktreeName: "poracode-feature-gpu-support-b127b363",
+        },
+        {
+          threadId: "thread-gpu-ws",
+          title: "Add full GPU support for macOS and Linux",
+          updatedAt: "2026-08-29T00:00:00.000Z",
+          projectName: "Lightcode",
+          worktreeName: "poracode-feature-gpu-support-b127b363",
+        },
+      ],
+    );
+
+    expect(results).toEqual([
+      {
+        type: "thread",
+        path: "thread-gpu",
+        name: "Add full GPU support for macOS and Linux",
+        detail: "poracode-feature-gpu-support-b127b363",
+      },
+      {
+        type: "thread",
+        path: "thread-gpu-ws",
+        name: "Add full GPU support for macOS and Linux",
+        detail: "Lightcode · poracode-feature-gpu-support-b127b363",
+      },
+    ]);
+  });
+
+  it("does not match short hex queries against thread ids over title matches", () => {
+    const results = buildMentionResults(
+      [],
+      "ed",
+      [],
+      [],
+      [
+        {
+          threadId: "b1ededed-2222-4333-8444-555555555555",
+          title: "Worktree sync task",
+          updatedAt: "2026-08-29T10:00:00.000Z",
+        },
+        {
+          threadId: "aaaaaaaa-1111-4222-8333-666666666666",
+          title: "Editor polish",
+          updatedAt: "2026-08-29T09:00:00.000Z",
+        },
+      ],
+    );
+
+    expect(results).toEqual([
+      {
+        type: "thread",
+        path: "aaaaaaaa-1111-4222-8333-666666666666",
+        name: "Editor polish",
+        detail: "66666666",
+      },
+    ]);
+  });
+
+  it("matches thread ids once the query is long enough", () => {
+    const results = buildMentionResults(
+      [],
+      "66666666",
+      [],
+      [],
+      [
+        {
+          threadId: "aaaaaaaa-1111-4222-8333-666666666666",
+          title: "Something else",
+          updatedAt: "2026-08-29T10:00:00.000Z",
+        },
+      ],
+    );
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.path).toBe("aaaaaaaa-1111-4222-8333-666666666666");
+  });
+
   it("inserts a thread mention chip that round-trips its title and id", () => {
     const ref = createRef<MentionInputHandle>();
     render(
@@ -322,6 +410,8 @@ describe("buildMentionResults", () => {
     expect(chip).not.toBeNull();
     expect(chip).toHaveAttribute("data-thread-mention-id", "thread-1");
     expect(chip).toHaveAttribute("data-thread-mention-title", "Fix the composer");
+    expect(chip).toHaveClass("poracode-thread-mention-chip");
+    expect(chip).toHaveAttribute("title", "Fix the composer");
     expect(ref.current?.serializeSegments()).toEqual([
       { kind: "thread", threadId: "thread-1", title: "Fix the composer" },
       { kind: "text", content: " " },
@@ -430,6 +520,10 @@ describe("plugin mention selection", () => {
     fireEvent.keyDown(editor, { key: "Enter" });
 
     expect(editor.querySelector('[data-plugin-id="github"]')).toHaveTextContent("GitHub");
+    expect(editor.querySelector('[data-plugin-id="github"]')).toHaveAttribute(
+      "aria-label",
+      "GitHub",
+    );
     expect(ref.current?.serializeSegments()).toEqual([
       {
         kind: "skill",
@@ -443,6 +537,43 @@ describe("plugin mention selection", () => {
       },
       { kind: "text", content: " " },
     ]);
+  });
+
+  it("turns on the built-in servers whose mention rows the plugin replaces", () => {
+    const onMcpMentionSelect = vi.fn<(id: string) => void>();
+    render(
+      createElement(MentionInput, {
+        placeholder: "Send a message...",
+        projectLocation: undefined,
+        onTextChange: vi.fn<(hasText: boolean) => void>(),
+        onSubmit: vi.fn<(segments: PromptSegment[]) => void>(),
+        onMcpMentionSelect,
+        pluginMentions: [
+          {
+            id: "browser-tools",
+            name: "Browser",
+            enablesMcpServerIds: ["browser"],
+            command: {
+              id: "browser-control",
+              label: "Browser Control",
+              skillName: "browser-control",
+              skillPath: String.raw`C:\plugins\browser-tools\skills\browser-control\SKILL.md`,
+              skillInvocation: "$browser-control",
+              skillProvider: "Browser",
+              skillScope: "global",
+              pluginId: "browser-tools",
+              pluginName: "Browser",
+            },
+          },
+        ],
+      }),
+    );
+
+    const editor = typeMention("bro");
+    fireEvent.keyDown(editor, { key: "Enter" });
+
+    expect(editor.querySelector('[data-plugin-id="browser-tools"]')).not.toBeNull();
+    expect(onMcpMentionSelect).toHaveBeenCalledWith("browser");
   });
 });
 

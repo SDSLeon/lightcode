@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assistantDisplayText } from "@/shared/assistantMessageText";
 import type {
   AgentKind,
   Project,
@@ -735,16 +736,24 @@ function waitSnapshot(
 }
 
 /** Best-effort plain-text projection of a persisted runtime item's streams. */
-function itemText(item: { payload?: unknown; streams: Record<string, string> }): string {
+function itemText(item: {
+  type: string;
+  state: "started" | "updated" | "completed";
+  payload?: unknown;
+  streams: Record<string, string>;
+}): string {
+  // Assistant messages go through the shared display-truth helper so text a
+  // display hook rewrote or suppressed reads the same here as on screen.
+  const assistantText = item.type === "assistant_message" ? assistantDisplayText(item) : undefined;
   const streamed = Object.values(item.streams).join("").trim();
-  if (streamed) return streamed;
+  if (streamed && assistantText === undefined) return streamed;
   const payload = messageItemPayloadSchema.safeParse(item.payload);
-  if (!payload.success) return "";
-  return payload.data.content
+  if (!payload.success) return assistantText?.trim() ?? "";
+  const payloadText = payload.data.content
     .map((block) => {
       switch (block.kind) {
         case "text":
-          return block.text;
+          return assistantText === undefined ? block.text : "";
         case "skill":
           return block.pluginName ? `@${block.pluginName}` : block.invocation;
         case "mcp":
@@ -761,6 +770,7 @@ function itemText(item: { payload?: unknown; streams: Record<string, string> }):
     })
     .join("")
     .trim();
+  return [assistantText?.trim(), payloadText].filter(Boolean).join("\n");
 }
 
 function truncate(text: string, max: number): string {

@@ -96,6 +96,19 @@ data class ProcedurerenameProjectEntryRequest_4a22ffc9b4(
 }
 
 @Serializable
+data class ProcedurerollbackThreadConversationRequestU2DConfigU2DExecutionEnvironment_4cd2587996(
+    @SerialName("distro") val distro: String,
+    @SerialName("kind") val kind: ProcedurebeginMcpServerOauthRequestU2DProjectLocationU2DOptionU2D2U2DKind_2d8274eae5,
+) {
+    companion object {
+        val descriptor = RemoteModelDescriptor(RemoteUnknownFieldPolicy.STRIP, listOf(
+            RemoteFieldDescriptor("distro", "String", true, false, null, null, 1, null, null, null, null, null, listOf()),
+            RemoteFieldDescriptor("kind", "ProcedurebeginMcpServerOauthRequestU2DProjectLocationU2DOptionU2D2U2DKind_2d8274eae5", true, false, null, null, null, null, null, null, null, null, listOf()),
+        ), listOf())
+    }
+}
+
+@Serializable
 enum class ProcedurerollbackThreadConversationRequestU2DConfigU2DMode_01e21946e9 {
     @SerialName("agent") AGENT,
     @SerialName("plan") PLAN,
@@ -103,7 +116,7 @@ enum class ProcedurerollbackThreadConversationRequestU2DConfigU2DMode_01e21946e9
 }
 
 @Serializable
-data class ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a(
+data class ProcedurerollbackThreadConversationRequestU2DConfig_023567f089(
     @SerialName("approvalPolicy") val approvalPolicy: RemoteField<String> = RemoteField.Missing,
     @SerialName("approvalsReviewer") val approvalsReviewer: RemoteField<String> = RemoteField.Missing,
     @SerialName("browserMcp") val browserMcp: RemoteField<Boolean> = RemoteField.Missing,
@@ -112,6 +125,7 @@ data class ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a(
     @SerialName("contextSize") val contextSize: RemoteField<String> = RemoteField.Missing,
     @SerialName("crossagentMcp") val crossagentMcp: RemoteField<Boolean> = RemoteField.Missing,
     @SerialName("effort") val effort: RemoteField<String> = RemoteField.Missing,
+    @SerialName("executionEnvironment") val executionEnvironment: RemoteField<ProcedurerollbackThreadConversationRequestU2DConfigU2DExecutionEnvironment_4cd2587996> = RemoteField.Missing,
     @SerialName("fast") val fast: RemoteField<Boolean> = RemoteField.Missing,
     @SerialName("mode") val mode: RemoteField<ProcedurerollbackThreadConversationRequestU2DConfigU2DMode_01e21946e9> = RemoteField.Missing,
     @SerialName("model") val model: String,
@@ -128,6 +142,7 @@ data class ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a(
             RemoteFieldDescriptor("contextSize", "String", false, false, null, null, null, null, null, null, null, null, listOf()),
             RemoteFieldDescriptor("crossagentMcp", "Boolean", false, false, null, null, null, null, null, null, null, null, listOf()),
             RemoteFieldDescriptor("effort", "String", false, false, null, null, null, null, null, null, null, null, listOf()),
+            RemoteFieldDescriptor("executionEnvironment", "ProcedurerollbackThreadConversationRequestU2DConfigU2DExecutionEnvironment_4cd2587996", false, false, null, null, null, null, null, null, null, null, listOf()),
             RemoteFieldDescriptor("fast", "Boolean", false, false, null, null, null, null, null, null, null, null, listOf()),
             RemoteFieldDescriptor("mode", "ProcedurerollbackThreadConversationRequestU2DConfigU2DMode_01e21946e9", false, false, null, null, null, null, null, null, null, null, listOf()),
             RemoteFieldDescriptor("model", "String", true, false, null, null, 1, null, null, null, null, null, listOf()),
@@ -138,14 +153,14 @@ data class ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a(
 }
 
 @Serializable
-data class ProcedurerollbackThreadConversationRequest_257f5640a1(
-    @SerialName("config") val config: RemoteField<ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a> = RemoteField.Missing,
+data class ProcedurerollbackThreadConversationRequest_b50a220194(
+    @SerialName("config") val config: RemoteField<ProcedurerollbackThreadConversationRequestU2DConfig_023567f089> = RemoteField.Missing,
     @SerialName("numTurns") val numTurns: Long,
     @SerialName("threadId") val threadId: String,
 ) {
     companion object {
         val descriptor = RemoteModelDescriptor(RemoteUnknownFieldPolicy.STRIP, listOf(
-            RemoteFieldDescriptor("config", "ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a", false, false, null, null, null, null, null, null, null, null, listOf()),
+            RemoteFieldDescriptor("config", "ProcedurerollbackThreadConversationRequestU2DConfig_023567f089", false, false, null, null, null, null, null, null, null, null, listOf()),
             RemoteFieldDescriptor("numTurns", "Long", true, false, 0.0, 9007199254740991.0, null, null, null, null, null, null, listOf()),
             RemoteFieldDescriptor("threadId", "String", true, false, null, null, 1, null, null, null, null, null, listOf()),
         ), listOf())
@@ -428,9 +443,4 @@ data class ProcedurestageThreadInputRequestU2DSegmentsU2DItemU2DOptionU2D2_12ca2
             RemoteFieldDescriptor("path", "String", true, false, null, null, null, null, null, null, null, null, listOf()),
         ), listOf())
     }
-}
-
-@Serializable
-enum class ProcedurestageThreadInputRequestU2DSegmentsU2DItemU2DOptionU2D3U2DKind_7db74ec55c {
-    @SerialName("attachment") ATTACHMENT,
 }

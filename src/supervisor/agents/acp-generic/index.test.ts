@@ -66,6 +66,47 @@ describe("createAcpGenericAdapter", () => {
     expect(typeof adapter.createStructuredSession).toBe("function");
   });
 
+  it("forwards a first-class provider session behavior profile", async () => {
+    const sessionBehavior = {
+      suppressOutputAfterInterrupt: true,
+      suppressStderrLogging: true,
+    } as const;
+    const adapter = createAcpGenericAdapter(baseInstance, { sessionBehavior });
+
+    await adapter.createStructuredSession?.({
+      threadId: "thread-behavior",
+      projectLocation:
+        process.platform === "win32"
+          ? { kind: "windows", path: process.cwd() }
+          : { kind: "posix", path: process.cwd() },
+      config: { model: "test" },
+      presentationMode: "gui",
+    });
+
+    expect(vi.mocked(createAcpStructuredSession).mock.calls.at(-1)?.[2]).toEqual({
+      behavior: sessionBehavior,
+    });
+  });
+
+  it("forwards a provider text-stream extension to the shared ACP session", async () => {
+    const textStreamExtension = { id: "vendor.taskNotifications" };
+    const adapter = createAcpGenericAdapter(baseInstance, { textStreamExtension });
+
+    await adapter.createStructuredSession?.({
+      threadId: "thread-extension",
+      projectLocation:
+        process.platform === "win32"
+          ? { kind: "windows", path: process.cwd() }
+          : { kind: "posix", path: process.cwd() },
+      config: { model: "test" },
+      presentationMode: "gui",
+    });
+
+    expect(vi.mocked(createAcpStructuredSession).mock.calls.at(-1)?.[2]).toEqual({
+      textStreamExtension,
+    });
+  });
+
   it("falls back to the binary as a label when displayName is omitted", () => {
     const adapter = createAcpGenericAdapter({ ...baseInstance, displayName: undefined });
     expect(adapter.label).toBe("my-acp");
@@ -216,38 +257,6 @@ describe("createAcpGenericAdapter", () => {
     expect(status.capabilities.modelEfforts).toEqual({ model: ["High"] });
   });
 
-  it("normalizes Factory Droid model rates at the provider boundary", async () => {
-    vi.mocked(probeAcpCapabilities).mockResolvedValue({
-      models: [
-        {
-          id: "glm-5.1",
-          label: "Droid Core (GLM-5.1)",
-          description: "0.55x Factory token rate",
-        },
-        {
-          id: "auto",
-          label: "Auto",
-          description: "Let Droid choose the best model",
-        },
-      ],
-    });
-    const adapter = createAcpGenericAdapter({
-      ...baseInstance,
-      id: "factory-droid",
-      displayName: "Factory Droid",
-    });
-    const status = await adapter.detectInstall();
-    expect(status.capabilities.models).toEqual([
-      {
-        id: "glm-5.1",
-        label: "Droid Core (GLM-5.1)",
-        description: "0.55x",
-        tooltipDescription: "0.55x Factory token rate",
-      },
-      { id: "auto", label: "Auto", description: "Let Droid choose the best model" },
-    ]);
-  });
-
   it("repairs an existing Factory Droid daemon command before launch", async () => {
     const adapter = createAcpGenericAdapter({
       ...baseInstance,
@@ -272,20 +281,20 @@ describe("createAcpGenericAdapter", () => {
     expect(launchArgs.join(" ")).not.toContain("acp-daemon");
   });
 
-  it("does not parse token-rate prose for other ACP-generic instances", async () => {
+  it("preserves model descriptions without a normalization hook", async () => {
     vi.mocked(probeAcpCapabilities).mockResolvedValue({
       models: [
         {
           id: "glm-5.1",
           label: "GLM-5.1",
-          description: "0.55x Factory token rate",
+          description: "0.55x provider token rate",
         },
       ],
     });
     const adapter = createAcpGenericAdapter(baseInstance);
     const status = await adapter.detectInstall();
     expect(status.capabilities.models).toEqual([
-      { id: "glm-5.1", label: "GLM-5.1", description: "0.55x Factory token rate" },
+      { id: "glm-5.1", label: "GLM-5.1", description: "0.55x provider token rate" },
     ]);
   });
 

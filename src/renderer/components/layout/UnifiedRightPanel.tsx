@@ -1,10 +1,24 @@
 import { type CSSProperties, type ReactNode, useRef } from "react";
-import { Lock, LockOpen, Maximize2, PanelRightClose, PictureInPicture2, X } from "lucide-react";
+import { Dropdown, Label } from "@heroui/react";
+import {
+  Ellipsis,
+  Lock,
+  LockOpen,
+  Maximize2,
+  PanelRightClose,
+  PictureInPicture2,
+  X,
+} from "lucide-react";
 import { useLingui } from "@lingui/react/macro";
 import { PanelHeaderProjectName } from "@/renderer/components/layout/PanelHeaderProjectName";
 import { PanelDockDropZone } from "@/renderer/components/layout/PanelDock/PanelDockDropZone";
 import { PanelSectionHeader } from "@/renderer/components/layout/PanelDock/PanelSectionHeader";
 import { PanelTabDragButton } from "@/renderer/components/layout/PanelDock/PanelTabDragButton";
+import {
+  type PanelHeaderControlId,
+  resolvePanelHeaderOverflow,
+  usePanelHeaderAvailableWidth,
+} from "@/renderer/components/layout/PanelDock/panelHeaderOverflow";
 import {
   PANEL_TAB_ICONS,
   usePanelTabLabels,
@@ -29,7 +43,7 @@ export function UnifiedRightPanel(props: {
   usageContent?: ReactNode;
   notesContent?: ReactNode;
   portsContent?: ReactNode;
-  planContent?: ReactNode;
+  docksContent?: ReactNode;
   subagentContent?: ReactNode;
   subagentModel?: ReactNode;
   subagentTitle?: ReactNode;
@@ -37,13 +51,15 @@ export function UnifiedRightPanel(props: {
   usageHeaderActions?: ReactNode;
   /** Tab-specific action buttons rendered in the header when the ports tab is active. */
   portsHeaderActions?: ReactNode;
+  /** Tab-specific action buttons rendered in the header when the docks tab is active. */
+  docksHeaderActions?: ReactNode;
   showTerminalTab?: boolean;
   showFilesTab?: boolean;
   showGitTab?: boolean;
   showUsageTab?: boolean;
   showNotesTab?: boolean;
   showPortsTab?: boolean;
-  showPlanTab?: boolean;
+  showDocksTab?: boolean;
   showSubagentTab?: boolean;
   showBrowserTab?: boolean;
   onCloseSubagent?: () => void;
@@ -81,19 +97,20 @@ export function UnifiedRightPanel(props: {
     usageContent,
     notesContent,
     portsContent,
-    planContent,
+    docksContent,
     subagentContent,
     subagentModel,
     subagentTitle,
     usageHeaderActions,
     portsHeaderActions,
+    docksHeaderActions,
     showTerminalTab = true,
     showFilesTab = true,
     showGitTab = true,
     showUsageTab = true,
     showNotesTab = true,
     showPortsTab = false,
-    showPlanTab = false,
+    showDocksTab = false,
     showSubagentTab = false,
     showBrowserTab = true,
     onCloseSubagent,
@@ -120,6 +137,15 @@ export function UnifiedRightPanel(props: {
   const { t } = useLingui();
   const splitContainerRef = useRef<HTMLDivElement>(null);
   const splitFirstPaneRef = useRef<HTMLDivElement>(null);
+  const headerRowRef = useRef<HTMLDivElement>(null);
+  const headerLeadingRef = useRef<HTMLDivElement>(null);
+  const headerAccessoryRef = useRef<HTMLDivElement>(null);
+  const headerAvailableWidth = usePanelHeaderAvailableWidth(
+    headerRowRef,
+    headerLeadingRef,
+    headerAccessoryRef,
+    activeTab,
+  );
   const {
     percent: splitPercent,
     minPercent: splitMinPercent,
@@ -152,11 +178,11 @@ export function UnifiedRightPanel(props: {
   const labels = usePanelTabLabels();
   const tabs = [
     {
-      id: "plan",
-      label: labels.plan,
-      icon: PANEL_TAB_ICONS.plan,
-      content: planContent,
-      visible: showPlanTab,
+      id: "docks",
+      label: labels.docks,
+      icon: PANEL_TAB_ICONS.docks,
+      content: docksContent,
+      visible: showDocksTab,
       onOpen: undefined,
     },
     {
@@ -233,76 +259,112 @@ export function UnifiedRightPanel(props: {
   const isTabOnScreen = (tab: RightPanelTab) =>
     tab === activeTab || tab === splitEntry?.id || dockedTabs.includes(tab);
 
+  const visibleTabs = tabs.filter((tab) => tab.visible);
+  const pressTab = (tab: (typeof tabs)[number]) => {
+    if (tab.onOpen) tab.onOpen();
+    else onTabChange(tab.id);
+  };
+
+  // Trailing header controls in row order; the close button is pinned and the
+  // rest fold into a "More" menu one by one as the panel narrows.
+  const headerControls: PanelHeaderControlId[] = [
+    ...visibleTabs.map((tab) => tab.id),
+    ...(onToggleFollowsThread ? (["lock"] as const) : []),
+    "close",
+  ];
+  const headerOverflow = resolvePanelHeaderOverflow(headerControls, headerAvailableWidth);
+  const overflowed = new Set(headerOverflow.overflowed);
+  const overflowedTabs = visibleTabs.filter((tab) => overflowed.has(tab.id));
+  const lockOverflowed = overflowed.has("lock");
+  const lockLabel = followsThread
+    ? t`Unlock panel from the open thread`
+    : t`Lock panel to the open thread`;
+  const overflowActive =
+    overflowedTabs.some((tab) => isTabOnScreen(tab.id)) || (lockOverflowed && followsThread);
+
   return (
     <div
       data-poracode-panel=""
       className="flex h-full min-h-0 flex-col bg-[var(--content-background)]"
     >
-      <div className={`poracode-overlay-header ${panelHeaderRowClass}`} data-active-tab={activeTab}>
-        {hasSubagentModel ? (
-          <div className="flex min-w-0 flex-1 items-center">{subagentModel}</div>
-        ) : projectName ? (
-          <PanelHeaderProjectName
-            name={projectName}
-            maxWidthClass="max-w-[100px]"
-            triggerClassName={dragCtl}
-          />
-        ) : null}
-        {hasSubagentModel ? null : <div className="flex-1" />}
-        {activeTab === "git" && onExpandGitToOverlay && (
-          <button
-            type="button"
-            className={`${dragCtl} ${panelHeaderIconButtonClass}`}
-            title={t`Maximize`}
-            onClick={onExpandGitToOverlay}
-          >
-            <Maximize2 className="size-3.5" />
-          </button>
-        )}
-        {activeTab === "files" && onExpandFilesToOverlay && (
-          <button
-            type="button"
-            className={`${dragCtl} ${panelHeaderIconButtonClass}`}
-            title={t`Maximize`}
-            onClick={onExpandFilesToOverlay}
-          >
-            <Maximize2 className="size-3.5" />
-          </button>
-        )}
-        {activeTab === "browser" && onExpandBrowserToOverlay && (
-          <button
-            type="button"
-            className={`${dragCtl} ${panelHeaderIconButtonClass}`}
-            title={t`Maximize`}
-            onClick={onExpandBrowserToOverlay}
-          >
-            <Maximize2 className="size-3.5" />
-          </button>
-        )}
-        {activeTab === "browser" && onExtractBrowserToWindow && (
-          <button
-            type="button"
-            className={`${dragCtl} ${panelHeaderIconButtonClass}`}
-            title={t`Move browser to window`}
-            onClick={onExtractBrowserToWindow}
-          >
-            <PictureInPicture2 className="size-3.5" />
-          </button>
-        )}
-        {activeTab === "usage" ? usageHeaderActions : null}
-        {activeTab === "ports" ? portsHeaderActions : null}
+      <div
+        ref={headerRowRef}
+        className={`poracode-overlay-header ${panelHeaderRowClass}`}
+        data-active-tab={activeTab}
+      >
+        {/* Leading content is capped so the trailing controls always keep a
+            measurable share of the row; the title truncates inside it. */}
+        <div
+          ref={headerLeadingRef}
+          className="flex min-w-0 max-w-[55%] shrink-0 items-center gap-1.5 overflow-hidden"
+        >
+          {hasSubagentModel ? (
+            <div className="flex min-w-0 flex-1 items-center">{subagentModel}</div>
+          ) : projectName ? (
+            <PanelHeaderProjectName
+              name={projectName}
+              maxWidthClass="max-w-[100px]"
+              triggerClassName={dragCtl}
+            />
+          ) : null}
+          {activeTab === "git" && onExpandGitToOverlay && (
+            <button
+              type="button"
+              className={`${dragCtl} ${panelHeaderIconButtonClass}`}
+              title={t`Maximize`}
+              onClick={onExpandGitToOverlay}
+            >
+              <Maximize2 className="size-3.5" />
+            </button>
+          )}
+          {activeTab === "files" && onExpandFilesToOverlay && (
+            <button
+              type="button"
+              className={`${dragCtl} ${panelHeaderIconButtonClass}`}
+              title={t`Maximize`}
+              onClick={onExpandFilesToOverlay}
+            >
+              <Maximize2 className="size-3.5" />
+            </button>
+          )}
+          {activeTab === "browser" && onExpandBrowserToOverlay && (
+            <button
+              type="button"
+              className={`${dragCtl} ${panelHeaderIconButtonClass}`}
+              title={t`Maximize`}
+              onClick={onExpandBrowserToOverlay}
+            >
+              <Maximize2 className="size-3.5" />
+            </button>
+          )}
+          {activeTab === "browser" && onExtractBrowserToWindow && (
+            <button
+              type="button"
+              className={`${dragCtl} ${panelHeaderIconButtonClass}`}
+              title={t`Move browser to window`}
+              onClick={onExtractBrowserToWindow}
+            >
+              <PictureInPicture2 className="size-3.5" />
+            </button>
+          )}
+          {activeTab === "usage" ? usageHeaderActions : null}
+          {activeTab === "ports" ? portsHeaderActions : null}
+        </div>
+        <div className="flex-1" />
+        <div
+          ref={headerAccessoryRef}
+          className={activeTab === "docks" && docksHeaderActions ? "flex shrink-0" : "hidden"}
+        >
+          {activeTab === "docks" ? docksHeaderActions : null}
+        </div>
         <div className="mx-0.5 h-3 w-px bg-border" />
-        {tabs.map((tab) => {
-          if (!tab.visible) return null;
+        {visibleTabs.map((tab) => {
+          if (overflowed.has(tab.id)) return null;
           const Icon = tab.icon;
           // Lit whenever the panel is painted somewhere — the active layer, the
           // split half, or a bottom dock slot.
           const onScreen = isTabOnScreen(tab.id);
           const buttonClass = `${dragCtl} ${panelHeaderTabIconButtonClass(onScreen)}`;
-          const handlePress = () => {
-            if (tab.onOpen) tab.onOpen();
-            else onTabChange(tab.id);
-          };
           if (DOCKABLE_PANEL_TABS.has(tab.id)) {
             return (
               <PanelTabDragButton
@@ -311,7 +373,7 @@ export function UnifiedRightPanel(props: {
                 label={tab.label}
                 className={buttonClass}
                 aria-pressed={onScreen}
-                onPress={handlePress}
+                onPress={() => pressTab(tab)}
               >
                 <Icon className="size-3.5" />
               </PanelTabDragButton>
@@ -324,26 +386,71 @@ export function UnifiedRightPanel(props: {
               className={buttonClass}
               title={tab.label}
               aria-pressed={onScreen}
-              onClick={handlePress}
+              onClick={() => pressTab(tab)}
             >
               <Icon className="size-3.5" />
             </button>
           );
         })}
-        {onToggleFollowsThread ? (
+        {onToggleFollowsThread && !lockOverflowed ? (
           <button
             type="button"
             className={`${dragCtl} ${panelHeaderTabIconButtonClass(followsThread)}`}
-            title={
-              followsThread
-                ? t`Unlock panel from the open thread`
-                : t`Lock panel to the open thread`
-            }
+            title={lockLabel}
             aria-pressed={followsThread}
             onClick={onToggleFollowsThread}
           >
             {followsThread ? <Lock className="size-3.5" /> : <LockOpen className="size-3.5" />}
           </button>
+        ) : null}
+        {headerOverflow.showTrigger ? (
+          <Dropdown>
+            <Dropdown.Trigger
+              aria-label={t`More`}
+              // Stands in for the icons it hides, so it carries their lit state.
+              className={`${dragCtl} ${panelHeaderTabIconButtonClass(overflowActive)}`}
+            >
+              <Ellipsis className="size-3.5" />
+            </Dropdown.Trigger>
+            <Dropdown.Popover placement="bottom end">
+              <Dropdown.Menu
+                aria-label={t`More`}
+                className="poracode-menu min-w-48"
+                onAction={(key) => {
+                  if (key === "lock") {
+                    onToggleFollowsThread?.();
+                    return;
+                  }
+                  const tab = overflowedTabs.find((entry) => entry.id === String(key));
+                  if (tab) pressTab(tab);
+                }}
+              >
+                {overflowedTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <Dropdown.Item key={tab.id} id={tab.id} textValue={tab.label}>
+                      <span className="flex size-4 shrink-0 items-center justify-center text-muted">
+                        <Icon className="size-3.5" />
+                      </span>
+                      <Label>{tab.label}</Label>
+                    </Dropdown.Item>
+                  );
+                })}
+                {lockOverflowed ? (
+                  <Dropdown.Item key="lock" id="lock" textValue={lockLabel}>
+                    <span className="flex size-4 shrink-0 items-center justify-center text-muted">
+                      {followsThread ? (
+                        <Lock className="size-3.5" />
+                      ) : (
+                        <LockOpen className="size-3.5" />
+                      )}
+                    </span>
+                    <Label>{lockLabel}</Label>
+                  </Dropdown.Item>
+                ) : null}
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown>
         ) : null}
         <button
           type="button"

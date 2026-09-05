@@ -132,6 +132,8 @@ describe("sharedSettingsFile", () => {
       acpRegistryAutoInstallOptOuts: [],
       agentInstances: {},
       collapseTerminalComposer: false,
+      threadDocksPlacement: "composer",
+      threadDocksOrder: ["goal", "plan", "agents", "backgroundTasks", "images"],
       cliPickerTarget: "ask",
       staleThreadUnloadMinutes: 20,
       autoArchiveDoneAfterDays: 7,
@@ -274,6 +276,8 @@ describe("sharedSettingsFile", () => {
       acpRegistryAutoInstallOptOuts: [],
       agentInstances: {},
       collapseTerminalComposer: false,
+      threadDocksPlacement: "composer",
+      threadDocksOrder: ["goal", "plan", "agents", "backgroundTasks", "images"],
       cliPickerTarget: "ask",
       staleThreadUnloadMinutes: 20,
       autoArchiveDoneAfterDays: 7,
@@ -515,6 +519,24 @@ describe("sharedSettingsFile", () => {
       transcriptionLanguage: "en",
       transcriptionModel: "tiny",
       useWebGpu: true,
+    });
+  });
+
+  it("defaults compact composer and thread dock settings for older files", () => {
+    const settingsPath = join(makeTempDir(), "settings.json");
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({
+        themeMode: "dark",
+      }),
+      "utf8",
+    );
+
+    expect(readSharedSettingsFile(settingsPath)).toMatchObject({
+      themeMode: "dark",
+      collapseTerminalComposer: true,
+      threadDocksPlacement: "right",
+      threadDocksOrder: ["goal", "plan", "agents", "backgroundTasks", "images"],
     });
   });
 

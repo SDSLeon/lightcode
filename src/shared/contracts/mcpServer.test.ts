@@ -3,6 +3,7 @@ import {
   BUILT_IN_MCP_SERVER_TOOL_COUNTS,
   BUILT_IN_MCP_SERVER_TOOL_NAMES,
   builtInMcpServerDisabledSchema,
+  builtInMcpDisabledToolsSchema,
   discoverExternalMcpServersPayloadSchema,
   isReservedMcpServerName,
   isValidMcpServerName,
@@ -10,6 +11,7 @@ import {
   mcpExternalServerCandidateSchema,
   mcpServerSchema,
   mergeMcpServers,
+  normalizeBuiltInMcpDisabledTools,
   resolveEnabledMcpServers,
   type McpServer,
 } from "./mcpServer";
@@ -31,6 +33,28 @@ function server(id: string, name: string, enabled = true): McpServer {
 }
 
 describe("mcpServerSchema", () => {
+  it("keeps the disabled-tools schema transform-free for the remote-v3 wire", () => {
+    // Legacy normalization lives at the settings load boundary
+    // (normalizeBuiltInMcpDisabledTools); parsing itself must not transform.
+    expect(
+      builtInMcpDisabledToolsSchema.parse({
+        chrome: ["chrome_click", "click"],
+        browser: ["fill"],
+      }),
+    ).toEqual({ chrome: ["chrome_click", "click"], browser: ["fill"] });
+  });
+  it("normalizes disabled tools from the previous Chrome catalogue at the load boundary", () => {
+    expect(
+      normalizeBuiltInMcpDisabledTools({
+        chrome: ["chrome_click", "click", "chrome_eval", "disable"],
+        browser: ["fill"],
+      }),
+    ).toEqual({ chrome: ["click", "eval", "disable"], browser: ["fill"] });
+    expect(normalizeBuiltInMcpDisabledTools({ browser: ["fill"] })).toEqual({
+      browser: ["fill"],
+    });
+    expect(normalizeBuiltInMcpDisabledTools({})).toEqual({});
+  });
   it("normalizes defaults for a canonical stdio server", () => {
     expect(
       mcpServerSchema.parse({

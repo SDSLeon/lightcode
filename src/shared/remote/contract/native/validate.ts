@@ -210,7 +210,7 @@ export function parseNativeBindingIr(raw: unknown, manifest: unknown): NativeBin
   const item = record(raw, "binding IR");
   if (item.contract !== "poracode.remote")
     throw new Error("binding IR contract must be poracode.remote");
-  if (item.protocolVersion !== 8)
+  if (item.protocolVersion !== 9)
     throw new Error(`unsupported protocol version ${String(item.protocolVersion)}`);
   if (item.bindingFormatVersion !== 2)
     throw new Error(`unsupported binding format ${String(item.bindingFormatVersion)}`);
@@ -305,7 +305,7 @@ export function parseNativeBindingIr(raw: unknown, manifest: unknown): NativeBin
 
   return {
     contract: "poracode.remote",
-    protocolVersion: 8,
+    protocolVersion: 9,
     bindingFormatVersion: 2,
     generatorVersion: 3,
     manifestFormatVersion: 1,

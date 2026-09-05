@@ -153,7 +153,6 @@ describe("ThreadUsageBubble", () => {
         errorDockStates={[]}
         onGoalDockDismiss={() => undefined}
         onDismissError={() => undefined}
-        onTodoDockPlacementChange={() => undefined}
         hidden={false}
         usageThread={thread}
       />,

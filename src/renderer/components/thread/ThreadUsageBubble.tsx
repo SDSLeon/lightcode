@@ -53,6 +53,30 @@ function useThreadUsagePresentation(thread: Thread) {
   };
 }
 
+/**
+ * Hydrates the provider-usage store when a thread opens. Mounted with
+ * `key={thread.id}` so the mount-only fetch re-runs on every thread switch.
+ * Best-effort: a missing or failing usage endpoint must never break the
+ * thread view.
+ */
+function ThreadUsageHydration() {
+  useEffect(() => {
+    let cancelled = false;
+    void readBridge()
+      .getProviderUsage({})
+      .then((result) => {
+        if (cancelled || !result) return;
+        const store = useProviderUsageStore.getState();
+        for (const incomingSnapshot of result.snapshots) store.mergeSnapshot(incomingSnapshot);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return null;
+}
+
 /** Thread context and provider quota windows that travel with the mobile composer. */
 export function ThreadUsageBubble(props: {
   readonly thread: Thread;
@@ -67,23 +91,9 @@ export function ThreadUsageBubble(props: {
     props.thread,
   );
 
-  useEffect(() => {
-    let cancelled = false;
-    void readBridge()
-      .getProviderUsage({})
-      .then((result) => {
-        if (cancelled || !result) return;
-        const store = useProviderUsageStore.getState();
-        for (const incomingSnapshot of result.snapshots) store.mergeSnapshot(incomingSnapshot);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [props.thread.id]);
-
   return (
     <>
+      <ThreadUsageHydration key={props.thread.id} />
       {props.contextSummary && props.onContextToggle ? (
         <button
           type="button"

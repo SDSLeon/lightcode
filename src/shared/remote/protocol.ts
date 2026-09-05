@@ -2,6 +2,7 @@ import { z } from "zod";
 import { sensitiveAgentSettingKeys } from "../agentSecrets";
 import {
   agentStatusSchema,
+  backgroundTaskSchema,
   cloneRepoSourceSchema,
   projectSchema,
   scheduledTaskIdPayloadSchema,
@@ -17,9 +18,9 @@ import { gitStateInterestSchema, gitStatePatchSchema, gitStateSnapshotSchema } f
 import { sharedSettingsSchema } from "../settings";
 import { userNotificationSchema } from "../threadNotification";
 
-// v8 adds thread prompt segments and canonical thread content blocks. Older
-// clients cannot paint or preserve those structured mentions correctly.
-export const PORACODE_REMOTE_PROTOCOL_VERSION = 8;
+// v9 carries the selected execution environment in thread snapshots and
+// mutation payloads. Older clients would silently drop a pinned WSL distro.
+export const PORACODE_REMOTE_PROTOCOL_VERSION = 9;
 export const REMOTE_COMMAND_ID_HEADER = "x-poracode-command-id";
 
 export const remoteAccessScopeSchema = z.enum([
@@ -812,6 +813,8 @@ export const remoteThreadSnapshotSchema = z.object({
   runtimeNextCursor: z.number().int().nonnegative().nullable().optional(),
   completedTurns: z.array(persistedCompletedTurnSchema),
   contextUsage: threadContextUsageSchema.nullable(),
+  /** Authoritative live background work. Absent on legacy hosts. */
+  backgroundTasks: z.array(backgroundTaskSchema).optional(),
   terminalScrollback: z.string().optional(),
   terminalSize: terminalSizeSchema.optional(),
   updatedAt: z.string().min(1),

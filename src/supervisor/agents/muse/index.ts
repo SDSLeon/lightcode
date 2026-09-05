@@ -1,7 +1,14 @@
 import type { AgentCapability } from "@/shared/contracts";
-import { detectAgentInstall, type AgentAdapter, inheritBaseSpawnEnv } from "../base";
+import {
+  buildAgentLogoutCommand,
+  detectAgentInstall,
+  type CreateStructuredSessionInput,
+  type AgentAdapter,
+  inheritBaseSpawnEnv,
+} from "../base";
 import { buildMuseArgs, buildMuseResumeArgs } from "./argv";
 import { MUSE_DEFAULT_MODEL_ID, museDefaultCapabilities, museDetectionSpec } from "./detection";
+import { MuseMspStructuredSession } from "./msp/session";
 import { formatMusePromptSegments } from "./prompt";
 import {
   makeMuseDiscoverSessionRef,
@@ -12,11 +19,10 @@ import { detectMuseTerminalStatus, isMuseReadyForInitialPrompt } from "./termina
 
 // Muse Code provider — Meta's terminal coding agent CLI.
 // Docs: https://dev.meta.ai/docs/muse-code
-// Install: curl -fsSL https://dev.meta.ai/install.sh | sh
+// Install: curl -fsSL https://dev.meta.ai/install.sh | bash
 //
-// Terminal-only: interactive TUI via PTY. Muse has no ACP mode; a GUI
-// structured session is deliberately deferred until Muse ships real ACP
-// support (then wire it through the shared ACP client like Grok/Kimi/Qwen).
+// Terminal uses the interactive TUI via PTY; GUI uses Muse Session Protocol
+// (`muse serve` over stdio) through the provider-local structured session.
 
 export function createMuseAdapter(): AgentAdapter {
   let capabilities: AgentCapability = museDefaultCapabilities;
@@ -25,6 +31,7 @@ export function createMuseAdapter(): AgentAdapter {
     kind: museDetectionSpec.kind,
     label: museDetectionSpec.label,
     binary: museDetectionSpec.binary,
+    windowsProjectExecution: "wsl",
     // Surface the update spec on the adapter so the shared updater and the
     // Settings registry card can read `adapter.update` (not just status).
     ...(museDetectionSpec.update ? { update: museDetectionSpec.update } : {}),
@@ -54,6 +61,8 @@ export function createMuseAdapter(): AgentAdapter {
     buildResumeArgv(_location, config, _prompt, sessionRef) {
       const id = sessionRef.providerSessionId;
       // Degenerate/legacy ref: resume the most recent session in this workspace.
+      // Verified benign on real 1.0.2 with an empty store: `resume --last`
+      // exits 0 with `no retained sessions found for this workspace`.
       const args = id
         ? buildMuseResumeArgs(id, config)
         : ["resume", "--last", ...buildMuseArgs(config)];
@@ -65,6 +74,11 @@ export function createMuseAdapter(): AgentAdapter {
       return undefined;
     },
 
+    async createStructuredSession(input: CreateStructuredSessionInput) {
+      if (input.presentationMode !== "gui") return undefined;
+      return MuseMspStructuredSession.create(input);
+    },
+
     // Muse writes the date-sharded session dir shortly after launch; poll a
     // beat afterward and rely on watchSessionRef to catch creation.
     initialSessionRefDiscoveryDelayMs: 1000,
@@ -74,7 +88,7 @@ export function createMuseAdapter(): AgentAdapter {
     buildDirectInput(prompt) {
       // The TUI treats bulk writes as paste, so an embedded `\r` becomes a
       // literal newline. Pause briefly between text and Enter (kimi-style).
-      return [prompt, "@wait:200", "\r"];
+      return [prompt, "@wait:200", "\x1b[13;1u"];
     },
 
     // `muse resume <uuid>` accepts no positional prompt. Always hand the first
@@ -89,6 +103,10 @@ export function createMuseAdapter(): AgentAdapter {
     formatPromptSegments: formatMusePromptSegments,
 
     detectTerminalStatus: detectMuseTerminalStatus,
+
+    // `muse logout` removes the saved Meta credential (API key or login);
+    // the shared registry logout action drives this on explicit user action.
+    buildAcpLogoutCommand: buildAgentLogoutCommand("muse", ["logout"]),
 
     // `muse exec` requires the prompt as an argv argument (stdin and
     // /dev/stdin prompt files are unsupported), which matches the shared

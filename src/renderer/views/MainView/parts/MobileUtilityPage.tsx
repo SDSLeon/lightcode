@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useAppStore } from "@/renderer/state/appStore";
 import { useBrowserPanelStore } from "@/renderer/state/browserPanelStore";
 import { usePanelStore } from "@/renderer/state/panelStore";
@@ -55,11 +55,11 @@ export function MobileUtilityPage() {
     selectedServer ? state.lastKnownProjects[selectedServer.desktopId] : undefined,
   );
 
-  useEffect(() => {
-    if (selectedDesktopId && !servers.some((server) => server.desktopId === selectedDesktopId)) {
-      setSelectedDesktopId(null);
-    }
-  }, [selectedDesktopId, servers]);
+  // Drop a disconnected desktop selection during render so the page never
+  // paints a frame for a desktop that is no longer paired.
+  if (selectedDesktopId && !servers.some((server) => server.desktopId === selectedDesktopId)) {
+    setSelectedDesktopId(null);
+  }
 
   const changeDesktop = (desktopId: string | null) => {
     if (!desktopId) return;

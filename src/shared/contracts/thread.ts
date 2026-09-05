@@ -171,6 +171,23 @@ export const promptSegmentSchema = z.discriminatedUnion("kind", [
 export type PromptSegment = z.infer<typeof promptSegmentSchema>;
 
 /**
+ * How a handoff transfers the prior conversation to the incoming provider:
+ *
+ * - "thread-transcript": the new provider reads the stored rows itself — its
+ *   own thread on a chat→chat switch, the source thread through a thread
+ *   mention on a fork. Only chat sources qualify, because only they keep
+ *   persisted rows.
+ * - "context-file": the prior conversation travels with the prompt as a written
+ *   context file (an extracted summary, or the stored transcript).
+ *
+ * Absent means "context-file": a client that predates this field always sends
+ * its context with the prompt, so the supervisor must not assume otherwise.
+ * See {@link resolveProviderHandoffStrategy} for the routing itself.
+ */
+export const providerHandoffContextStrategySchema = z.enum(["thread-transcript", "context-file"]);
+export type ProviderHandoffContextStrategy = z.infer<typeof providerHandoffContextStrategySchema>;
+
+/**
  * Set when a launch continues an existing thread under a different provider.
  * The supervisor records the switch as a `provider_handoff` divider ahead of
  * the prompt, reusing `handoffItemId` so a renderer's optimistic row dedupes
@@ -180,6 +197,13 @@ export type PromptSegment = z.infer<typeof promptSegmentSchema>;
 export const providerSwitchSchema = z.object({
   fromAgentKind: agentKindSchema,
   handoffItemId: z.string().min(1).optional(),
+  /**
+   * How the launching client transferred the prior conversation. Only
+   * "thread-transcript" makes the supervisor attach the transcript-reading
+   * instruction; anything else already carries its context in the prompt, and
+   * adding the instruction on top would hand the provider two copies.
+   */
+  contextStrategy: providerHandoffContextStrategySchema.optional(),
   /**
    * Only set on the REVERT command the host sends after a failed switched
    * start: the status the durable row was restored to, which the renderer
@@ -221,6 +245,15 @@ export const startThreadPayloadSchema = z
      * provider. See {@link providerSwitchSchema}.
      */
     providerSwitch: providerSwitchSchema.optional(),
+    /**
+     * Set when the launch reads its context from a thread mention in its own
+     * prompt — a forked chat thread (see `buildForkMentionLaunchInput`). If the
+     * session cannot resolve `read_thread`, no mention is readable, so the
+     * supervisor drops them all and starts with a transcript-unavailable note
+     * instead of failing the launch. Launches without this marker — a mention
+     * the user typed themselves — still fail loudly.
+     */
+    mentionHandoff: z.literal(true).optional(),
   })
   .superRefine((payload, ctx) => {
     if (!payload.providerSwitch) return;

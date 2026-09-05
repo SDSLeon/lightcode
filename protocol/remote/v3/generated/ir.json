@@ -15,13 +15,13 @@
     "procedures": 100,
     "replayableEventTypes": 15,
     "routes": 61,
-    "runtimeEventTypes": 14,
+    "runtimeEventTypes": 15,
     "voidProcedureResults": 36,
     "webSocketClientMessages": 8,
     "webSocketServerMessages": 9
   },
   "manifestFormatVersion": 1,
-  "manifestHash": "sha256:67c83477b74a5fb78fdefc7420c51543af13ca63c90005a46d13581dae512e96",
+  "manifestHash": "sha256:17211d0f9667ac6d07ddba8bdf445f1d7ae8d7f959c3d049098021688b3a71ef",
   "portableTransformIds": [
     "agent-settings.strip-sensitive",
     "push.routing.client-connection-id.lowercase",
@@ -14034,6 +14034,25 @@
               "effort": {
                 "type": "string"
               },
+              "executionEnvironment": {
+                "additionalProperties": true,
+                "properties": {
+                  "distro": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "kind": {
+                    "const": "wsl",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "distro"
+                ],
+                "type": "object",
+                "x-poracode-unknownFields": "strip"
+              },
               "fast": {
                 "type": "boolean"
               },
@@ -15515,6 +15534,54 @@
                   {
                     "additionalProperties": true,
                     "properties": {
+                      "tasks": {
+                        "items": {
+                          "additionalProperties": true,
+                          "properties": {
+                            "description": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "enum": [
+                                "command",
+                                "other"
+                              ],
+                              "type": "string"
+                            },
+                            "taskId": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "taskId",
+                            "kind",
+                            "description"
+                          ],
+                          "type": "object",
+                          "x-poracode-unknownFields": "strip"
+                        },
+                        "type": "array"
+                      },
+                      "threadId": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "const": "background_tasks.changed",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "threadId",
+                      "tasks"
+                    ],
+                    "type": "object",
+                    "x-poracode-unknownFields": "strip"
+                  },
+                  {
+                    "additionalProperties": true,
+                    "properties": {
                       "payload": {
                         "additionalProperties": true,
                         "properties": {
@@ -16337,6 +16404,54 @@
                       "type",
                       "threadId",
                       "usage"
+                    ],
+                    "type": "object",
+                    "x-poracode-unknownFields": "strip"
+                  },
+                  {
+                    "additionalProperties": true,
+                    "properties": {
+                      "tasks": {
+                        "items": {
+                          "additionalProperties": true,
+                          "properties": {
+                            "description": {
+                              "type": "string"
+                            },
+                            "kind": {
+                              "enum": [
+                                "command",
+                                "other"
+                              ],
+                              "type": "string"
+                            },
+                            "taskId": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "taskId",
+                            "kind",
+                            "description"
+                          ],
+                          "type": "object",
+                          "x-poracode-unknownFields": "strip"
+                        },
+                        "type": "array"
+                      },
+                      "threadId": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "const": "background_tasks.changed",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "threadId",
+                      "tasks"
                     ],
                     "type": "object",
                     "x-poracode-unknownFields": "strip"
@@ -17225,7 +17340,7 @@
     "writeExternalFile",
     "writeProjectFile"
   ],
-  "protocolVersion": 8,
+  "protocolVersion": 9,
   "routes": [
     {
       "auth": "bearer",
@@ -17291,6 +17406,10 @@
                   "minLength": 1,
                   "type": "string"
                 },
+                "loginCommandDisplay": {
+                  "minLength": 1,
+                  "type": "string"
+                },
                 "preferTerminalLogin": {
                   "type": "boolean"
                 },
@@ -17353,6 +17472,10 @@
                         "type": "boolean"
                       },
                       "loginCommand": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "loginCommandDisplay": {
                         "minLength": 1,
                         "type": "string"
                       },
@@ -18295,6 +18418,9 @@
                   },
                   "type": "array"
                 },
+                "readsImageAttachmentsFromHost": {
+                  "type": "boolean"
+                },
                 "readsPdfAttachmentsFromHost": {
                   "type": "boolean"
                 },
@@ -19006,7 +19132,7 @@
               "type": "string"
             },
             "protocolVersion": {
-              "const": 8,
+              "const": 9,
               "type": "number"
             }
           },
@@ -19172,7 +19298,7 @@
               "type": "string"
             },
             "protocolVersion": {
-              "const": 8,
+              "const": 9,
               "type": "number"
             }
           },
@@ -23444,6 +23570,25 @@
                     "effort": {
                       "type": "string"
                     },
+                    "executionEnvironment": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "distro": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "kind": {
+                          "const": "wsl",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "distro"
+                      ],
+                      "type": "object",
+                      "x-poracode-unknownFields": "strip"
+                    },
                     "fast": {
                       "type": "boolean"
                     },
@@ -24985,7 +25130,7 @@
                     "anyOf": [
                       {
                         "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                         "type": "string"
                       },
                       {
@@ -25015,7 +25160,7 @@
                   },
                   "startedAt": {
                     "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                     "type": "string"
                   },
                   "status": {
@@ -25201,7 +25346,7 @@
                         },
                         "runAt": {
                           "format": "date-time",
-                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                           "type": "string"
                         }
                       },
@@ -25352,7 +25497,7 @@
                 },
                 "createdAt": {
                   "format": "date-time",
-                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                   "type": "string"
                 },
                 "enabled": {
@@ -25367,7 +25512,7 @@
                   "anyOf": [
                     {
                       "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                       "type": "string"
                     },
                     {
@@ -25399,7 +25544,7 @@
                   "anyOf": [
                     {
                       "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                       "type": "string"
                     },
                     {
@@ -25431,7 +25576,7 @@
                   "anyOf": [
                     {
                       "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                       "type": "string"
                     },
                     {
@@ -25518,7 +25663,7 @@
                         },
                         "runAt": {
                           "format": "date-time",
-                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                           "type": "string"
                         }
                       },
@@ -25533,7 +25678,7 @@
                 },
                 "updatedAt": {
                   "format": "date-time",
-                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                   "type": "string"
                 }
               },
@@ -25629,7 +25774,7 @@
                 },
                 "createdAt": {
                   "format": "date-time",
-                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                   "type": "string"
                 },
                 "enabled": {
@@ -25644,7 +25789,7 @@
                   "anyOf": [
                     {
                       "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                       "type": "string"
                     },
                     {
@@ -25676,7 +25821,7 @@
                   "anyOf": [
                     {
                       "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                       "type": "string"
                     },
                     {
@@ -25708,7 +25853,7 @@
                   "anyOf": [
                     {
                       "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                       "type": "string"
                     },
                     {
@@ -25795,7 +25940,7 @@
                         },
                         "runAt": {
                           "format": "date-time",
-                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                           "type": "string"
                         }
                       },
@@ -25810,7 +25955,7 @@
                 },
                 "updatedAt": {
                   "format": "date-time",
-                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                   "type": "string"
                 }
               },
@@ -26907,10 +27052,29 @@
               "type": "boolean"
             },
             "__schema12": {
+              "additionalProperties": true,
+              "properties": {
+                "distro": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "wsl",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "distro"
+              ],
+              "type": "object",
+              "x-poracode-unknownFields": "strip"
+            },
+            "__schema13": {
               "minLength": 1,
               "type": "string"
             },
-            "__schema13": {
+            "__schema14": {
               "additionalProperties": true,
               "properties": {
                 "hostId": {
@@ -26927,21 +27091,21 @@
               "type": "object",
               "x-poracode-unknownFields": "strip"
             },
-            "__schema14": {
+            "__schema15": {
               "additionalProperties": true,
               "properties": {
                 "ahead": {
-                  "$ref": "#/$defs/__schema15"
+                  "$ref": "#/$defs/__schema16"
                 },
                 "behind": {
-                  "$ref": "#/$defs/__schema15"
+                  "$ref": "#/$defs/__schema16"
                 },
                 "branch": {
                   "type": "string"
                 },
                 "conflictFiles": {
                   "items": {
-                    "$ref": "#/$defs/__schema16"
+                    "$ref": "#/$defs/__schema17"
                   },
                   "type": "array"
                 },
@@ -27007,22 +27171,22 @@
                 },
                 "staged": {
                   "items": {
-                    "$ref": "#/$defs/__schema16"
+                    "$ref": "#/$defs/__schema17"
                   },
                   "type": "array"
                 },
                 "totalDeletions": {
-                  "$ref": "#/$defs/__schema15"
+                  "$ref": "#/$defs/__schema16"
                 },
                 "totalInsertions": {
-                  "$ref": "#/$defs/__schema15"
+                  "$ref": "#/$defs/__schema16"
                 },
                 "tracking": {
                   "type": "string"
                 },
                 "unstaged": {
                   "items": {
-                    "$ref": "#/$defs/__schema16"
+                    "$ref": "#/$defs/__schema17"
                   },
                   "type": "array"
                 }
@@ -27043,19 +27207,19 @@
               "type": "object",
               "x-poracode-unknownFields": "strip"
             },
-            "__schema15": {
+            "__schema16": {
               "maximum": 9007199254740991,
               "minimum": -9007199254740991,
               "type": "integer"
             },
-            "__schema16": {
+            "__schema17": {
               "additionalProperties": true,
               "properties": {
                 "deletions": {
-                  "$ref": "#/$defs/__schema15"
+                  "$ref": "#/$defs/__schema16"
                 },
                 "insertions": {
-                  "$ref": "#/$defs/__schema15"
+                  "$ref": "#/$defs/__schema16"
                 },
                 "oldPath": {
                   "type": "string"
@@ -27080,12 +27244,12 @@
               "type": "object",
               "x-poracode-unknownFields": "strip"
             },
-            "__schema17": {
+            "__schema18": {
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991,
               "type": "integer"
             },
-            "__schema18": {
+            "__schema19": {
               "additionalProperties": true,
               "properties": {
                 "avatarUrl": {
@@ -27101,11 +27265,14 @@
               "type": "object",
               "x-poracode-unknownFields": "strip"
             },
-            "__schema19": {
+            "__schema2": {
+              "type": "boolean"
+            },
+            "__schema20": {
               "additionalProperties": true,
               "properties": {
                 "author": {
-                  "$ref": "#/$defs/__schema18"
+                  "$ref": "#/$defs/__schema19"
                 },
                 "body": {
                   "type": "string"
@@ -27128,9 +27295,6 @@
               ],
               "type": "object",
               "x-poracode-unknownFields": "strip"
-            },
-            "__schema2": {
-              "type": "boolean"
             },
             "__schema3": {
               "type": "boolean"
@@ -27170,7 +27334,7 @@
                     "additionalProperties": true,
                     "properties": {
                       "project": {
-                        "$ref": "#/$defs/__schema13"
+                        "$ref": "#/$defs/__schema14"
                       },
                       "pullRequestKeys": {
                         "items": {
@@ -27251,13 +27415,13 @@
                         "type": "boolean"
                       },
                       "ref": {
-                        "$ref": "#/$defs/__schema13"
+                        "$ref": "#/$defs/__schema14"
                       },
                       "refreshedAt": {
                         "type": "string"
                       },
                       "status": {
-                        "$ref": "#/$defs/__schema14"
+                        "$ref": "#/$defs/__schema15"
                       },
                       "worktrees": {
                         "items": {
@@ -27350,7 +27514,7 @@
                             "type": "string"
                           },
                           "number": {
-                            "$ref": "#/$defs/__schema17"
+                            "$ref": "#/$defs/__schema18"
                           },
                           "reviewDecision": {
                             "type": "string"
@@ -27393,10 +27557,10 @@
                         "additionalProperties": true,
                         "properties": {
                           "additions": {
-                            "$ref": "#/$defs/__schema15"
+                            "$ref": "#/$defs/__schema16"
                           },
                           "author": {
-                            "$ref": "#/$defs/__schema18"
+                            "$ref": "#/$defs/__schema19"
                           },
                           "baseBranch": {
                             "type": "string"
@@ -27405,7 +27569,7 @@
                             "type": "string"
                           },
                           "changedFiles": {
-                            "$ref": "#/$defs/__schema15"
+                            "$ref": "#/$defs/__schema16"
                           },
                           "checks": {
                             "items": {
@@ -27455,7 +27619,7 @@
                           },
                           "comments": {
                             "items": {
-                              "$ref": "#/$defs/__schema19"
+                              "$ref": "#/$defs/__schema20"
                             },
                             "type": "array"
                           },
@@ -27467,7 +27631,7 @@
                                   "type": "string"
                                 },
                                 "author": {
-                                  "$ref": "#/$defs/__schema18"
+                                  "$ref": "#/$defs/__schema19"
                                 },
                                 "authoredDate": {
                                   "type": "string"
@@ -27500,7 +27664,7 @@
                             "type": "string"
                           },
                           "deletions": {
-                            "$ref": "#/$defs/__schema15"
+                            "$ref": "#/$defs/__schema16"
                           },
                           "headBranch": {
                             "type": "string"
@@ -27518,7 +27682,7 @@
                           "mergedBy": {
                             "anyOf": [
                               {
-                                "$ref": "#/$defs/__schema18"
+                                "$ref": "#/$defs/__schema19"
                               },
                               {
                                 "type": "null"
@@ -27526,14 +27690,14 @@
                             ]
                           },
                           "number": {
-                            "$ref": "#/$defs/__schema17"
+                            "$ref": "#/$defs/__schema18"
                           },
                           "reviews": {
                             "items": {
                               "additionalProperties": true,
                               "properties": {
                                 "author": {
-                                  "$ref": "#/$defs/__schema18"
+                                  "$ref": "#/$defs/__schema19"
                                 },
                                 "body": {
                                   "type": "string"
@@ -27598,10 +27762,10 @@
                           "additionalProperties": true,
                           "properties": {
                             "additions": {
-                              "$ref": "#/$defs/__schema15"
+                              "$ref": "#/$defs/__schema16"
                             },
                             "deletions": {
-                              "$ref": "#/$defs/__schema15"
+                              "$ref": "#/$defs/__schema16"
                             },
                             "path": {
                               "type": "string"
@@ -27668,7 +27832,7 @@
                           "properties": {
                             "comments": {
                               "items": {
-                                "$ref": "#/$defs/__schema19"
+                                "$ref": "#/$defs/__schema20"
                               },
                               "type": "array"
                             },
@@ -27682,7 +27846,7 @@
                               "type": "boolean"
                             },
                             "line": {
-                              "$ref": "#/$defs/__schema15"
+                              "$ref": "#/$defs/__schema16"
                             },
                             "path": {
                               "type": "string"
@@ -27788,7 +27952,7 @@
                         "x-poracode-unknownFields": "strip"
                       },
                       "status": {
-                        "$ref": "#/$defs/__schema14"
+                        "$ref": "#/$defs/__schema15"
                       }
                     },
                     "required": [
@@ -27952,7 +28116,7 @@
                     "additionalProperties": true,
                     "properties": {
                       "agentKind": {
-                        "$ref": "#/$defs/__schema12"
+                        "$ref": "#/$defs/__schema13"
                       },
                       "approvalPolicy": {
                         "$ref": "#/$defs/__schema5"
@@ -27977,6 +28141,9 @@
                       },
                       "effort": {
                         "$ref": "#/$defs/__schema0"
+                      },
+                      "executionEnvironment": {
+                        "$ref": "#/$defs/__schema12"
                       },
                       "fast": {
                         "$ref": "#/$defs/__schema2"
@@ -28312,7 +28479,7 @@
                     "type": "string"
                   },
                   "agentKind": {
-                    "$ref": "#/$defs/__schema12"
+                    "$ref": "#/$defs/__schema13"
                   },
                   "archived": {
                     "default": false,
@@ -28362,6 +28529,9 @@
                       },
                       "effort": {
                         "$ref": "#/$defs/__schema0"
+                      },
+                      "executionEnvironment": {
+                        "$ref": "#/$defs/__schema12"
                       },
                       "fast": {
                         "$ref": "#/$defs/__schema2"
@@ -29114,6 +29284,25 @@
                     "effort": {
                       "type": "string"
                     },
+                    "executionEnvironment": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "distro": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "kind": {
+                          "const": "wsl",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "distro"
+                      ],
+                      "type": "object",
+                      "x-poracode-unknownFields": "strip"
+                    },
                     "fast": {
                       "type": "boolean"
                     },
@@ -29189,6 +29378,13 @@
                 "providerSwitch": {
                   "additionalProperties": true,
                   "properties": {
+                    "contextStrategy": {
+                      "enum": [
+                        "thread-transcript",
+                        "context-file"
+                      ],
+                      "type": "string"
+                    },
                     "fromAgentKind": {
                       "$ref": "#/$defs/__schema0"
                     },
@@ -29858,6 +30054,35 @@
           "$schema": "https://json-schema.org/draft/2020-12/schema",
           "additionalProperties": true,
           "properties": {
+            "backgroundTasks": {
+              "items": {
+                "additionalProperties": true,
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "enum": [
+                      "command",
+                      "other"
+                    ],
+                    "type": "string"
+                  },
+                  "taskId": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "taskId",
+                  "kind",
+                  "description"
+                ],
+                "type": "object",
+                "x-poracode-unknownFields": "strip"
+              },
+              "type": "array"
+            },
             "completedTurns": {
               "items": {
                 "additionalProperties": true,
@@ -30094,6 +30319,25 @@
                     },
                     "effort": {
                       "type": "string"
+                    },
+                    "executionEnvironment": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "distro": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "kind": {
+                          "const": "wsl",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "distro"
+                      ],
+                      "type": "object",
+                      "x-poracode-unknownFields": "strip"
                     },
                     "fast": {
                       "type": "boolean"
@@ -30667,6 +30911,25 @@
                 "effort": {
                   "type": "string"
                 },
+                "executionEnvironment": {
+                  "additionalProperties": true,
+                  "properties": {
+                    "distro": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "wsl",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "distro"
+                  ],
+                  "type": "object",
+                  "x-poracode-unknownFields": "strip"
+                },
                 "fast": {
                   "type": "boolean"
                 },
@@ -31148,6 +31411,25 @@
                 "effort": {
                   "type": "string"
                 },
+                "executionEnvironment": {
+                  "additionalProperties": true,
+                  "properties": {
+                    "distro": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "wsl",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "distro"
+                  ],
+                  "type": "object",
+                  "x-poracode-unknownFields": "strip"
+                },
                 "fast": {
                   "type": "boolean"
                 },
@@ -31284,6 +31566,10 @@
               },
               "type": "array"
             },
+            "mentionHandoff": {
+              "const": true,
+              "type": "boolean"
+            },
             "presentationMode": {
               "enum": [
                 "terminal",
@@ -31381,6 +31667,13 @@
             "providerSwitch": {
               "additionalProperties": true,
               "properties": {
+                "contextStrategy": {
+                  "enum": [
+                    "thread-transcript",
+                    "context-file"
+                  ],
+                  "type": "string"
+                },
                 "fromAgentKind": {
                   "$ref": "#/$defs/__schema0"
                 },
@@ -31768,6 +32061,25 @@
                 },
                 "effort": {
                   "type": "string"
+                },
+                "executionEnvironment": {
+                  "additionalProperties": true,
+                  "properties": {
+                    "distro": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "wsl",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "distro"
+                  ],
+                  "type": "object",
+                  "x-poracode-unknownFields": "strip"
                 },
                 "fast": {
                   "type": "boolean"
@@ -32212,7 +32524,7 @@
     "void-envelope.omit-result",
     "void-result.omit-field"
   ],
-  "sourceHash": "sha256:e3b40d8327e148e858739bf87c003376ffe60e706b7be626ab12944dfe661144",
+  "sourceHash": "sha256:19ac4727f9f36256a23a9d35740babb66a2412c1aaf3534a2b83cae859b192f3",
   "unknownObjectFields": "ignore",
   "webSocket": {
     "clientMessages": [

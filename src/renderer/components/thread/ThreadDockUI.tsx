@@ -18,12 +18,14 @@ export function ThreadDockSection({
 }) {
   const { t } = useLingui();
   const resolvedAriaLabel = ariaLabel ?? t`Thread dock`;
+  // In the right panel the docks tab lays the sections out flush; composer
+  // sections carry the bordered strip chrome.
   const baseClass =
     placement === "composer"
       ? "flex flex-col border-b border-[color:var(--border)] bg-transparent text-xs"
       : collapsed
-        ? "flex flex-col rounded-2xl border border-[color:var(--border)] bg-[var(--composer-surface)] text-xs"
-        : "flex h-full min-h-0 flex-col rounded-2xl border border-[color:var(--border)] bg-[var(--composer-surface)] text-xs";
+        ? "flex flex-col rounded-none border-0 bg-[var(--content-background)] text-xs"
+        : "flex h-full min-h-0 flex-col rounded-none border-0 bg-[var(--content-background)] text-xs";
 
   return (
     <section
@@ -55,7 +57,7 @@ export function ThreadDockHeader({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 px-2 py-1 leading-none">
+    <div className="flex h-8 items-center gap-2 px-2 leading-none">
       <Icon className={`size-3.5 shrink-0 ${iconClassName}`} />
       <div
         className={`flex min-w-0 flex-1 leading-none ${
@@ -165,15 +167,22 @@ export const ThreadDockRow = forwardRef<
     isDone?: boolean;
     title?: string;
     onClick?: () => void;
+    /**
+     * Stable identity key for the row (e.g. `${sourceId}:${index}`). Rendered
+     * as `data-row-key` so owners can look the row up among its siblings
+     * without keeping a ref per row.
+     */
+    rowKey?: string;
   }
->(function ThreadDockRow({ children, isActive, isDone, title, onClick }, ref) {
+>(function ThreadDockRow({ children, isActive, isDone, title, onClick, rowKey }, ref) {
   const innerClass = `flex items-center gap-2 rounded px-2 py-1 leading-5 ${
     isDone ? "opacity-60" : ""
   } ${isActive && !isDone ? "bg-accent/10" : ""}`;
+  const rowKeyAttrs = rowKey ? { "data-row-key": rowKey } : {};
 
   if (onClick) {
     return (
-      <li ref={ref} className="flex">
+      <li ref={ref} className="flex" {...rowKeyAttrs}>
         <button
           type="button"
           onClick={onClick}
@@ -188,7 +197,13 @@ export const ThreadDockRow = forwardRef<
   }
 
   return (
-    <li ref={ref} className={innerClass} title={title} aria-current={isActive ? "step" : undefined}>
+    <li
+      ref={ref}
+      className={innerClass}
+      title={title}
+      aria-current={isActive ? "step" : undefined}
+      {...rowKeyAttrs}
+    >
       {children}
     </li>
   );

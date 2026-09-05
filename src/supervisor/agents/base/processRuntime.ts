@@ -227,10 +227,10 @@ export function findPosixExecutableInWellKnownDirs(binary: string): string | und
 
 export function resolveExecutablePath(command: string): string | undefined {
   if (process.platform === "win32") {
-    return (
-      resolveWindowsExecutablePath(command) ??
-      resolveWindowsExecutablePath(command, buildWindowsPathOverride())
-    );
+    const resolved = resolveWindowsExecutablePath(command);
+    if (resolved) return resolved;
+    const env = buildWindowsPathOverride();
+    return env ? resolveWindowsExecutablePath(command, env) : undefined;
   }
 
   const result = spawnSync(
@@ -318,26 +318,52 @@ function resolveWindowsScoopShimTarget(path: string | undefined): string | undef
  * Returns undefined for exe-wrapping shims.
  */
 export function extractWindowsCmdShimScript(body: string): string | undefined {
-  const js = /["']?%dp0%\\([^"']+?\.[cm]?js)["']?\s+%\*/i.exec(body)?.[1];
+  const js = /["']?%(?:~dp0|dp0%)[\\/]([^"']+?\.[cm]?js)["']?\s+%\*/i.exec(body)?.[1];
   if (js) return js;
-  const prog = /"%_prog%"\s+["']?%dp0%\\([^"']+?)["']?\s+%\*/i.exec(body)?.[1];
+  const prog =
+    /(?:["']?%_prog%["']?|["']?%(?:~dp0|dp0%)[\\/]node(?:\.exe)?["']?|\bnode(?:\.exe)?\b)\s+["']?%(?:~dp0|dp0%)[\\/]([^"']+?)["']?\s+%\*/i.exec(
+      body,
+    )?.[1];
   if (prog && !/\.(?:exe|cmd|bat|com|ps1)$/i.test(prog)) return prog;
+  // npm 11.19 (Node 24.20) routes npm.cmd/npx.cmd through variables:
+  // `SET "NPX_CLI_JS=%~dp0\node_modules\npm\bin\npx-cli.js"` then
+  // `"%NODE_EXE%" "%NPX_CLI_JS%" %*`. Resolve one level of indirection via
+  // the first %~dp0-relative SET for that variable (the later
+  // NPM_PREFIX_* override targets a global prefix that may not exist).
+  const indirectVar =
+    /(?:["']?%[A-Za-z0-9_]+%["']?|["']?%(?:~dp0|dp0%)[\\/]node(?:\.exe)?["']?|\bnode(?:\.exe)?\b)\s+["']?%([A-Za-z][A-Za-z0-9_]*)%["']?\s+%\*/i.exec(
+      body,
+    )?.[1];
+  if (indirectVar) {
+    const rel = findDp0RelativeVarAssignment(body, indirectVar);
+    if (rel && !/\.(?:exe|cmd|bat|com|ps1)$/i.test(rel)) return rel;
+  }
   return undefined;
+}
+
+function findDp0RelativeVarAssignment(body: string, varName: string): string | undefined {
+  const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `^\\s*SET\\s+"?${escaped}\\s*=\\s*"?(?:%~dp0|%dp0%)[\\\\/]?([^"\\r\\n]+?)"?\\s*$`,
+    "gim",
+  );
+  return pattern.exec(body)?.[1]?.trim();
 }
 
 function resolveWindowsCmdExeTarget(path: string | undefined): string | undefined {
   if (!path || !/\.cmd$/i.test(path)) return undefined;
   try {
     const body = readFileSync(path, "utf8");
-    // npm's standard Node-script shim wraps `"%dp0%\node.exe" "%dp0%\…\entry.mjs" %*`
-    // (or `"%_prog%" "%dp0%\node_modules\…\bin\<name>" %*` for extensionless bins).
+    // npm/pnpm's standard Node-script shim wraps `"%dp0%\node.exe" "%dp0%\…\entry.mjs" %*`
+    // (or `"%_prog%" "%dp0%\node_modules\…\bin\<name>" %*` for extensionless bins,
+    // or pnpm's `"%~dp0\node.exe" "%~dp0\..\global\…\entry.js"` / `node "%~dp0\…"`).
     // Leave those alone so the downstream resolveWindowsNodeCmdShim (in base/index.ts)
     // can extract the script entry and invoke node with it directly. Substituting to
     // node.exe here would strip the script arg and pass agent flags straight to
     // node, which rejects them ("bad option: --model", etc.) and exits — breaking
-    // every npm-installed agent (codex, commandcode, gemini, …) on Windows.
+    // every npm/pnpm-installed agent (codex, commandcode, gemini, …) on Windows.
     if (extractWindowsCmdShimScript(body) !== undefined) return undefined;
-    const match = /"%dp0%\\([^"]+?\.exe)"/i.exec(body);
+    const match = /@?["']?%(?:~dp0|dp0%)[\\/]([^"'\r\n]+?\.exe)["']?/i.exec(body);
     if (!match?.[1]) return undefined;
     const target = join(dirname(path), match[1]);
     return existsSync(target) ? target : undefined;

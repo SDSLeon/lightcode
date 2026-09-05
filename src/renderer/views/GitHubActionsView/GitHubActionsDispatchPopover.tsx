@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Button, Checkbox, Description, Input, Label, TextField } from "@heroui/react";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { ChevronDown, GitBranch, LoaderCircle, Play } from "lucide-react";
@@ -65,17 +65,22 @@ export function GitHubActionsDispatchPopover(props: {
   );
   const [missing, setMissing] = useState<string[]>([]);
 
-  useEffect(() => {
+  // Reset the form to the newly selected workflow's defaults during render
+  // rather than in an effect, so opening the popover for another workflow
+  // never paints one frame with the previous workflow's inputs.
+  const [prevDefinition, setPrevDefinition] = useState(props.definition);
+  if (prevDefinition !== props.definition) {
+    setPrevDefinition(props.definition);
     if (!props.definition) {
       setRef("");
       setValues({});
       setMissing([]);
-      return;
+    } else {
+      setRef(props.definition.ref);
+      setValues(defaultInputValues(props.definition));
+      setMissing([]);
     }
-    setRef(props.definition.ref);
-    setValues(defaultInputValues(props.definition));
-    setMissing([]);
-  }, [props.definition]);
+  }
 
   async function runWorkflow() {
     if (!props.definition) return;

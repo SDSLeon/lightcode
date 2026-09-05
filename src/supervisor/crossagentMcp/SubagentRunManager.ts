@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { authoritativeAssistantText } from "@/shared/assistantMessageText";
 import type {
   AgentCapability,
   AgentKind,
@@ -36,7 +37,7 @@ export const DEFAULT_WAIT_TIMEOUT_MS = 120_000;
 /** Hard cap on caller-supplied `timeout_s` — see {@link DEFAULT_WAIT_TIMEOUT_MS}. */
 export const MAX_WAIT_TIMEOUT_MS = 240_000;
 /** Max concurrent live children per parent thread. */
-export const MAX_CONCURRENT_CHILDREN_PER_PARENT = 4;
+export const MAX_CONCURRENT_CHILDREN_PER_PARENT = 16;
 /** Bound terminal result retention for long-lived parent threads. */
 const MAX_RETAINED_RUNS_PER_PARENT = 50;
 /**
@@ -69,6 +70,20 @@ export interface SubagentRunManagerDeps {
   getStatusCapabilities?: (kind: AgentKind) => AgentCapability | null | undefined;
 }
 
+interface OutputSegment {
+  itemId: string;
+  text: string;
+  override?: string;
+  cursorRanges: Array<{ start: number; end: number }>;
+}
+
+interface CursorOutputEdit {
+  key: string;
+  start: number;
+  end: number;
+  replacement: string;
+}
+
 interface RunRecord extends AttemptExecutionState {
   runId: string;
   createdAt: number;
@@ -79,12 +94,24 @@ interface RunRecord extends AttemptExecutionState {
   plan: PreparedSubagentRun;
   attemptIndex: number;
   attemptSettled: boolean;
+  steering: { completion: "none" | "pending" | "resumed" } | undefined;
   attemptResults: SubagentAttemptResult[];
   status: SubagentRunStatus;
   /** Assistant text accumulated for the current attempt. */
   output: string;
   /** Assistant text accumulated across every fallback attempt. */
   cursorOutput: string;
+  /**
+   * Per-item spans of `output`, in arrival order, so an authoritative
+   * item.updated payload rewriting or suppressing already-streamed text can
+   * replace exactly its item's contribution.
+   * `cursorOutput` is deliberately not rebuilt: callers hold character
+   * offsets into it, so it stays an append-only live tail — the same rule
+   * the chat applies (stream while live, authoritative payload once final).
+   */
+  outputSegments: OutputSegment[];
+  /** Authoritative replacements indexed against append-only `cursorOutput`. */
+  cursorOutputEdits: CursorOutputEdit[];
   /** Direct child items started under the synthetic Agent row. */
   stepCount: number;
   /**
@@ -209,10 +236,13 @@ export class SubagentRunManager {
       plan,
       attemptIndex: 0,
       attemptSettled: false,
+      steering: undefined,
       attemptResults: [],
       status: "running",
       output: "",
       cursorOutput: "",
+      outputSegments: [],
+      cursorOutputEdits: [],
       stepCount: 0,
       handle: undefined,
       oneShot: undefined,
@@ -221,6 +251,7 @@ export class SubagentRunManager {
       cancelRequested: false,
       turnStarted: false,
       turnDispatched: false,
+      steerReady: false,
       error: undefined,
       settled: false,
       settledPromise,
@@ -279,7 +310,32 @@ export class SubagentRunManager {
     timeoutMs: number,
     parentThreadId?: string,
     options?: SubagentWaitOptions | ((runId: string) => SubagentWaitOptions),
+    mode: "all" | "any" = "all",
   ): Promise<Array<{ run_id: string } & SubagentWaitResult>> {
+    if (mode === "any" && runIds.length > 0) {
+      const records = runIds.map((runId) => this.ownedRun(runId, parentThreadId));
+      if (records.every((record) => record?.status === "running")) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          await Promise.race([
+            ...records.map((record) => record!.settledPromise),
+            new Promise<void>((resolve) => {
+              timer = setTimeout(resolve, Math.max(0, timeoutMs));
+            }),
+          ]);
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      }
+      return runIds.map((runId) => ({
+        run_id: runId,
+        ...this.getStatus(
+          runId,
+          parentThreadId,
+          typeof options === "function" ? options(runId) : options,
+        ),
+      }));
+    }
     return await Promise.all(
       runIds.map(async (runId) => ({
         run_id: runId,
@@ -314,9 +370,62 @@ export class SubagentRunManager {
         background: record.background,
         attempt: record.attemptIndex + 1,
         attempt_count: record.plan.attempts.length,
+        can_steer:
+          record.status === "running" &&
+          record.steerReady &&
+          !record.steering &&
+          !!record.handle?.steerTurn,
       });
     }
     return out;
+  }
+
+  getCapacity(parentThreadId: string): { running: number; limit: number; available_slots: number } {
+    const running = this.activeCountForParent(parentThreadId);
+    return {
+      running,
+      limit: MAX_CONCURRENT_CHILDREN_PER_PARENT,
+      available_slots: MAX_CONCURRENT_CHILDREN_PER_PARENT - running,
+    };
+  }
+
+  /** Forward a parent correction using the live session's native steering capability. */
+  async steer(runId: string, prompt: string, parentThreadId: string): Promise<void> {
+    const record = this.ownedRun(runId, parentThreadId);
+    if (!record) throw new SubagentSpawnError(`Unknown run_id: ${runId}`);
+    if (record.status !== "running") throw new SubagentSpawnError("Subagent is no longer running");
+    if (!record.steerReady)
+      throw new SubagentSpawnError("Subagent is still starting; try again once it is ready");
+    if (!record.handle?.steerTurn)
+      throw new SubagentSpawnError("This subagent session does not support live steering");
+    if (record.steering)
+      throw new SubagentSpawnError("A steer is already in progress for this subagent");
+    const steering: NonNullable<RunRecord["steering"]> = { completion: "none" };
+    record.steering = steering;
+    const attemptIndex = record.attemptIndex;
+    try {
+      await record.handle.steerTurn(prompt, record.plan.attempts[attemptIndex]!.config);
+      if (!this.isCurrentAttempt(record, attemptIndex)) {
+        throw new SubagentSpawnError("Subagent stopped before steering could be confirmed");
+      }
+    } catch (error) {
+      if (record.steering === steering && steering.completion === "resumed") {
+        this.finishAttempt(
+          record,
+          attemptIndex,
+          "failed",
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+      throw error;
+    } finally {
+      if (record.steering === steering) {
+        record.steering = undefined;
+        if (steering.completion === "pending") {
+          this.finishAttempt(record, attemptIndex, "completed");
+        }
+      }
+    }
   }
 
   /** Interrupt + dispose a single run. */
@@ -391,17 +500,32 @@ export class SubagentRunManager {
   private waitResult(record: RunRecord, options?: SubagentWaitOptions): SubagentWaitResult {
     const fullOutput = options?.fullOutput === true;
     const incremental = !fullOutput && options?.afterOutputChars !== undefined;
-    const source =
-      incremental || (fullOutput && options?.currentAttemptOnly !== true)
-        ? record.cursorOutput
-        : record.output;
+    const cursorOffset = options?.afterOutputChars ?? 0;
+    const displayOutput = [
+      ...record.attemptResults
+        .filter((attempt) => attempt.attempt !== record.attemptIndex + 1)
+        .map((attempt) => attempt.output),
+      record.output,
+    ].join("");
+    // Non-zero cursors index the append-only live stream a caller has already
+    // observed. Reads from the beginning and full reads use the final display
+    // projection so replaced or suppressed text is not exposed again.
+    const useCursorOutput = incremental && cursorOffset !== 0;
+    const source = fullOutput
+      ? options?.currentAttemptOnly === true
+        ? record.output
+        : displayOutput
+      : useCursorOutput
+        ? this.cursorOutputAfter(record, cursorOffset)
+        : incremental
+          ? displayOutput
+          : record.output;
     const total = record.cursorOutput.length;
-    const offset = incremental ? Math.min(Math.max(0, options.afterOutputChars!), total) : 0;
-    const delta = source.slice(offset);
+    const delta = source;
     const tailCap =
       record.status === "running" ? MAX_RUNNING_OUTPUT_TAIL_CHARS : MAX_SETTLED_OUTPUT_TAIL_CHARS;
     const output = fullOutput ? delta : clipOutputTail(delta, tailCap);
-    const isCompleteTranscript = fullOutput || (offset === 0 && delta.length <= tailCap);
+    const isCompleteTranscript = fullOutput || (!useCursorOutput && delta.length <= tailCap);
     return {
       status: record.status,
       output,
@@ -418,6 +542,26 @@ export class SubagentRunManager {
           }
         : {}),
     };
+  }
+
+  private cursorOutputAfter(record: RunRecord, requestedOffset: number): string {
+    const offset = Math.min(Math.max(0, requestedOffset), record.cursorOutput.length);
+    const parts: string[] = [];
+    const emitted = new Set<string>();
+    let position = offset;
+    for (const edit of [...record.cursorOutputEdits].sort(
+      (left, right) => left.start - right.start,
+    )) {
+      if (edit.end <= position) continue;
+      if (edit.start > position) parts.push(record.cursorOutput.slice(position, edit.start));
+      if (!emitted.has(edit.key)) {
+        parts.push(edit.replacement);
+        emitted.add(edit.key);
+      }
+      position = Math.max(position, edit.end);
+    }
+    parts.push(record.cursorOutput.slice(position));
+    return parts.join("");
   }
 
   private requireParent(parentThreadId: string): {
@@ -451,12 +595,15 @@ export class SubagentRunManager {
 
     record.attemptIndex = attemptIndex;
     record.attemptSettled = false;
+    record.steering = undefined;
     record.childThreadId = this.childThreadId(record.parentThreadId, record.runId, attemptIndex);
     record.label = attempt.label;
     record.output = "";
+    record.outputSegments = [];
     record.error = undefined;
     record.turnStarted = false;
     record.turnDispatched = false;
+    record.steerReady = false;
     record.handle = undefined;
     record.oneShot = undefined;
 
@@ -476,10 +623,49 @@ export class SubagentRunManager {
 
     this.attemptRunner.run(record, attemptIndex, attempt, {
       isActive: () => this.isCurrentAttempt(record, attemptIndex),
+      onWorking: () => {
+        if (record.steering?.completion === "pending") record.steering.completion = "resumed";
+      },
       onRuntimeEvent: (event) => this.onChildEvent(record, attemptIndex, event),
       onSettle: (status, errorMessage) =>
         this.finishAttempt(record, attemptIndex, status, errorMessage),
     });
+  }
+
+  /**
+   * A final-display hook delivers its rewrite as an authoritative item.updated
+   * payload after the text already streamed into `output`.
+   * Replace that item's span so waitResult/settle report the final text (or
+   * drop suppressed text) instead of the superseded stream.
+   */
+  private applyAuthoritativeOutput(
+    record: RunRecord,
+    attemptIndex: number,
+    event: Extract<RuntimeEvent, { type: "item.updated" }>,
+  ): void {
+    const authoritative = authoritativeAssistantText(event.payload);
+    if (authoritative === null) return;
+    const segment = record.outputSegments.find((s) => s.itemId === event.itemId);
+    if (segment) {
+      segment.override = authoritative;
+      const key = `${attemptIndex}:${event.itemId}`;
+      record.cursorOutputEdits = record.cursorOutputEdits.filter((edit) => edit.key !== key);
+      record.cursorOutputEdits.push(
+        ...segment.cursorRanges.map((range) => ({
+          key,
+          ...range,
+          replacement: authoritative,
+        })),
+      );
+    } else {
+      record.outputSegments.push({
+        itemId: event.itemId,
+        text: "",
+        override: authoritative,
+        cursorRanges: [],
+      });
+    }
+    record.output = record.outputSegments.map((s) => s.override ?? s.text).join("");
   }
 
   /**
@@ -497,10 +683,35 @@ export class SubagentRunManager {
       return;
     }
     switch (event.type) {
+      case "turn.started":
+        record.steerReady = true;
+        // A native steer can start a follow-up turn if the original finished
+        // during its round-trip. Keep that new turn alive until it completes.
+        if (record.steering?.completion === "pending") record.steering.completion = "resumed";
+        break;
       case "content.delta":
         if (event.stream === "assistant_text") {
+          const cursorStart = record.cursorOutput.length;
           record.output += event.delta;
           record.cursorOutput += event.delta;
+          const segment = record.outputSegments.find((s) => s.itemId === event.itemId);
+          if (segment) {
+            segment.text += event.delta;
+            const lastRange = segment.cursorRanges.at(-1);
+            if (lastRange?.end === cursorStart) lastRange.end += event.delta.length;
+            else {
+              segment.cursorRanges.push({
+                start: cursorStart,
+                end: cursorStart + event.delta.length,
+              });
+            }
+          } else {
+            record.outputSegments.push({
+              itemId: event.itemId,
+              text: event.delta,
+              cursorRanges: [{ start: cursorStart, end: cursorStart + event.delta.length }],
+            });
+          }
         }
         this.deps.host.appendRuntimeEvent(
           record.parentThreadId,
@@ -527,6 +738,7 @@ export class SubagentRunManager {
         }
         return;
       case "item.updated": {
+        this.applyAuthoritativeOutput(record, attemptIndex, event);
         const forwarded = this.retag(record, attemptIndex, event) as Extract<
           RuntimeEvent,
           { type: "item.updated" }
@@ -617,6 +829,10 @@ export class SubagentRunManager {
     errorMessage?: string,
   ): void {
     if (!this.isCurrentAttempt(record, attemptIndex)) return;
+    if (record.steering && status === "completed") {
+      record.steering.completion = "pending";
+      return;
+    }
     record.attemptSettled = true;
     this.drainPendingRequests(record);
     this.completeOpenForwardedItems(record);

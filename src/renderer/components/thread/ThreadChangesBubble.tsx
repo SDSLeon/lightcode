@@ -13,6 +13,8 @@ import { useCompactLayout } from "@/renderer/adaptiveLayout";
 import { DiffStat } from "@/renderer/components/common";
 import {
   floatingGlassActiveClass,
+  floatingGlassBubbleActiveClass,
+  floatingGlassBubbleClass,
   floatingGlassSurfaceClass,
 } from "@/renderer/components/layout/floatingGlass";
 import { useGitStore } from "@/renderer/state/gitStore";
@@ -128,9 +130,9 @@ export function ThreadChangesBubble(props: {
       aria-pressed={isOpen}
       /* Sized to a 28px pill — same height as the scroll-to-bottom circle and the
          rail's icon buttons, so the floating chrome shares one scale. */
-      className={`${floatingGlassSurfaceClass} flex h-7 items-center gap-1.5 rounded-full text-xs font-medium transition-colors ${
+      className={`${floatingGlassSurfaceClass} ${floatingGlassBubbleClass} flex h-7 items-center gap-1.5 rounded-full text-xs font-medium transition-colors ${
         hasChanges || hasVisiblePr ? "px-3" : "w-7 justify-center px-0"
-      } ${isOpen ? floatingGlassActiveClass : "hover:border-border/30"}`}
+      } ${isOpen ? `${floatingGlassActiveClass} ${floatingGlassBubbleActiveClass}` : ""}`}
       onClick={() => {
         if (isOpen) {
           closeAllPanels();
@@ -157,18 +159,14 @@ export function ThreadChangesBubble(props: {
     </button>
   );
 
-  return (
-    // Position an out-of-flow wrapper, not the tooltip trigger. HeroUI's trigger
-    // then measures the real button without adding a line box above the composer.
-    <div className="absolute right-3 bottom-full z-10 mb-1.5">
-      {worktreeName ? (
-        <Tooltip delay={0}>
-          <Tooltip.Trigger>{bubble}</Tooltip.Trigger>
-          <Tooltip.Content placement="top">{worktreeName}</Tooltip.Content>
-        </Tooltip>
-      ) : (
-        bubble
-      )}
-    </div>
+  // The caller positions this (with the other composer bubbles) in one
+  // out-of-flow wrapper so HeroUI's tooltip trigger measures the real button.
+  return worktreeName ? (
+    <Tooltip delay={0}>
+      <Tooltip.Trigger>{bubble}</Tooltip.Trigger>
+      <Tooltip.Content placement="top">{worktreeName}</Tooltip.Content>
+    </Tooltip>
+  ) : (
+    bubble
   );
 }

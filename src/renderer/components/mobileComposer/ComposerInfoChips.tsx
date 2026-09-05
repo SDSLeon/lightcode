@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useLingui } from "@lingui/react/macro";
 import {
+  Activity,
   AlertTriangle,
   Bot,
   Gauge,
@@ -20,6 +21,8 @@ import { ThreadContextDock } from "@/renderer/components/thread/ThreadContextDoc
 import { ThreadErrorDock } from "@/renderer/components/thread/ThreadErrorDock";
 import { ThreadGoalDock } from "@/renderer/components/thread/ThreadGoalDock";
 import { ThreadAuthRequiredDock } from "@/renderer/components/thread/ThreadAuthRequiredDock";
+import { ThreadBackgroundTasksDock } from "@/renderer/components/thread/ThreadBackgroundTasksDock";
+import { useVisibleThreadBackgroundTasks } from "@/renderer/components/thread/useThreadDocksSummary";
 import { ThreadTodoDock } from "@/renderer/components/thread/ThreadTodoDock";
 import {
   resolveThreadAuthState,
@@ -30,7 +33,15 @@ import type { ThreadTodoDockState } from "@/renderer/components/thread/threadTod
 import type { ThreadContextUsageSummary } from "@/renderer/components/thread/threadContextUsage";
 import { ThreadUsageBubble, ThreadUsageDock } from "@/renderer/components/thread/ThreadUsageBubble";
 
-type ChipKey = ActiveAgentKind | "auth" | "context" | "usage" | "plan" | "goal" | "errors";
+type ChipKey =
+  | ActiveAgentKind
+  | "auth"
+  | "backgroundTasks"
+  | "context"
+  | "usage"
+  | "plan"
+  | "goal"
+  | "errors";
 const PANEL_EXIT_MS = 160;
 const CHIP_EXIT_MS = 160;
 const CHIP_ORDER: readonly ChipKey[] = [
@@ -38,6 +49,7 @@ const CHIP_ORDER: readonly ChipKey[] = [
   "crossagent",
   "workflow",
   "auth",
+  "backgroundTasks",
   "context",
   "plan",
   "goal",
@@ -65,7 +77,6 @@ export function ComposerInfoChips(props: {
   readonly errorDockStates: ThreadErrorDockState[];
   readonly onGoalDockDismiss: () => void;
   readonly onDismissError: (sourceItemId: string) => void;
-  readonly onTodoDockPlacementChange: (placement: "composer" | "right") => void;
   readonly onTodoDockRetire?: (() => void) | undefined;
   readonly hidden: boolean;
   readonly leading?: ReactNode;
@@ -87,6 +98,7 @@ export function ComposerInfoChips(props: {
     authState: props.agentStatus?.authState,
     errorDockStates: props.errorDockStates,
   });
+  const backgroundTasks = useVisibleThreadBackgroundTasks(threadId);
   const completedSteps =
     props.todoDockState?.steps.filter((step) => step.status === "completed").length ?? 0;
 
@@ -126,6 +138,15 @@ export function ComposerInfoChips(props: {
       tone: "warning",
     });
   }
+  if (backgroundTasks.length > 0) {
+    chips.push({
+      key: "backgroundTasks",
+      icon: Activity,
+      label: t`Background tasks`,
+      count: String(backgroundTasks.length),
+      active: true,
+    });
+  }
   if (contextSummary) {
     chips.push({
       key: "context",
@@ -156,10 +177,20 @@ export function ComposerInfoChips(props: {
     });
   }
   const chipKeys = chips.map((chip) => chip.key).join(",");
-  currentChipsRef.current = chips;
+
+  // Mirror the latest chips for the exit-tracking effect below. Written in a
+  // layout effect (never during render) and declared first so it runs before
+  // the tracker: the tracker's re-runs are keyed on chipKeys, while the chip
+  // objects themselves get a fresh identity every render.
+  useLayoutEffect(() => {
+    currentChipsRef.current = chips;
+  });
 
   useLayoutEffect(() => {
     const currentChips = currentChipsRef.current;
+    // Membership comes from the key string the re-runs are keyed on, so the
+    // trigger value is genuinely consumed here.
+    const currentKeys = new Set(chipKeys.split(",").filter((key) => key.length > 0));
     if (previousThreadIdRef.current !== threadId) {
       previousThreadIdRef.current = threadId;
       previousChipsRef.current = currentChips;
@@ -168,7 +199,6 @@ export function ComposerInfoChips(props: {
       setExitingChips([]);
       return;
     }
-    const currentKeys = new Set(currentChips.map((chip) => chip.key));
     const removed = previousChipsRef.current.filter((chip) => !currentKeys.has(chip.key));
     setExitingChips((current) => {
       const retained = current.filter((chip) => !currentKeys.has(chip.key));
@@ -318,6 +348,8 @@ export function ComposerInfoChips(props: {
             <ThreadGoalDock
               threadId={threadId}
               state={props.goalDockState}
+              placement="composer"
+              showPlacementToggle
               onDismiss={props.onGoalDockDismiss}
             />
           ) : null}
@@ -336,10 +368,16 @@ export function ComposerInfoChips(props: {
               state={props.todoDockState}
               placement="composer"
               collapsed={false}
-              canMove={false}
+              showPlacementToggle
               onCollapsedChange={closePanel}
-              onPlacementChange={props.onTodoDockPlacementChange}
               onRetire={props.onTodoDockRetire ?? (() => undefined)}
+            />
+          ) : null}
+          {panelKey === "backgroundTasks" ? (
+            <ThreadBackgroundTasksDock
+              threadId={threadId}
+              placement="composer"
+              showPlacementToggle
             />
           ) : null}
           {panelKey === "errors"
@@ -356,6 +394,7 @@ export function ComposerInfoChips(props: {
               threadId={threadId}
               projectLocation={projectLocation}
               kinds={[panelKey]}
+              showPlacementToggle
             />
           ) : null}
         </div>

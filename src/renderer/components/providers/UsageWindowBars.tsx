@@ -5,6 +5,7 @@ import {
 } from "@poracode/agents-usage/formatters";
 import type { UsageProjection } from "@poracode/agents-usage/formatters";
 import type { UsageWindow } from "@poracode/agents-usage/types";
+import { useState } from "react";
 import { formatPaceSummary, formatWindowSecondaryValue, formatWindowValue } from "./usageFormat";
 import { usageToneColor } from "./usageTone";
 
@@ -89,7 +90,9 @@ export function UsageWindowBars(props: {
   showPace?: boolean;
 }) {
   const { windows, className, showReset = true, showPace = true } = props;
-  const now = Date.now();
+  // Snapshot once per mount: the countdown/projection labels below are
+  // relative to this render's clock rather than an impure render-time read.
+  const [now] = useState(() => Date.now());
   return (
     <div className={`space-y-1.5 ${className ?? ""}`}>
       {windows.map((w) => {

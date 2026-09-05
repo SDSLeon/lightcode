@@ -149,7 +149,7 @@ export function registerSubAgentTaskIfNeeded(message: SDKMessage, state: ClaudeM
   if (title) tool.subAgentTitle = title;
 }
 
-function readNonEmptyString(value: unknown): string | undefined {
+export function readNonEmptyString(value: unknown): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 

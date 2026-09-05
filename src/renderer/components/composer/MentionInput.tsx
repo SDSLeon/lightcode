@@ -33,7 +33,8 @@ export interface McpMentionItem {
   /** Stable non-visible names that should also match the typed query. */
   searchAliases?: readonly string[];
   icon: LucideIcon;
-  detail: string;
+  /** Optional extra context; the popover section header already names the kind. */
+  detail?: string;
   enabled: boolean;
 }
 
@@ -41,15 +42,24 @@ export interface McpMentionItem {
 export interface PluginMentionItem {
   id: string;
   name: string;
-  detail: string;
+  /** Extra terms that match the typed query, from the manifest keywords. */
+  searchAliases?: readonly string[];
+  detail?: string;
   command: AgentSlashCommand;
+  /**
+   * MCP mention ids this plugin stands in for. The plugin row replaces those
+   * rows in the popover, so selecting it must enable them the way the MCP row
+   * would have.
+   */
+  enablesMcpServerIds?: readonly string[];
 }
 
 export interface ThreadMentionItem {
   threadId: string;
   title: string;
   updatedAt: string;
-  projectName?: string;
+  projectName?: string | undefined;
+  worktreeName?: string | undefined;
 }
 
 /** Stable empty list so an omitted `mcpMentions` prop doesn't churn renders. */
@@ -75,17 +85,22 @@ export function buildMentionResults(
       path: item.id,
       name: item.name,
       icon: item.icon,
-      detail: item.detail,
+      ...(item.detail ? { detail: item.detail } : {}),
       enabled: item.enabled,
     }));
   const pluginResults: MentionEntry[] = pluginMentions
-    .filter((item) => item.name.toLowerCase().startsWith(q))
+    .filter((item) =>
+      [item.name, ...(item.searchAliases ?? [])].some((name) => name.toLowerCase().startsWith(q)),
+    )
     .map((item) => ({
       type: "plugin",
       path: item.id,
       name: item.name,
-      detail: item.detail,
+      ...(item.detail ? { detail: item.detail } : {}),
       command: item.command,
+      ...(item.enablesMcpServerIds?.length
+        ? { enablesMcpServerIds: item.enablesMcpServerIds }
+        : {}),
     }));
   // Recency order comes from the producer (useThreadMentionItems); only the
   // query filter and result cap apply here.
@@ -94,17 +109,24 @@ export function buildMentionResults(
       (item) =>
         q.length === 0 ||
         threadMentionLabel(item).toLowerCase().includes(q) ||
-        item.projectName?.toLowerCase().includes(q),
+        item.projectName?.toLowerCase().includes(q) ||
+        item.worktreeName?.toLowerCase().includes(q) ||
+        // Only match raw thread ids on longer queries: ids are UUIDs, so short
+        // all-hex queries (e.g. "ed", "da") would flood the result cap with
+        // id-only matches and displace title matches.
+        (q.length >= 6 && item.threadId.toLowerCase().includes(q)),
     )
     .slice(0, q.length === 0 ? 3 : 5)
-    .map((item) => ({
-      type: "thread" as const,
-      path: item.threadId,
-      name: threadMentionLabel(item),
-      detail: item.projectName
-        ? `${item.projectName} · ${item.threadId.slice(-8)}`
-        : item.threadId.slice(-8),
-    }));
+    .map((item) => {
+      const base = item.worktreeName || item.threadId.slice(-8);
+      const detail = item.projectName ? `${item.projectName} · ${base}` : base;
+      return {
+        type: "thread" as const,
+        path: item.threadId,
+        name: threadMentionLabel(item),
+        detail,
+      };
+    });
   return [...pluginResults, ...mcpResults, ...threadResults, ...fileResults];
 }
 
@@ -309,6 +331,8 @@ export const MentionInput = forwardRef<
     pluginMentions?: readonly PluginMentionItem[];
     threadMentions?: readonly ThreadMentionItem[];
     onMcpMentionSelect?: (id: string) => void;
+    /** Portal target for the mention popover; see MentionPopover.portalContainer. */
+    popoverPortalContainer?: Element | null;
     onSlashCommandChange?: (query: string | null) => void;
     commandListId?: string;
     commandActiveDescendant?: string;
@@ -368,9 +392,32 @@ export const MentionInput = forwardRef<
     threadMentions,
   );
 
-  useEffect(() => {
+  // Restart keyboard navigation at the top whenever the query or the result
+  // set changes, tracked as a render snapshot instead of a sync setState in
+  // an effect.
+  const [prevMentionResults, setPrevMentionResults] = useState({
+    query: mention?.query,
+    files: fileResults,
+    mcp: mcpMentionKey,
+    plugin: pluginMentionKey,
+    thread: threadMentionKey,
+  });
+  if (
+    prevMentionResults.query !== mention?.query ||
+    prevMentionResults.files !== fileResults ||
+    prevMentionResults.mcp !== mcpMentionKey ||
+    prevMentionResults.plugin !== pluginMentionKey ||
+    prevMentionResults.thread !== threadMentionKey
+  ) {
+    setPrevMentionResults({
+      query: mention?.query,
+      files: fileResults,
+      mcp: mcpMentionKey,
+      plugin: pluginMentionKey,
+      thread: threadMentionKey,
+    });
     setActiveIndex(0);
-  }, [mention?.query, fileResults, mcpMentionKey, pluginMentionKey, threadMentionKey]);
+  }
 
   function insertPlainText(text: string) {
     const editor = editorRef.current;
@@ -699,6 +746,10 @@ export const MentionInput = forwardRef<
         nextRange.collapse(true);
         sel.removeAllRanges();
         sel.addRange(nextRange);
+        // The plugin row supersedes the MCP rows for the servers it wraps, so
+        // it has to turn them on as well — otherwise the skill lands without
+        // the tools it describes.
+        entry.enablesMcpServerIds?.forEach((id) => onMcpMentionSelect?.(id));
       } else if (entry.enabled) {
         const chip = createMcpMentionChipElement({ id: entry.path, name: entry.name });
         range.insertNode(chip);
@@ -903,6 +954,7 @@ export const MentionInput = forwardRef<
           mentionRange={liveRange}
           onSelect={insertMention}
           onActiveIndexChange={setActiveIndex}
+          portalContainer={props.popoverPortalContainer ?? null}
         />
       )}
     </div>

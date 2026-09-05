@@ -2,12 +2,15 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@/renderer/components/providers/bootstrap";
 import type { Thread } from "@/shared/contracts";
-import { closeAllPanels } from "@/renderer/actions/panelActions";
+import { closeAllPanels, setThreadDocksPlacement } from "@/renderer/actions/panelActions";
 import { AppProvider } from "@/renderer/components/ui/provider";
 import { useAppStore } from "@/renderer/state/appStore";
 import { usePanelStore } from "@/renderer/state/panelStore";
 import { useSharedSettings } from "@/renderer/state/sharedSettingsStore";
+import { useThreadSubAgentDockStore } from "@/renderer/state/threadSubAgentDockStore";
+import { useThreadGoalDockStore } from "@/renderer/state/threadGoalDockStore";
 import { useThreadTodoDockStore } from "@/renderer/state/threadTodoDockStore";
+import { useThreadBackgroundTasksDockStore } from "@/renderer/state/threadBackgroundTasksDockStore";
 import { ThreadView } from "./ThreadView";
 
 const { bridge, captureFileCheckpoint, runtimeActions } = vi.hoisted(() => ({
@@ -91,11 +94,20 @@ describe("ThreadView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    useSharedSettings.setState({ agentSettings: {}, collapseTerminalComposer: false });
+    useSharedSettings.setState({
+      agentSettings: {},
+      collapseTerminalComposer: false,
+      threadDocksPlacement: "composer",
+    });
     useThreadTodoDockStore.setState({
-      defaultPlacement: "composer",
       defaultCollapsed: false,
       byThreadId: {},
+    });
+    useThreadSubAgentDockStore.setState({ dismissedByThread: {} });
+    useThreadGoalDockStore.setState({ dismissedByThread: {} });
+    useThreadBackgroundTasksDockStore.setState({
+      collapsed: false,
+      dismissedTasksKeyByThread: {},
     });
     usePanelStore.setState({ rightPanelTab: "git" });
     useAppStore.setState({
@@ -184,7 +196,7 @@ describe("ThreadView", () => {
     expect(screen.queryByLabelText("Browser MCP enabled for this thread")).toBeNull();
     expect(
       screen.queryByLabelText(
-        "Computer Use enabled — interactive actions take over the desktop; don't use the machine while the agent is controlling it",
+        "Computer Use enabled — the agent drives desktop apps in the background; it only takes over the mouse and keyboard when a step explicitly needs the foreground or when a system-approved desktop portal requires it",
       ),
     ).toBeNull();
     expect(screen.queryByLabelText("Disable Browser MCP")).toBeNull();
@@ -1503,10 +1515,22 @@ describe("ThreadView", () => {
     useAppStore.setState({
       view: { kind: "thread", panes: ["thread-gui-plan"] },
       runtimeItemIdsByThread: {
-        "thread-gui-plan": ["plan-1"],
+        "thread-gui-plan": ["subagent-1", "plan-1"],
       },
       runtimeItemsByIdByThread: {
         "thread-gui-plan": {
+          "subagent-1": {
+            id: "subagent-1",
+            type: "tool_call",
+            state: "started",
+            payload: {
+              name: "spawnAgent",
+              status: "running",
+              isSubAgent: true,
+              args: { description: "dismissed reviewer" },
+            },
+            streams: {},
+          },
           "plan-1": {
             id: "plan-1",
             type: "plan",
@@ -1521,6 +1545,14 @@ describe("ThreadView", () => {
           },
         },
       },
+      runtimeBackgroundTasksByThread: {
+        "thread-gui-plan": [
+          { taskId: "task-1", kind: "command", description: "Run background checks" },
+        ],
+      },
+    });
+    useThreadSubAgentDockStore.setState({
+      dismissedByThread: { "thread-gui-plan": { "subagent-1": true } },
     });
 
     renderThreadView({
@@ -1571,18 +1603,68 @@ describe("ThreadView", () => {
       },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Move todo dock to right panel" }));
-    expect(screen.queryByLabelText("Thread todo dock")).not.toBeInTheDocument();
-    expect(useThreadTodoDockStore.getState().byThreadId["thread-gui-plan"]?.placement).toBe(
-      "right",
-    );
-    expect(usePanelStore.getState().rightPanelTab).toBe("plan");
+    const placementButtons = screen.getAllByRole("button", {
+      name: "Show docks in the right panel",
+    });
+    expect(placementButtons).toHaveLength(1);
+    expect(screen.getByLabelText("Background tasks")).toContainElement(placementButtons[0]!);
+    const backgroundDock = screen.getByLabelText("Background tasks");
+    expect(backgroundDock.querySelector(".poracode-pixel-loader")).not.toBeNull();
+    expect(backgroundDock.querySelector("svg.lucide-terminal")).toBeNull();
 
+    fireEvent.click(placementButtons[0]!);
+    expect(screen.queryByLabelText("Thread todo dock")).not.toBeInTheDocument();
+    // One global mode: the setting flips and the Docks tab opens right away.
+    expect(useSharedSettings.getState().threadDocksPlacement).toBe("right");
+    expect(usePanelStore.getState().rightPanelTab).toBe("docks");
+    expect(usePanelStore.getState().threadDocksPanelOpen).toBe(true);
+    // Compact bubbles stand in for the docks above the composer. They are one
+    // group for one panel: while the Docks tab shows, every bubble is pressed
+    // and reads "Hide", because clicking any of them hides the panel.
+    expect(screen.getByRole("button", { name: "Hide Plan" })).toBeInTheDocument();
+    const backgroundBubble = screen.getByRole("button", { name: "Hide Background tasks" });
+    expect(backgroundBubble).toHaveClass("poracode-floating-chrome--bubble");
+    expect(backgroundBubble).toHaveAttribute("aria-pressed", "true");
+    expect(backgroundBubble.querySelector("svg.lucide-activity")).toHaveClass(
+      "motion-safe:animate-pulse",
+    );
+    expect(backgroundBubble.querySelector("svg.lucide-loader-circle")).toBeNull();
+
+    // Closing the right panel hides the tab but does not change the mode.
     act(() => closeAllPanels());
+    expect(usePanelStore.getState().threadDocksPanelOpen).toBe(false);
+    expect(screen.queryByLabelText("Thread todo dock")).not.toBeInTheDocument();
+    expect(useSharedSettings.getState().threadDocksPlacement).toBe("right");
+    expect(screen.getByRole("button", { name: "Show Plan" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+
+    // The bubble reopens the Docks tab focused on the plan.
+    fireEvent.click(screen.getByRole("button", { name: "Show Plan" }));
+    expect(usePanelStore.getState().threadDocksPanelOpen).toBe(true);
+    expect(usePanelStore.getState().threadDocksFocus).toBe("plan");
+    expect(screen.getByRole("button", { name: "Hide Plan" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    // Any other bubble closes the shared panel instead of re-focusing it.
+    fireEvent.click(screen.getByRole("button", { name: "Hide Background tasks" }));
+    expect(usePanelStore.getState().threadDocksPanelOpen).toBe(false);
+
+    // Reopening from that bubble focuses its own dock.
+    fireEvent.click(screen.getByRole("button", { name: "Show Background tasks" }));
+    expect(usePanelStore.getState().threadDocksPanelOpen).toBe(true);
+    expect(usePanelStore.getState().threadDocksFocus).toBe("backgroundTasks");
+    fireEvent.click(screen.getByRole("button", { name: "Hide Background tasks" }));
+    expect(usePanelStore.getState().threadDocksPanelOpen).toBe(false);
+
+    act(() => setThreadDocksPlacement("composer"));
     expect(screen.getByLabelText("Thread todo dock")).toHaveAttribute("data-placement", "composer");
   });
 
-  it("keeps todo dock placement and collapse scoped to each thread", () => {
+  it("keeps todo dock collapse scoped to each thread", () => {
     useAppStore.setState({
       runtimeItemIdsByThread: {
         "thread-gui-plan-a": ["plan-a"],
@@ -1668,13 +1750,12 @@ describe("ThreadView", () => {
       },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Move todo dock to right panel" }));
-    useThreadTodoDockStore.getState().setCollapsed("thread-gui-plan-a", true);
+    fireEvent.click(screen.getByRole("button", { name: "Collapse todo dock" }));
 
     expect(useThreadTodoDockStore.getState().byThreadId["thread-gui-plan-a"]).toMatchObject({
-      placement: "right",
       collapsed: true,
     });
+    expect(screen.getByLabelText("Thread todo dock")).toHaveAttribute("data-collapsed", "true");
 
     rerender(
       <AppProvider>

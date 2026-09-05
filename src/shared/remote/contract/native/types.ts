@@ -50,7 +50,7 @@ export interface NativeProcedureIr {
 
 export interface NativeBindingIr {
   readonly contract: "poracode.remote";
-  readonly protocolVersion: 8;
+  readonly protocolVersion: 9;
   readonly bindingFormatVersion: 2;
   readonly generatorVersion: 3;
   readonly manifestFormatVersion: 1;

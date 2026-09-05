@@ -26,6 +26,7 @@ import {
   resolveEnabledMcpServers,
 } from "@/shared/contracts";
 import type { McpThreadIdentity } from "@/shared/browserMcpThread";
+import { msg } from "@/shared/messages";
 import type { AgentNativePlugin } from "@/supervisor/agents/base";
 import {
   resolveBrowserMcpHttpConfigForLaunch,
@@ -56,15 +57,21 @@ import {
   defaultFormatPromptSegments,
   injectWslEnv,
   primeProjectShellEnv,
+  resolveAgentProjectLocation,
   resolveLaunchSpec,
   mergeSpawnEnv,
 } from "../../agents/base";
 import { captureSupervisorException } from "../../diagnostics/sentry";
 import { ensureNodePtySpawnHelperExecutable } from "../../nodePty";
 import type { QueuedStructuredTurn, SessionRuntime } from "../sessionTypes";
+import { effectiveProjectLocation, withLogicalProjectLocation } from "../sessionTypes";
 import type { ThreadOutputPipeline } from "../threadOutputPipeline";
 import { rewriteSegmentsForWsl } from "../threadAttachments";
-import { resolveThreadMentionSegments } from "../threadMentionResolver";
+import {
+  buildProviderHandoffInstruction,
+  isResolvedThreadMentionSegment,
+  resolveThreadMentionSegments,
+} from "../threadMentionResolver";
 import { applyLaunchArgsConfigRewrite, mergeCliHookExtraArgs } from "./cliHookArgs";
 import type { CliHookSessionCoordinator } from "./cliHookPlugin";
 import { shouldPrimeNativeProjectShellEnv } from "./helpers";
@@ -83,6 +90,8 @@ export interface SpawnThreadInput {
   threadId: string;
   agentKind: AgentKind;
   adapter: AgentAdapter;
+  /** User-visible project location before any provider execution fallback. */
+  logicalProjectLocation?: ProjectLocation;
   projectLocation: ProjectLocation;
   config: ThreadConfig;
   initialSize: TerminalSize;
@@ -148,9 +157,10 @@ export function workspaceLaunchConfig(
   adapter: { capabilities: UnrestrictedPermissionCapabilities },
   disabledBuiltInMcpServerIds: readonly BuiltInMcpServerId[],
   pluginBuiltInMcpServerIds: readonly BuiltInMcpServerId[] = [],
+  homeScopeLocation: ProjectLocation = location,
 ): ThreadConfig {
   return applyHomeScopePermissions(
-    location,
+    homeScopeLocation,
     effectiveLaunchConfig(config, disabledBuiltInMcpServerIds, pluginBuiltInMcpServerIds),
     adapter.capabilities,
   );
@@ -285,6 +295,31 @@ export interface SpawnPipelineContext {
   ): string;
 }
 
+export async function resolveThreadExecution(
+  adapter: AgentAdapter,
+  projectLocation: ProjectLocation,
+  config: ThreadConfig,
+): Promise<{ location: ProjectLocation; config: ThreadConfig }> {
+  const { executionEnvironment, ...baseConfig } = config;
+  const location = await resolveAgentProjectLocation(
+    adapter,
+    projectLocation,
+    executionEnvironment,
+  );
+  return {
+    location,
+    config:
+      adapter.windowsProjectExecution === "wsl" &&
+      projectLocation.kind === "windows" &&
+      location.kind === "wsl"
+        ? {
+            ...baseConfig,
+            executionEnvironment: { kind: "wsl", distro: location.distro },
+          }
+        : baseConfig,
+  };
+}
+
 /**
  * Spawn orchestration for agent threads: initial launches, restarts of
  * inactive-but-resumable threads, and the shared `spawnThread` runtime-session
@@ -314,6 +349,11 @@ export class SpawnPipeline {
     }
 
     const adapter = this.requireAdapter(payload.agentKind);
+    const { location: executionLocation, config: runtimeConfig } = await resolveThreadExecution(
+      adapter,
+      payload.projectLocation,
+      payload.config,
+    );
 
     const isServerControlled = adapter.capabilities.liveInputMode === "server";
     // Per-thread mode wins over the adapter default. Chat-mode threads route
@@ -323,7 +363,7 @@ export class SpawnPipeline {
     const usesTerminalPresentation = requestedPresentation === "terminal";
     const useStructuredFlow = isServerControlled || !usesTerminalPresentation;
     const pluginContributions = (await ctx.options.resolvePluginLaunchContributions?.(
-      payload.projectLocation,
+      executionLocation,
       payload.agentKind,
     )) ?? { mcpServers: [], builtInMcpServerIds: [], nativePlugins: [] };
     const nativePlugins = pluginContributions.nativePlugins;
@@ -331,8 +371,9 @@ export class SpawnPipeline {
       ? resolveThreadMentionSegments(payload.segments)
       : undefined;
     const wslSegments = mentionSegments
-      ? await rewriteSegmentsForWsl(mentionSegments, payload.projectLocation, {
-          preserveImageAttachments: useStructuredFlow,
+      ? await rewriteSegmentsForWsl(mentionSegments, executionLocation, {
+          preserveImageAttachments:
+            useStructuredFlow && adapter.capabilities.readsImageAttachmentsFromHost !== false,
           preservePdfAttachments:
             useStructuredFlow && adapter.capabilities.readsPdfAttachmentsFromHost === true,
         })
@@ -343,25 +384,26 @@ export class SpawnPipeline {
     const policySegments = wslSegments?.some((segment) => segment.kind === "skill")
       ? ((await ctx.options.filterPluginSkillSegments?.({
           agentKind: payload.agentKind,
-          projectLocation: payload.projectLocation,
+          projectLocation: executionLocation,
           presentationMode: requestedPresentation,
           nativePlugins,
           segments: wslSegments,
         })) ?? wslSegments)
       : wslSegments;
-    const effectiveSegments =
+    let effectiveSegments =
       !useStructuredFlow && policySegments?.some((segment) => segment.kind === "skill")
         ? ((await ctx.options.rewriteTerminalSkillSegments?.({
             agentKind: payload.agentKind,
-            projectLocation: payload.projectLocation,
+            projectLocation: executionLocation,
             nativePlugins,
             segments: policySegments,
           })) ?? policySegments)
         : policySegments;
-    const initialPrompt =
+    const formatPrompt = (segments: PromptSegment[]): string =>
+      adapter.formatPromptSegments?.(segments) ?? defaultFormatPromptSegments(segments);
+    let initialPrompt =
       effectiveSegments && effectiveSegments.length > 0
-        ? (adapter.formatPromptSegments?.(effectiveSegments) ??
-          defaultFormatPromptSegments(effectiveSegments))
+        ? formatPrompt(effectiveSegments)
         : payload.prompt.trim();
     // Portable-skills fallback for the initial structured turn: inline SKILL.md
     // instructions for invoked skills this provider can't load natively.
@@ -369,7 +411,7 @@ export class SpawnPipeline {
       useStructuredFlow && effectiveSegments?.some((segment) => segment.kind === "skill")
         ? await ctx.options.buildSkillTurnInjection?.({
             agentKind: payload.agentKind,
-            projectLocation: payload.projectLocation,
+            projectLocation: executionLocation,
             nativePlugins,
             segments: effectiveSegments,
           })
@@ -410,19 +452,20 @@ export class SpawnPipeline {
     };
     const optimisticLaunchConfig = this.resolveMcpLaunchConfig(
       workspaceLaunchConfig(
-        payload.projectLocation,
-        payload.config,
+        executionLocation,
+        runtimeConfig,
         adapter,
         optimisticMcpLaunchSnapshot.disabledBuiltInMcpServerIds,
         optimisticMcpLaunchSnapshot.pluginBuiltInMcpServerIds,
+        payload.projectLocation,
       ),
       optimisticMcpLaunchSnapshot,
       adapter,
       payload.threadId,
-      payload.projectLocation,
+      executionLocation,
     );
     if (optimisticUserMessageItemId) {
-      this.emitOptimisticWorkingState(payload.threadId, payload.config, optimisticLaunchConfig);
+      this.emitOptimisticWorkingState(payload.threadId, runtimeConfig, optimisticLaunchConfig);
     }
 
     // Prime the user's interactive-shell env (fnm / nvm / asdf / mise cd-hooks
@@ -431,10 +474,10 @@ export class SpawnPipeline {
     // so without this the spawned CLI picks up homebrew node instead of the
     // project-pinned version. Memoized per cwd; the later prime before the PTY
     // launch is a no-op after this.
-    if (shouldPrimeNativeProjectShellEnv(payload.projectLocation)) {
-      await primeProjectShellEnv(payload.projectLocation.path);
+    if (shouldPrimeNativeProjectShellEnv(executionLocation)) {
+      await primeProjectShellEnv(executionLocation.path);
     }
-    await this.ctx.options.prepareSkillsForLaunch?.(payload.projectLocation, payload.agentKind);
+    await this.ctx.options.prepareSkillsForLaunch?.(executionLocation, payload.agentKind);
 
     const mcpIdentity = {
       threadId: payload.threadId,
@@ -454,10 +497,7 @@ export class SpawnPipeline {
       mcpServers = await this.ctx.options.applyMcpServerAuthorization(mcpServers);
     }
     if (this.ctx.options.prepareMcpToolFilters) {
-      mcpServers = await this.ctx.options.prepareMcpToolFilters(
-        mcpServers,
-        payload.projectLocation,
-      );
+      mcpServers = await this.ctx.options.prepareMcpToolFilters(mcpServers, executionLocation);
     }
     const mcpLaunchSnapshot: McpLaunchSnapshot = {
       mcpServers,
@@ -465,19 +505,20 @@ export class SpawnPipeline {
     };
     const launchConfig = this.resolveMcpLaunchConfig(
       workspaceLaunchConfig(
-        payload.projectLocation,
-        payload.config,
+        executionLocation,
+        runtimeConfig,
         adapter,
         mcpLaunchSnapshot.disabledBuiltInMcpServerIds,
         mcpLaunchSnapshot.pluginBuiltInMcpServerIds,
+        payload.projectLocation,
       ),
       mcpLaunchSnapshot,
       adapter,
       payload.threadId,
-      payload.projectLocation,
+      executionLocation,
     );
     const resolvedMcpServers = await this.resolveMcpServersForLaunch({
-      location: payload.projectLocation,
+      location: executionLocation,
       config: launchConfig,
       mcpLaunchSnapshot,
       identity: mcpIdentity,
@@ -486,9 +527,51 @@ export class SpawnPipeline {
       presentationMode: requestedPresentation,
     });
     const threadMentionToolsAvailable = hasThreadMentionTools(resolvedMcpServers);
+    // A fork handoff reads its source thread through the mention in its own
+    // prompt (see `buildForkMentionLaunchInput`), so its whole context rides on
+    // `read_thread` resolving. When it does not, no mention is readable, so
+    // degrade the way a "thread-transcript" switch does — drop them all, start
+    // anyway, and say so — rather than failing a launch the user did not
+    // hand-write. Launches without the marker (a mention the user typed
+    // themselves) still fail loudly below.
+    const handoffMentionUnresolved =
+      payload.mentionHandoff === true &&
+      !threadMentionToolsAvailable &&
+      payload.segments?.some((segment) => segment.kind === "thread") === true;
+    if (handoffMentionUnresolved) {
+      effectiveSegments = effectiveSegments?.filter(
+        (segment) => !isResolvedThreadMentionSegment(segment),
+      );
+      initialPrompt =
+        effectiveSegments && effectiveSegments.length > 0
+          ? formatPrompt(effectiveSegments)
+          : payload.prompt.trim();
+    }
+    // A "thread-transcript" switch (chat → chat) keeps the thread id and the
+    // whole transcript, so the incoming provider reads the prior conversation
+    // straight from the app database instead of being handed a summary. Every
+    // other handoff already carries its context in the prompt and must not get
+    // the instruction on top of it.
+    const handsOverTranscript = payload.providerSwitch?.contextStrategy === "thread-transcript";
+    const handoffInstruction =
+      handsOverTranscript && payload.providerSwitch && threadMentionToolsAvailable
+        ? buildProviderHandoffInstruction(payload.threadId, payload.providerSwitch.fromAgentKind)
+        : undefined;
+    // The client skipped extraction because it expected this session to resolve
+    // `read_thread`, and it did not. Nothing here can rebuild the context (the
+    // previous provider's session is already closed), so the thread says so
+    // instead of leaving the user with a provider that silently lost the
+    // conversation. Emitted below, after the handoff divider and the user's
+    // message, so it reads as a note on the new provider's first turn.
+    const transcriptHandoffLost = handsOverTranscript && !threadMentionToolsAvailable;
+    const inlineInstructions =
+      inlineSkillInstructions && handoffInstruction
+        ? `${handoffInstruction}\n\n${inlineSkillInstructions}`
+        : (handoffInstruction ?? inlineSkillInstructions);
     if (
       payload.segments?.some((segment) => segment.kind === "thread") &&
-      !threadMentionToolsAvailable
+      !threadMentionToolsAvailable &&
+      payload.mentionHandoff !== true
     ) {
       throw new Error(
         "Thread mentions require the Poracode read_thread tool, but it is unavailable for this session.",
@@ -498,7 +581,7 @@ export class SpawnPipeline {
       adapter,
       payload.threadId,
       payload.agentKind,
-      payload.projectLocation,
+      executionLocation,
       launchConfig,
       resolvedMcpServers,
       mcpIdentity,
@@ -563,8 +646,17 @@ export class SpawnPipeline {
             payload.segments,
             payload.userMessageItemId,
           );
-          this.emitOptimisticWorkingState(payload.threadId, payload.config, optimisticLaunchConfig);
+          this.emitOptimisticWorkingState(payload.threadId, runtimeConfig, optimisticLaunchConfig);
         }
+      }
+      if (transcriptHandoffLost || handoffMentionUnresolved) {
+        ctx.runtimeEventRouter.append(payload.threadId, {
+          type: "warning",
+          threadId: payload.threadId,
+          message: handoffMentionUnresolved
+            ? msg("supervisor.forkTranscriptUnavailable", { agent: adapter.label })
+            : msg("supervisor.handoffTranscriptUnavailable", { agent: adapter.label }),
+        });
       }
       const resolvedSessionRef =
         payload.sessionRef ??
@@ -574,8 +666,11 @@ export class SpawnPipeline {
         threadId: payload.threadId,
         adapter,
         agentKind: payload.agentKind,
-        projectLocation: payload.projectLocation,
-        config: payload.config,
+        ...(executionLocation !== payload.projectLocation
+          ? { logicalProjectLocation: payload.projectLocation }
+          : {}),
+        projectLocation: executionLocation,
+        config: runtimeConfig,
         initialSize: payload.initialSize,
         launchPrompt: "",
         structuredSession,
@@ -600,7 +695,7 @@ export class SpawnPipeline {
           ...(optimisticUserMessageItemId
             ? { userMessageItemId: optimisticUserMessageItemId }
             : {}),
-          ...(inlineSkillInstructions ? { inlineInstructions: inlineSkillInstructions } : {}),
+          ...(inlineInstructions ? { inlineInstructions } : {}),
         };
         void structuredSession
           .startTurn(
@@ -631,7 +726,7 @@ export class SpawnPipeline {
           initialPrompt,
           launchConfig,
           effectiveSegments,
-          inlineSkillInstructions ? { inlineInstructions: inlineSkillInstructions } : undefined,
+          inlineInstructions ? { inlineInstructions } : undefined,
         )
         .catch((error) => {
           console.error("[supervisor] initial turn failed:", error);
@@ -647,7 +742,7 @@ export class SpawnPipeline {
       await structuredSession?.ensureResumeArtifacts?.();
     }
 
-    const deferToTerminal = adapter.shouldDeferPromptToTerminal?.(payload.config) ?? false;
+    const deferToTerminal = adapter.shouldDeferPromptToTerminal?.(runtimeConfig) ?? false;
     // Use `initialPrompt` (the adapter-formatted version with `~/` shortening
     // and WSL path rewriting) so attachments hand off cleanly as the launch
     // arg instead of being staged for a deferred PTY-write.
@@ -656,18 +751,18 @@ export class SpawnPipeline {
       adapter,
       structuredSession?.launchOptions,
       resolvedMcpServers,
-      payload.projectLocation,
+      executionLocation,
     );
     const argv = payload.sessionRef
       ? adapter.buildResumeArgv(
-          payload.projectLocation,
+          executionLocation,
           launchConfig,
           launchPrompt,
           payload.sessionRef,
           launchOptionsWithMcp,
         )
       : adapter.buildLaunchArgv(
-          payload.projectLocation,
+          executionLocation,
           launchConfig,
           launchPrompt,
           payload.sessionRef,
@@ -684,7 +779,7 @@ export class SpawnPipeline {
     const cliHookExtras = await ctx.cliHookPlugin.resolveCliHookPluginExtras(
       payload.threadId,
       payload.agentKind,
-      payload.projectLocation,
+      executionLocation,
       resolvedMcpServers,
     );
     if (cliHookExtras.extraArgs.length > 0) {
@@ -699,13 +794,13 @@ export class SpawnPipeline {
     argv.args = await applyLaunchArgsConfigRewrite(
       adapter,
       argv.args,
-      payload.config,
-      payload.projectLocation,
+      runtimeConfig,
+      executionLocation,
     );
-    if (shouldPrimeNativeProjectShellEnv(payload.projectLocation)) {
-      await primeProjectShellEnv(payload.projectLocation.path);
+    if (shouldPrimeNativeProjectShellEnv(executionLocation)) {
+      await primeProjectShellEnv(executionLocation.path);
     }
-    const command = resolveLaunchSpec(payload.projectLocation, argv);
+    const command = resolveLaunchSpec(executionLocation, argv);
 
     const keepStructuredSession = structuredSession && useStructuredFlow;
     if (structuredSession && !keepStructuredSession) {
@@ -725,8 +820,11 @@ export class SpawnPipeline {
       threadId: payload.threadId,
       adapter,
       agentKind: payload.agentKind,
-      projectLocation: payload.projectLocation,
-      config: payload.config,
+      ...(executionLocation !== payload.projectLocation
+        ? { logicalProjectLocation: payload.projectLocation }
+        : {}),
+      projectLocation: executionLocation,
+      config: runtimeConfig,
       initialSize: payload.initialSize,
       launchPrompt,
       command,
@@ -741,7 +839,7 @@ export class SpawnPipeline {
       presentationMode: requestedPresentation,
       ...(deferToTerminal && !useStructuredFlow
         ? (() => {
-            const preInputs = adapter.buildTerminalPreInputs?.(payload.config);
+            const preInputs = adapter.buildTerminalPreInputs?.(runtimeConfig);
             return {
               ...(preInputs ? { pendingTerminalPreInputs: preInputs } : {}),
               pendingTerminalPrompt: initialPrompt,
@@ -756,10 +854,18 @@ export class SpawnPipeline {
 
   async restartThread(session: SessionRuntime, turn: QueuedStructuredTurn): Promise<void> {
     const ctx = this.ctx;
-    const { prompt, config } = turn;
+    const { prompt, config: turnConfig } = turn;
     if (!session.sessionRef) {
       throw new Error("Session cannot be restarted without a known session reference.");
     }
+    // Re-resolve the execution location so restarts honor a changed default
+    // distro or an updated executionEnvironment instead of reusing a stale
+    // cached UNC from the previous session.
+    const { location: executionLocation, config } = session.logicalProjectLocation
+      ? await resolveThreadExecution(session.adapter, session.logicalProjectLocation, turnConfig)
+      : { location: session.projectLocation, config: turnConfig };
+    session.projectLocation = executionLocation;
+    session.config = config;
     const mcpLaunchSnapshot = session.mcpLaunchSnapshot;
 
     const isServerControlled = session.adapter.capabilities.liveInputMode === "server";
@@ -801,6 +907,7 @@ export class SpawnPipeline {
         session.adapter,
         mcpLaunchSnapshot.disabledBuiltInMcpServerIds,
         mcpLaunchSnapshot.pluginBuiltInMcpServerIds,
+        effectiveProjectLocation(session),
       ),
       mcpLaunchSnapshot,
       session.adapter,
@@ -866,6 +973,7 @@ export class SpawnPipeline {
         threadId: session.threadId,
         agentKind: session.agentKind,
         adapter: session.adapter,
+        ...withLogicalProjectLocation(session),
         projectLocation: session.projectLocation,
         config,
         initialSize: session.terminalSize,
@@ -970,6 +1078,7 @@ export class SpawnPipeline {
       threadId: session.threadId,
       agentKind: session.agentKind,
       adapter: session.adapter,
+      ...withLogicalProjectLocation(session),
       projectLocation: session.projectLocation,
       config,
       initialSize: session.terminalSize,
@@ -1076,6 +1185,7 @@ export class SpawnPipeline {
       adapter: input.adapter,
       ...(pty ? { pty } : {}),
       ...(pty && command?.cleanup ? { launchCleanup: command.cleanup } : {}),
+      ...withLogicalProjectLocation(input),
       projectLocation: input.projectLocation,
       config: input.config,
       mcpLaunchSnapshot,
@@ -1091,6 +1201,7 @@ export class SpawnPipeline {
           input.adapter,
           mcpLaunchSnapshot.disabledBuiltInMcpServerIds,
           mcpLaunchSnapshot.pluginBuiltInMcpServerIds,
+          effectiveProjectLocation(input),
         ),
       terminalSize: input.initialSize,
       launchPrompt: input.launchPrompt,

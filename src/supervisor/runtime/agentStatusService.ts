@@ -20,9 +20,11 @@ import { effectiveAgentSettings } from "@/shared/machineSettings";
 import { localMachineKey, type AgentEnv } from "@/shared/machines";
 import { normalizeSharedSettings } from "@/shared/settings";
 import {
+  buildWindowsWslLoginCommand,
   getWindowsSystemCommand,
   invalidateExecutablePathCache,
   primeExecutablePathCache,
+  resolveAgentEnvContext,
   type AgentAdapter,
   type AgentEnvContext,
 } from "../agents/base";
@@ -78,8 +80,15 @@ const execFileAsync = promisify(execFile);
  * detection, so statuses cached under kind-global settings must be re-probed.
  * v21 adds Antigravity's independently detected terminal and ACP runtimes and
  * ACP-probed resume capability, so terminal-only cached statuses are invalid.
+ * v22 adds Muse's `authLogoutSupported` (the `muse logout` Settings action),
+ * so cached Muse statuses that hide the logout button must be re-probed.
+ * v23 lets adapters route native Windows projects through WSL and adds Muse's
+ * MSP-backed GUI presentation, so native terminal-only caches must be re-probed.
+ * v24 preserves model prefixes in generic ACP labels; re-probe labels previously
+ * shortened by the shared provider-specific formatter.
  */
-export const STATUS_CACHE_VERSION = 21;
+// v25 discards terminal auth environments with obsolete updater-disable values.
+export const STATUS_CACHE_VERSION = 25;
 const WSL_AGENT_DETECTION_TIMEOUT_MS = 60_000;
 const WSL_LXSS_REGISTRY_KEY = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Lxss";
 
@@ -103,6 +112,31 @@ function machineAgentSettingsFor(
 ): Record<string, boolean | string> | undefined {
   const merged = effectiveAgentSettings(settings, localMachineKey(env), agentKind);
   return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+async function detectAdapterInstall(
+  adapter: AgentAdapter,
+  context: AgentEnvContext,
+): Promise<AgentStatus> {
+  const executionContext = await resolveAgentEnvContext(adapter, context);
+  const status = await adapter.detectInstall(executionContext);
+  if (
+    context.envKind !== "windows" ||
+    executionContext.envKind !== "wsl" ||
+    !executionContext.wslDistro ||
+    !status.loginCommand
+  ) {
+    return status;
+  }
+  return {
+    ...status,
+    loginCommandDisplay: status.loginCommand,
+    loginCommand: buildWindowsWslLoginCommand(
+      adapter,
+      executionContext.wslDistro,
+      status.loginCommand,
+    ),
+  };
 }
 
 function migrateSettingDef(definition: Record<string, unknown>): Record<string, unknown> {
@@ -534,7 +568,7 @@ export class AgentStatusService {
           ...(agentSettings ? { agentSettings } : {}),
         };
     try {
-      const detected = await adapter.detectInstall(ctx);
+      const detected = await detectAdapterInstall(adapter, ctx);
       return {
         ...detected,
         envKind,
@@ -711,7 +745,7 @@ export class AgentStatusService {
               { kind: "native" },
               adapter.kind,
             );
-            const detected = await adapter.detectInstall({
+            const detected = await detectAdapterInstall(adapter, {
               envKind: nativeEnvKind,
               ...(agentSettings ? { agentSettings } : {}),
             });

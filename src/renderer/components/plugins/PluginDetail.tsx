@@ -6,16 +6,47 @@ import { ensureHomeScopeProject } from "@/renderer/actions/projectActions";
 import { newThreadFromText } from "@/renderer/actions/notesActions";
 import { usePanelStore } from "@/renderer/state/panelStore";
 import { useSharedSettings } from "@/renderer/state/sharedSettingsStore";
+import type {
+  BuiltInMcpServerDisabled,
+  InstalledPlugins,
+  LoadedPlugin,
+  PluginSkillRef,
+} from "@/shared/contracts";
 import {
+  canDisablePlugin,
+  canUninstallPlugin,
   isPluginMcpServerEnabled,
   isPluginSkillEnabled,
   isPluginSupportedOnHost,
   getPluginCoreSkill,
+  resolveInstalledPluginState,
 } from "@/shared/plugins/catalog";
 import { PluginIcon } from "./PluginIcon";
 import { PluginTag } from "./PluginTag";
 import { usePluginOauth } from "./usePluginOauth";
 import { useLocalizedPluginDiagnostic, type LocalizedPlugin } from "./pluginCopy";
+
+function canTryPluginNow(input: {
+  plugin: LoadedPlugin;
+  coreSkill: PluginSkillRef | undefined;
+  hostPlatform: NodeJS.Platform;
+  installedPlugins: InstalledPlugins;
+  disabledBuiltInMcpServers: BuiltInMcpServerDisabled;
+}): boolean {
+  const state = resolveInstalledPluginState(input.plugin, input.installedPlugins);
+  return Boolean(
+    isPluginSupportedOnHost(input.plugin, input.hostPlatform) &&
+    state &&
+    input.coreSkill &&
+    isPluginSkillEnabled(input.plugin, state, input.coreSkill.folder) &&
+    input.plugin.mcpServers.every((server) =>
+      isPluginMcpServerEnabled(input.plugin, state, server.name),
+    ) &&
+    input.plugin.poracode.builtInMcpServerIds.every(
+      (id) => input.disabledBuiltInMcpServers[id] !== true,
+    ),
+  );
+}
 
 export function PluginDetail(props: {
   plugin: LocalizedPlugin;
@@ -24,7 +55,11 @@ export function PluginDetail(props: {
 }) {
   const { t } = useLingui();
   const plugin = props.plugin.plugin;
-  const state = useSharedSettings((settings) => settings.installedPlugins[plugin.name]);
+  const installedPlugins = useSharedSettings((settings) => settings.installedPlugins);
+  const disabledBuiltInMcpServers = useSharedSettings(
+    (settings) => settings.disabledBuiltInMcpServers,
+  );
+  const state = resolveInstalledPluginState(plugin, installedPlugins);
   const installPlugin = useSharedSettings((settings) => settings.installPlugin);
   const uninstallPlugin = useSharedSettings((settings) => settings.uninstallPlugin);
   const setPluginEnabled = useSharedSettings((settings) => settings.setPluginEnabled);
@@ -39,6 +74,13 @@ export function PluginDetail(props: {
   const author = plugin.manifest.author?.name;
   const examplePrompt = plugin.poracode.examplePrompt;
   const coreSkill = getPluginCoreSkill(plugin);
+  const canTryNow = canTryPluginNow({
+    plugin,
+    coreSkill,
+    hostPlatform: props.hostPlatform,
+    installedPlugins,
+    disabledBuiltInMcpServers,
+  });
   const closeSettings = usePanelStore((panel) => panel.closeSettings);
   const oauth = usePluginOauth(plugin);
   const describeDiagnostic = useLocalizedPluginDiagnostic();
@@ -48,10 +90,26 @@ export function PluginDetail(props: {
   // Seeds a draft composer rather than sending anything, so the user still
   // reviews the prompt and picks a model before the thread starts.
   const tryNow = async () => {
-    if (!examplePrompt || !coreSkill) return;
+    if (!examplePrompt || !coreSkill || !canTryNow) return;
     const project = await ensureHomeScopeProject();
+    const latestSettings = useSharedSettings.getState();
+    if (
+      !canTryPluginNow({
+        plugin,
+        coreSkill,
+        hostPlatform: props.hostPlatform,
+        installedPlugins: latestSettings.installedPlugins,
+        disabledBuiltInMcpServers: latestSettings.disabledBuiltInMcpServers,
+      })
+    ) {
+      return;
+    }
     newThreadFromText(project.id, `/${coreSkill.folder} ${examplePrompt}`, {
       bindLeadingSkill: true,
+      leadingSkillPluginId: plugin.name,
+      ...(plugin.poracode.builtInMcpServerIds.length > 0
+        ? { enableMcpServerIds: plugin.poracode.builtInMcpServerIds }
+        : {}),
     });
     closeSettings();
   };
@@ -62,11 +120,15 @@ export function PluginDetail(props: {
 
   return (
     <div className="mx-auto min-h-full max-w-[720px]">
+      {/* Focused on mount, so it keeps its own padding: with `px-0` the hover
+          and focus surface hugged the glyph and the row read as a stray box. The
+          negative inline-start margin keeps the label optically aligned with the
+          heading below. */}
       <Button
         ref={backButtonRef}
         size="sm"
         variant="ghost"
-        className="mb-4 !px-0"
+        className="-ms-2 mb-4 gap-2 px-2"
         onPress={props.onBack}
       >
         <ArrowLeft className="size-4" />
@@ -86,25 +148,39 @@ export function PluginDetail(props: {
               <p className="mt-1 text-sm text-muted">{props.plugin.description}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              {examplePrompt && coreSkill ? (
+              {/* "Try now" opens a home-scope thread, which cannot see a
+                  package that belongs to one project's repository. */}
+              {examplePrompt && coreSkill && plugin.source !== "project" ? (
                 <Button
                   size="sm"
                   variant="tertiary"
-                  isDisabled={!state?.enabled}
+                  isDisabled={!canTryNow}
                   onPress={() => void tryNow()}
                 >
                   <Sparkles className="size-4" />
                   <Trans>Try now</Trans>
                 </Button>
               ) : null}
-              {state ? (
+              {!supported ? (
+                // Host support is independent of install state: a built-in
+                // tool plugin still ships installed where it cannot run.
+                <Button size="sm" isDisabled>
+                  <Trans>Unavailable on this device</Trans>
+                </Button>
+              ) : !state ? (
+                <Button size="sm" onPress={() => installPlugin(plugin)}>
+                  <Trans>Install</Trans>
+                </Button>
+              ) : canUninstallPlugin(plugin) ? (
                 <Button size="sm" variant="danger" onPress={() => uninstallPlugin(plugin)}>
                   <Trans>Uninstall</Trans>
                 </Button>
               ) : (
-                <Button size="sm" isDisabled={!supported} onPress={() => installPlugin(plugin)}>
-                  {supported ? <Trans>Install</Trans> : <Trans>Unavailable on this device</Trans>}
-                </Button>
+                // Built-in tool plugins ship inside the app: they can be
+                // switched off, but there is nothing to remove from disk.
+                <PluginTag>
+                  <Trans>Built-in</Trans>
+                </PluginTag>
               )}
             </div>
           </div>
@@ -113,6 +189,11 @@ export function PluginDetail(props: {
             {plugin.poracode.communityMaintained ? (
               <PluginTag>
                 <Trans>Community</Trans>
+              </PluginTag>
+            ) : null}
+            {plugin.source === "project" ? (
+              <PluginTag>
+                <Trans>Project</Trans>
               </PluginTag>
             ) : null}
             <span aria-hidden="true">·</span>
@@ -135,14 +216,16 @@ export function PluginDetail(props: {
       {examplePrompt && coreSkill ? (
         <Button
           variant="tertiary"
-          isDisabled={!state?.enabled}
-          className="mt-6 flex w-full items-center gap-3 rounded-2xl border border-[var(--hairline)] bg-surface-secondary !px-4 !py-3 text-left hover:border-[var(--hairline-strong)] focus-visible:border-[var(--hairline-strong)]"
+          isDisabled={!canTryNow}
+          className="mt-6 flex w-full min-w-0 max-w-full items-center gap-3 overflow-hidden rounded-2xl border border-[var(--hairline)] bg-surface-secondary !px-4 !py-3 text-left hover:border-[var(--hairline-strong)] focus-visible:border-[var(--hairline-strong)]"
           onPress={() => void tryNow()}
         >
           <span className="shrink-0 text-muted">
             <PluginIcon pluginId={plugin.name} className="size-4" />
           </span>
-          <span className="min-w-0 flex-1 text-sm text-foreground">{examplePrompt}</span>
+          <span className="min-w-0 flex-1 truncate text-sm text-foreground" title={examplePrompt}>
+            {examplePrompt}
+          </span>
           <ArrowRight className="size-4 shrink-0 text-muted" />
         </Button>
       ) : null}
@@ -174,7 +257,7 @@ export function PluginDetail(props: {
         </p>
       ) : null}
 
-      {state ? (
+      {state && canDisablePlugin(plugin) ? (
         <section className="flex items-center justify-between gap-4 border-b border-[var(--hairline)] py-5">
           <div>
             <h2 id={pluginToggleLabelId} className="text-sm font-semibold text-foreground">
@@ -233,7 +316,7 @@ export function PluginDetail(props: {
                         aria-labelledby={`${labelId} ${badgeId}`}
                         isSelected={enabled}
                         isDisabled={!supported || !state.enabled}
-                        onChange={(next) => setPluginMcpServerEnabled(plugin.name, server.id, next)}
+                        onChange={(next) => setPluginMcpServerEnabled(plugin, server.id, next)}
                       />
                     </div>
                   ) : undefined
@@ -270,12 +353,12 @@ export function PluginDetail(props: {
                 badge={t`Skill`}
                 last={index === props.plugin.skills.length - 1}
                 control={
-                  state ? (
+                  state && canDisablePlugin(plugin) ? (
                     <ToggleSwitch
                       aria-labelledby={`${labelId} ${badgeId}`}
                       isSelected={enabled}
                       isDisabled={!supported || !state.enabled}
-                      onChange={(next) => setPluginSkillEnabled(plugin.name, skill.id, next)}
+                      onChange={(next) => setPluginSkillEnabled(plugin, skill.id, next)}
                     />
                   ) : undefined
                 }

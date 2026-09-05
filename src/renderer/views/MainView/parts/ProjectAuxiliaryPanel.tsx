@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { isHomeProjectId } from "@/shared/homeScope";
+import { resolveProjectLocation } from "@/shared/worktree";
 import {
   productSurfaceView,
   useProductViewTracking,
@@ -25,25 +26,27 @@ import {
   SubAgentContent,
   SubAgentHeaderText,
 } from "@/renderer/components/thread/ChatPane/parts/items/SubAgentOverlay";
-import { ThreadTodoDock } from "@/renderer/components/thread/ThreadTodoDock";
-import { selectThreadTodoDockState } from "@/renderer/components/thread/threadTodoState";
+import { ThreadDocksPanel } from "@/renderer/components/thread/ThreadDocksPanel";
+import { useThreadGalleryImages } from "@/renderer/components/thread/useThreadGalleryImages";
+import { ThreadDocksPlacementToggle } from "@/renderer/components/thread/ThreadDocksPlacementToggle";
+import { panelHeaderIconButtonClass } from "@/renderer/components/layout/sidebarChrome";
+import { useDocksPanelHasContent } from "@/renderer/components/thread/useThreadDocksSummary";
 import { useAppStore } from "@/renderer/state/appStore";
 import { useBrowserPanelStore } from "@/renderer/state/browserPanelStore";
 import { useDevTerminalStore } from "@/renderer/state/devTerminalStore";
 import { useFileEditorStore, type FileEditorRootContext } from "@/renderer/state/fileEditorStore";
 import { usePanelStore, type GitReviewContext } from "@/renderer/state/panelStore";
-import { useThreadTodoDockStore } from "@/renderer/state/threadTodoDockStore";
 import {
   selectBrowserBridgeServer,
   selectBrowserPanelAvailable,
   useRemoteServersStore,
 } from "@/renderer/state/remoteServersStore";
 import { isBrowserClientRuntime } from "@/renderer/clientRuntime";
+import { useSharedSettings } from "@/renderer/state/sharedSettingsStore";
 import { watchRemoteTerminal } from "@/renderer/state/remoteTerminalFeed";
 import { prefetchVisibleGitPanelPrData } from "@/renderer/state/gitRefresh";
 import {
   closeAllPanels,
-  moveThreadTodoDock,
   showFilesPanel,
   showGitReviewPanel,
   undockPanelTab,
@@ -124,24 +127,28 @@ export function ProjectAuxiliaryPanel(props: {
   const terminalWorktreePath = useDevTerminalStore((s) => s.activeWorktreePath);
   const terminalProject = projects.find((project) => project.id === terminalProjectId);
   const currentThreadId = useFocusedThreadId();
-  const todoDockPlacement = useThreadTodoDockStore((state) =>
-    currentThreadId
-      ? (state.byThreadId[currentThreadId]?.placement ?? state.defaultPlacement)
-      : "composer",
+  const currentThread = useAppStore((state) =>
+    currentThreadId ? state.threads.find((thread) => thread.id === currentThreadId) : undefined,
   );
-  const todoDockCollapsed = useThreadTodoDockStore((state) =>
-    currentThreadId
-      ? (state.byThreadId[currentThreadId]?.collapsed ?? state.defaultCollapsed)
-      : false,
+  const currentThreadProject = currentThread
+    ? projects.find((project) => project.id === currentThread.projectId)
+    : undefined;
+  const currentThreadProjectLocation =
+    currentThread && currentThreadProject
+      ? resolveProjectLocation(currentThreadProject.location, currentThread.worktreePath)
+      : undefined;
+  const docksInCurrentThread = useDocksPanelHasContent();
+  // Image-only threads offer the Docks tab without making image presence itself
+  // an open flag. The explicit threadDocksPanelOpen state still owns dismissal.
+  const docksPlacement = useSharedSettings((s) => s.threadDocksPlacement);
+  const threadDocksFocus = usePanelStore((s) => s.threadDocksFocus);
+  const gallery = useThreadGalleryImages(
+    currentThreadId !== null && (docksPlacement === "right" || threadDocksFocus === "images")
+      ? currentThreadId
+      : undefined,
   );
-  const retiredTodoSourceItemId = useThreadTodoDockStore((state) =>
-    currentThreadId ? state.byThreadId[currentThreadId]?.retiredSourceItemId : undefined,
-  );
-  const todoDockState = useAppStore((state) =>
-    currentThreadId && todoDockPlacement === "right"
-      ? selectThreadTodoDockState(state, currentThreadId)
-      : null,
-  );
+  const imagesInCurrentThread = gallery.length > 0;
+  const docksTabAvailable = docksInCurrentThread || imagesInCurrentThread;
 
   const gitPanelOpen = !!gitReviewContext && gitReviewAsPanel;
   const filesPanelOpen = filesPanelContext !== null;
@@ -156,29 +163,22 @@ export function ProjectAuxiliaryPanel(props: {
     subAgentPanelContext !== null &&
     subAgentPanelContext.threadId === currentThreadId &&
     subAgentItemExists;
-  const planInCurrentThread =
-    currentThreadId !== null &&
-    todoDockPlacement === "right" &&
-    todoDockState !== null &&
-    todoDockState.sourceItemId !== retiredTodoSourceItemId;
 
-  const previousGitReviewContextRef = useRef<GitReviewContext | null>(null);
-  const gitReviewContextChanged = previousGitReviewContextRef.current !== gitReviewContext;
-  previousGitReviewContextRef.current = gitReviewContext;
-
-  const lastGitPanelContextRef = useRef(gitReviewContext);
-  if (gitReviewContext && gitReviewAsPanel) {
-    lastGitPanelContextRef.current = gitReviewContext;
+  // Last-non-null context holders. They derive from store state during
+  // render, so they are `useState` snapshots adjusted during render — never
+  // refs written during render. (Change *detection* for the sync effect below
+  // lives in that effect's own ref so the adopting commit still observes it.)
+  const [lastGitPanelContext, setLastGitPanelContext] = useState(gitReviewContext);
+  if (gitReviewContext && gitReviewAsPanel && lastGitPanelContext !== gitReviewContext) {
+    setLastGitPanelContext(gitReviewContext);
   }
-  const gitPanelContext = gitPanelOpen ? gitReviewContext : lastGitPanelContextRef.current;
+  const gitPanelContext = gitPanelOpen ? gitReviewContext : lastGitPanelContext;
 
-  const lastFilesPanelContextRef = useRef(filesPanelContext);
-  if (filesPanelContext) {
-    lastFilesPanelContextRef.current = filesPanelContext;
+  const [lastFilesPanelContext, setLastFilesPanelContext] = useState(filesPanelContext);
+  if (filesPanelContext && lastFilesPanelContext !== filesPanelContext) {
+    setLastFilesPanelContext(filesPanelContext);
   }
-  const rawFilesPanelContext = filesPanelOpen
-    ? filesPanelContext
-    : lastFilesPanelContextRef.current;
+  const rawFilesPanelContext = filesPanelOpen ? filesPanelContext : lastFilesPanelContext;
   const resolvedFilesPanelContext = resolveFilesRootContext(rawFilesPanelContext, projects);
 
   const requestedTab: RightPanelTab = props.includeTerminal
@@ -188,7 +188,7 @@ export function ProjectAuxiliaryPanel(props: {
         rightPanelTab === "usage" ||
         rightPanelTab === "notes" ||
         rightPanelTab === "ports" ||
-        rightPanelTab === "plan" ||
+        rightPanelTab === "docks" ||
         rightPanelTab === "subagent"
       ? rightPanelTab
       : "git";
@@ -197,14 +197,14 @@ export function ProjectAuxiliaryPanel(props: {
     // A bottom-docked tab already renders in the bottom row.
     if (isBottomDocked(requestedTab)) return false;
     if (requestedTab === "subagent") return subAgentInCurrentThread;
-    if (requestedTab === "plan") return planInCurrentThread;
+    if (requestedTab === "docks") return docksTabAvailable;
     // The browser panel is dismissed out-of-band when its last tab closes (the
     // browser sync clears browserPanelOpen but leaves rightPanelTab pointing at
     // "browser"), so it must honor its open flag even when no plan is present —
     // otherwise the panel stays open on an empty browser layer.
     if (requestedTab === "browser") return browserPanelAvailable && browserPanelOpen;
     if (requestedTab === "ports") return portsAvailable && portsPanelOpen;
-    if (!planInCurrentThread) return true;
+    if (!docksInCurrentThread) return true;
     if (requestedTab === "terminal") return terminalOpen;
     if (requestedTab === "files") return filesPanelOpen;
     if (requestedTab === "git") return gitPanelOpen;
@@ -213,7 +213,7 @@ export function ProjectAuxiliaryPanel(props: {
   }
 
   function fallbackActiveTab(): RightPanelTab {
-    if (planInCurrentThread) return "plan";
+    if (docksInCurrentThread) return "docks";
     if (subAgentInCurrentThread) return "subagent";
     if (filesPanelOpen && !isBottomDocked("files")) return "files";
     if (gitPanelOpen && !isBottomDocked("git")) return "git";
@@ -226,14 +226,20 @@ export function ProjectAuxiliaryPanel(props: {
   }
 
   const activeTab = requestedTabIsAvailable() ? requestedTab : fallbackActiveTab();
+  // Tracks the last git context this sync observed (null initially, so a
+  // context present on mount counts as an explicit target and wins). Read and
+  // written only inside the effect — never during render.
+  const prevGitReviewContextRef = useRef<GitReviewContext | null>(null);
   useEffect(() => {
     if (!props.visible) return;
+    // A new git context is an explicit target (for example, clicking thread
+    // B's badge while thread A is focused). Let that open win; the follow
+    // lock will take over again on the next thread or tab change.
+    const gitReviewContextChanged = prevGitReviewContextRef.current !== gitReviewContext;
+    prevGitReviewContextRef.current = gitReviewContext;
     let refreshTimer: number | undefined;
     const frame = requestAnimationFrame(() => {
-      // A new git context is an explicit target (for example, clicking thread
-      // B's badge while thread A is focused). Let that open win; the follow
-      // lock will take over again on the next thread or tab change.
-      if (activeTab !== "git" || !gitReviewContextChanged) {
+      if (rightPanelFollowsThread && (activeTab !== "git" || !gitReviewContextChanged)) {
         syncRightPanelTabToFocusedThread(activeTab);
       }
       if (activeTab !== "git") return;
@@ -253,14 +259,7 @@ export function ProjectAuxiliaryPanel(props: {
       cancelAnimationFrame(frame);
       if (refreshTimer !== undefined) window.clearTimeout(refreshTimer);
     };
-  }, [
-    activeTab,
-    currentThreadId,
-    gitReviewContext,
-    gitReviewContextChanged,
-    props.visible,
-    rightPanelFollowsThread,
-  ]);
+  }, [activeTab, currentThreadId, gitReviewContext, props.visible, rightPanelFollowsThread]);
   useProductViewTracking(productSurfaceView(activeTab, "panel"), "panel", {
     active: props.visible,
     finishWhenInactive: true,
@@ -310,8 +309,9 @@ export function ProjectAuxiliaryPanel(props: {
           ? formatProjectScopeLabel(terminalProjectName, terminalWorktreePath ?? undefined)
           : undefined;
       }
+      case "docks":
+        return t`Thread info`;
       case "subagent":
-      case "plan":
         return undefined;
       case "files":
         return resolvedFilesPanelContext?.rootLabel ?? projectNameForScope(activeProjectScope());
@@ -378,7 +378,7 @@ export function ProjectAuxiliaryPanel(props: {
   const renderNotesContent =
     notesPanelOpen && notesProjectId !== undefined && !isBottomDocked("notes");
   const renderPortsContent = portsAvailable && portsPanelOpen;
-  const renderPlanContent = planInCurrentThread;
+  const renderDocksContent = docksTabAvailable;
   const renderSubAgentContent = subAgentInCurrentThread;
 
   return (
@@ -386,7 +386,7 @@ export function ProjectAuxiliaryPanel(props: {
       activeTab={activeTab}
       onTabChange={(tab) => {
         if (tab === "subagent" && !renderSubAgentContent) return;
-        if (tab === "plan" && !renderPlanContent) return;
+        if (tab === "docks" && !renderDocksContent) return;
         pressTab(tab, () => setRightPanelTab(tab));
       }}
       {...(renderTerminalContent
@@ -435,22 +435,15 @@ export function ProjectAuxiliaryPanel(props: {
         ) : undefined
       }
       portsContent={renderPortsContent ? <PortsPanel /> : undefined}
-      {...(renderPlanContent && currentThreadId && todoDockState
+      {...(renderDocksContent && currentThreadId
         ? {
-            planContent: (
-              <ThreadTodoDock
-                collapsed={todoDockCollapsed}
-                placement="right"
-                state={todoDockState}
-                onCollapsedChange={(collapsed) =>
-                  useThreadTodoDockStore.getState().setCollapsed(currentThreadId, collapsed)
-                }
-                onPlacementChange={(placement) => moveThreadTodoDock(currentThreadId, placement)}
-                onRetire={() =>
-                  useThreadTodoDockStore
-                    .getState()
-                    .retire(currentThreadId, todoDockState.sourceItemId)
-                }
+            docksContent: (
+              <ThreadDocksPanel
+                key={currentThreadId}
+                threadId={currentThreadId}
+                {...(currentThreadProjectLocation
+                  ? { projectLocation: currentThreadProjectLocation }
+                  : {})}
               />
             ),
           }
@@ -474,12 +467,18 @@ export function ProjectAuxiliaryPanel(props: {
       portsHeaderActions={
         <PortsPanelHeaderActions dragControlClass="poracode-overlay-header__controls" />
       }
+      docksHeaderActions={
+        <ThreadDocksPlacementToggle
+          placement={docksPlacement}
+          buttonClassName={`poracode-overlay-header__controls ${panelHeaderIconButtonClass}`}
+        />
+      }
       showTerminalTab={props.includeTerminal}
       showFilesTab={!isHomeScope}
       showGitTab={!isHomeScope}
       showNotesTab={notesProjectId !== undefined}
       showPortsTab={portsAvailable}
-      showPlanTab={renderPlanContent}
+      showDocksTab={renderDocksContent}
       showSubagentTab={renderSubAgentContent}
       {...(renderSubAgentContent
         ? {

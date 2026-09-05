@@ -8,23 +8,23 @@ import type { ThreadContentCommonProps } from "./ThreadContent";
 
 const emptyTodoComposerProps = {
   todoDockCollapsed: false,
-  todoDockPlacement: "composer" as const,
+  docksPlacement: "composer" as const,
   todoDockState: null,
   goalDockState: null,
   errorDockStates: [],
   onGoalDockDismiss: () => undefined,
   onTodoDockCollapsedChange: () => undefined,
-  onTodoDockPlacementChange: () => undefined,
   onDismissError: () => undefined,
 };
 
-export function TerminalThreadContent(
-  props: ThreadContentCommonProps & {
-    onTerminalResize: (size: { cols: number; rows: number }) => void;
-    /** Mounted but hidden for keep-alive. */
-    hidden?: boolean;
-  },
-) {
+export function TerminalThreadContent({
+  terminalPaneRef,
+  ...props
+}: ThreadContentCommonProps & {
+  onTerminalResize: (size: { cols: number; rows: number }) => void;
+  /** Mounted but hidden for keep-alive. */
+  hidden?: boolean;
+}) {
   const thread = useThread(props.threadId) ?? props.fallbackThread;
   const { t } = useLingui();
   const awaitingWorktree = useAppStore(
@@ -37,7 +37,7 @@ export function TerminalThreadContent(
       <div className="relative min-h-0 flex-1 overflow-visible">
         {thread.remoteServerId && !props.remoteTerminalTransport ? null : (
           <TerminalPane
-            ref={props.terminalPaneRef}
+            ref={terminalPaneRef}
             key={thread.id}
             onTerminalResize={props.onTerminalResize}
             status={thread.status}
@@ -59,7 +59,11 @@ export function TerminalThreadContent(
           </div>
         ) : null}
       </div>
-      <ThreadComposerSection {...props} {...emptyTodoComposerProps} />
+      <ThreadComposerSection
+        {...props}
+        terminalPaneRef={terminalPaneRef}
+        {...emptyTodoComposerProps}
+      />
     </>
   );
 }

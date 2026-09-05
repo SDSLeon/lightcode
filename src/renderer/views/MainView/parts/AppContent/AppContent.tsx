@@ -3,7 +3,6 @@ import { X } from "lucide-react";
 import { toast } from "@heroui/react";
 import { useLingui } from "@lingui/react/macro";
 import type {
-  ExtractContextResult,
   Project,
   PromptSegment,
   Thread,
@@ -25,7 +24,11 @@ import {
 } from "@/renderer/state/useThread";
 import { startThreadFromDraft } from "@/renderer/actions/threadLaunchActions";
 import { markThreadDone } from "@/renderer/actions/threadActions";
-import { buildHandoffLaunchInput } from "@/renderer/actions/providerHandoff";
+import {
+  buildForkMentionLaunchInput,
+  buildHandoffLaunchInput,
+  type ProviderHandoffContext,
+} from "@/renderer/actions/providerHandoff";
 import { switchThreadProviderInPlace } from "@/renderer/actions/providerSwitchActions";
 import { continueRemoteThreadInNewThread } from "@/renderer/actions/providerSwitchRemoteActions";
 import { useRemoteServersStore } from "@/renderer/state/remoteServersStore";
@@ -71,6 +74,12 @@ function DeferredPageLoader() {
   );
 }
 
+// Non-subscribing store read for the thread branch below. Aliased at module
+// scope (rather than `useAppStore.getState()` inline) so the render path never
+// references the hook as a value; pane deletion always updates view.panes
+// atomically, so subscribing to threads/projects here isn't worth a re-render.
+const getAppState = useAppStore.getState;
+
 export function AppContent() {
   const { t } = useLingui();
   const view = useAppStore((state) => state.view);
@@ -103,7 +112,7 @@ export function AppContent() {
     prompt: string,
     segments: PromptSegment[] | undefined,
     intent: ContinueIntent,
-    extractedContext: ExtractContextResult | null,
+    handoffContext: ProviderHandoffContext,
   ) {
     if (findExperimentByThreadId(sourceThread.id)) return;
     const storeProjects = useAppStore.getState().projects;
@@ -143,13 +152,20 @@ export function AppContent() {
         targetConfig,
         prompt,
         segments,
-        extractedContext,
+        handoffContext,
         targetLabel,
       });
       return;
     }
 
+    // A fork on the transcript route reads its source thread through a thread
+    // mention; every other replacement thread carries a context file (possibly
+    // none). A replacement terminal thread never gets the transcript route —
+    // the dialog only picks it for a chat target.
+    const extractedContext =
+      handoffContext.strategy === "context-file" ? handoffContext.extracted : null;
     const isFork = intent === "fork";
+    const readsSourceThread = isFork && handoffContext.strategy === "thread-transcript";
 
     // The title is the user's own label for the task, and the task is what
     // carries over — so inherit it instead of generating a new one. A fork is
@@ -208,13 +224,24 @@ export function AppContent() {
       ...(groupName ? { groupName } : {}),
     });
 
-    const launch = await buildHandoffLaunchInput({
-      threadId: thread.id,
-      prompt,
-      segments,
-      extractedContext,
-    });
-    queueThreadLaunch(thread.id, launch.prompt, launch.segments);
+    const launch = readsSourceThread
+      ? buildForkMentionLaunchInput({ sourceThread, prompt, segments })
+      : await buildHandoffLaunchInput({
+          threadId: thread.id,
+          prompt,
+          segments,
+          extractedContext,
+        });
+    queueThreadLaunch(
+      thread.id,
+      launch.prompt,
+      launch.segments,
+      undefined,
+      // The mention is this fork's whole context. If the target session cannot
+      // resolve `read_thread`, the supervisor starts without it and says so
+      // instead of failing the launch.
+      readsSourceThread ? { mentionHandoff: true } : undefined,
+    );
 
     if (isFork) {
       useAppStore.getState().openThreadSideBySide(thread.id);
@@ -231,7 +258,7 @@ export function AppContent() {
     }
 
     toast.success(
-      extractedContext
+      extractedContext || readsSourceThread
         ? t`Context transferred to ${targetLabel}`
         : t`Started ${targetLabel} thread`,
     );
@@ -290,7 +317,7 @@ export function AppContent() {
   }
 
   if (view.kind === "thread") {
-    const closePane = useAppStore.getState().closePane;
+    const closePane = getAppState().closePane;
     const fullPaneLayout = view.paneLayout ?? buildPaneLayoutFromLegacy(view.panes, view.rowLayout);
     const { paneLayout, visiblePaneIds, hiddenCurrentPaneIds } = resolveResponsivePaneLayout({
       fullPaneLayout,
@@ -302,7 +329,7 @@ export function AppContent() {
     const fullPaneCount = view.panes.length;
     // Non-subscribing read: threads / projects array identity isn't worth
     // a re-render here — pane deletion always updates view.panes atomically.
-    const storeThreads = useAppStore.getState().threads;
+    const storeThreads = getAppState().threads;
     const hasValidPanes = view.panes.some((id) =>
       isDraftPaneId(id)
         ? projectIds.includes(parseDraftProjectId(id) ?? "")

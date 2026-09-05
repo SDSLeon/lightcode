@@ -64,6 +64,13 @@ export function useLongPress(onLongPress: (() => void) | null): Partial<LongPres
     originRef.current = null;
     clearSelectionGuard();
   };
+  // The unmount cleanup is subscribed once but must invoke the latest
+  // cancelPending — route it through a ref synced after every render so the
+  // effect takes no per-render dependency.
+  const cancelPendingRef = useRef(cancelPending);
+  useLayoutEffect(() => {
+    cancelPendingRef.current = cancelPending;
+  });
 
   const armSelectionGuard = () => {
     clearSelectionGuard();
@@ -82,7 +89,7 @@ export function useLongPress(onLongPress: (() => void) | null): Partial<LongPres
     };
   };
 
-  useLayoutEffect(() => () => cancelPending(), []);
+  useLayoutEffect(() => () => cancelPendingRef.current(), []);
 
   if (!onLongPress) return {};
 

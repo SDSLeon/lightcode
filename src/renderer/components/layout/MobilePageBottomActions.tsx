@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useMobilePageActionScope } from "./MobilePageActionScope";
 
@@ -30,13 +30,19 @@ export function MobilePageBottomAction(props: {
   const scope = useMobilePageActionScope();
   const [target, setTarget] = useState<HTMLElement | null>(null);
 
-  useLayoutEffect(() => {
-    setTarget(
-      document.querySelector<HTMLElement>(
-        `[data-poracode-mobile-page-bottom-action="${scope}:${props.side}"]`,
-      ),
-    );
-  }, [props.side, scope]);
+  // Same commit-phase lookup as MobilePageHeaderActions: the bottom-bar slot
+  // lives outside this subtree, so the portal target resolves when the anchor
+  // commits rather than in an effect.
+  const selector = `[data-poracode-mobile-page-bottom-action="${scope}:${props.side}"]`;
+  const [locateSlot] = useState(
+    () => (anchor: HTMLElement | null) =>
+      setTarget(anchor ? document.querySelector<HTMLElement>(selector) : null),
+  );
 
-  return target ? createPortal(props.children, target) : null;
+  return (
+    <>
+      <span key={selector} ref={locateSlot} hidden />
+      {target ? createPortal(props.children, target) : null}
+    </>
+  );
 }

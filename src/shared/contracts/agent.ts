@@ -311,6 +311,15 @@ export const agentCapabilitySchema = z.object({
    * supervisor, so WSL path rewriting must preserve their native host paths.
    */
   readsPdfAttachmentsFromHost: z.boolean().optional(),
+  /**
+   * Whether structured turns read image attachment bytes in the host supervisor
+   * and hand them to the provider as inline image content. When false, the
+   * provider's structured sessions cannot consume inline images — image
+   * attachments take the terminal path instead: WSL rewriting copies them into
+   * the execution location and the adapter references them by path.
+   * Optional: absent = true.
+   */
+  readsImageAttachmentsFromHost: z.boolean().optional(),
   liveInputMode: liveInputModeSchema.default("terminal"),
   presentationMode: threadPresentationModeSchema.default("terminal"),
   /**
@@ -391,6 +400,7 @@ export const agentRuntimeVariantSchema = z.object({
   authUsesProviderLogin: z.boolean(),
   /** Runtime-specific login controls for providers with independently authenticated surfaces. */
   loginCommand: z.string().min(1).optional(),
+  loginCommandDisplay: z.string().min(1).optional(),
   preferTerminalLogin: z.boolean().optional(),
   authMethods: z.array(agentAuthMethodSchema).optional(),
   authLogoutSupported: z.boolean().optional(),
@@ -451,6 +461,8 @@ export const agentStatusSchema = z.object({
     })
     .optional(),
   loginCommand: z.string().min(1).optional(),
+  /** Concise command shown in UI when `loginCommand` is a generated platform wrapper. */
+  loginCommandDisplay: z.string().min(1).optional(),
   /**
    * Prefer the terminal `loginCommand` over agent-owned/browser auth methods
    * in login UIs. Reported by the provider's capabilities probe (e.g. Grok's
@@ -534,6 +546,18 @@ export const acpRegistryListResultSchema = z.object({
 });
 export type AcpRegistryListResult = z.infer<typeof acpRegistryListResultSchema>;
 
+const acpRegistryInstallationSchema = z.object({
+  version: z.string().min(1),
+  target: z.string().min(1),
+  installedAt: z.string(),
+  /**
+   * On-disk layout generation of the extracted artifact (see
+   * `ACP_REGISTRY_INSTALL_LAYOUT_VERSION`). Absent means the layout predates
+   * the marker and needs the launch-time repair sweep.
+   */
+  layoutVersion: z.number().int().positive().optional(),
+});
+
 export const installedAcpRegistryAgentSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -545,19 +569,8 @@ export const installedAcpRegistryAgentSchema = z.object({
   /** Per-environment registry artifact versions. Absent means a legacy native install. */
   installations: z
     .object({
-      native: z
-        .object({ version: z.string().min(1), target: z.string().min(1), installedAt: z.string() })
-        .optional(),
-      wsl: z
-        .record(
-          z.string().min(1),
-          z.object({
-            version: z.string().min(1),
-            target: z.string().min(1),
-            installedAt: z.string(),
-          }),
-        )
-        .optional(),
+      native: acpRegistryInstallationSchema.optional(),
+      wsl: z.record(z.string().min(1), acpRegistryInstallationSchema).optional(),
     })
     .optional(),
 });

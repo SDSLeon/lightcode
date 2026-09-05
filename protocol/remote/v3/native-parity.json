@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "contract": "poracode.remote.native-parity",
-  "protocolVersion": 8,
+  "protocolVersion": 9,
   "entries": {
     "httpRoutes": [
       {
@@ -3991,6 +3991,19 @@
           ]
         },
         "note": "Android and iOS intentionally no-op this renderer event; the desktop main-process usage ledger remains authoritative and native UI exposes no usage ledger."
+      },
+      {
+        "id": "background_tasks.changed",
+        "batch": "rich-chat-requests",
+        "ios": {
+          "disposition": "planned",
+          "evidence": []
+        },
+        "android": {
+          "disposition": "planned",
+          "evidence": []
+        },
+        "note": "Protocol v9 adds live background-task levels inside the replayable thread-runtime-event envelopes and thread snapshots. Neither native client reduces this event nor renders a background-tasks surface yet."
       },
       {
         "id": "request.opened",

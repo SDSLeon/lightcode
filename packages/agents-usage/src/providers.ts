@@ -52,6 +52,15 @@ export const BUILT_IN_USAGE_PROVIDER_DESCRIPTORS = {
     // Monthly credit pool plus rolling 5h / weekly USD caps from windowLimits.
     windowIds: ["session-5h", "weekly", "monthly"],
   },
+  muse: {
+    id: "muse",
+    label: "Muse Code",
+    mechanism: "oauth-endpoint",
+    needsLogin: false,
+    // Subscription plan + account from the key endpoint; rolling 5h / weekly
+    // quota windows only when the endpoint reports `subs_usage`.
+    windowIds: ["session-5h", "weekly"],
+  },
   factory: {
     id: "factory",
     label: "Droid",
@@ -82,6 +91,14 @@ export const BUILT_IN_USAGE_PROVIDER_DESCRIPTORS = {
     apiKeyFallback: true,
     windowIds: ["session-5h", "weekly", "monthly"],
   },
+  qoder: {
+    id: "qoder",
+    label: "Qoder",
+    mechanism: "cookie",
+    needsLogin: true,
+    apiKeyFallback: true,
+    windowIds: ["monthly"],
+  },
 } satisfies Record<string, UsageProviderDescriptor>;
 
 /** Descriptors for the built-in HTTP collectors, in registration order. */
@@ -94,13 +111,13 @@ export function builtInUsageProviderDescriptors(): UsageProviderDescriptor[] {
  * source of truth for the renderer's provider list and the supervisor's default
  * collection set so the two never drift.
  *
- * Most providers are HTTP collectors registered in `registry.ts`. A couple are
+ * Most providers are HTTP collectors registered in `registry.ts`. Several are
  * collected supervisor-side because they need process / SQLite access the pure
  * HTTP registry can't do — they have a descriptor here but no package collector:
- * `antigravity` probes its local language server (cli-jsonrpc), and `opencode`
- * needs the supervisor for the opencode.ai cookie session plus a local
- * `auth.json` probe (Go plan badge). Go quota meters are web-only — never
- * derived from local `opencode.db` spend.
+ * `antigravity` prefers its local language server and falls back to Cloud Code
+ * with official ACP credentials, while `opencode` needs the supervisor for the
+ * opencode.ai cookie session plus a local `auth.json` probe (Go plan badge). Go
+ * quota meters are web-only — never derived from local `opencode.db` spend.
  */
 export const LOCAL_USAGE_PROVIDER_DESCRIPTORS: readonly UsageProviderDescriptor[] = [
   {

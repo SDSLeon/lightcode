@@ -30,6 +30,8 @@ export function McpChip(props: {
   onRemove?: (() => void) | undefined;
   title?: string;
   variant?: "chip" | "header";
+  /** Overrides the registry label when a plugin packages this server. */
+  label?: string;
 }) {
   const { t } = useLingui();
   const { descriptor, onRemove, variant = "chip" } = props;
@@ -60,7 +62,7 @@ export function McpChip(props: {
       role={onRemove ? "group" : "img"}
     >
       <Icon className="size-3 text-muted" aria-hidden="true" />
-      <span className="poracode-attachment-chip__name">{t(descriptor.label)}</span>
+      <span className="poracode-attachment-chip__name">{props.label ?? t(descriptor.label)}</span>
       {onRemove ? (
         <button
           type="button"
@@ -87,7 +89,7 @@ export function McpChip(props: {
 const computerUseChipDescriptor: McpChipDescriptor = {
   icon: Monitor,
   label: msg`Computer Use`,
-  enabledTitle: msg`Computer Use enabled — interactive actions take over the desktop; don't use the machine while the agent is controlling it`,
+  enabledTitle: msg`Computer Use enabled — the agent drives desktop apps in the background; it only takes over the mouse and keyboard when a step explicitly needs the foreground or when a system-approved desktop portal requires it`,
   disableLabel: msg`Disable Computer Use`,
 };
 
@@ -97,13 +99,11 @@ export function ComputerUseChip(props: {
   variant?: "chip" | "header";
 }) {
   const { t } = useLingui();
-  // Interactive actions steal the real mouse/keyboard on the host desktop —
-  // including when driving from a paired phone.
   const title =
     props.title ??
     (isRemoteSession()
-      ? t`Computer Use enabled — controls the paired desktop; don't use that machine while the agent is controlling it`
-      : t`Computer Use enabled — interactive actions take over the desktop; don't use the machine while the agent is controlling it`);
+      ? t`Computer Use enabled — the agent drives apps on the paired desktop in the background; it only takes over that desktop's mouse and keyboard when a step explicitly needs the foreground or when that desktop's system-approved portal requires it`
+      : t`Computer Use enabled — the agent drives desktop apps in the background; it only takes over the mouse and keyboard when a step explicitly needs the foreground or when a system-approved desktop portal requires it`);
   return (
     <McpChip
       descriptor={computerUseChipDescriptor}

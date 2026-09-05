@@ -1,5 +1,5 @@
-import { msg } from "@lingui/core/macro";
 import type {
+  BackgroundTask,
   CanonicalItemType,
   CanonicalRequestType,
   FileCheckpointRecord,
@@ -8,11 +8,8 @@ import type {
   RuntimeContentStreamKind,
   RuntimeEvent,
   ThreadContextUsage,
-  ToolCallPayload,
 } from "@/shared/contracts";
 import type { PersistedRuntimeItem } from "@/shared/ipc";
-import { isDelegatedAgentTool } from "@/shared/toolCallClassification";
-import { i18n } from "@/renderer/i18n/i18n";
 import type { SliceCreator } from "./shared";
 import { clearRuntimeStructuralChangeHint } from "../runtimeStructuralChanges";
 import {
@@ -20,8 +17,7 @@ import {
   applyRuntimeEventBatchesToState,
   mergeCompletedTurns,
 } from "./runtimeEventReducer";
-
-const STALE_SUB_AGENT_ERROR_MESSAGE = msg`Interrupted: agent session ended before completion.`;
+import { terminateStaleSubAgentItems } from "./staleSubAgents";
 
 /**
  * Frozen "Worked for X" record for a turn that has finished. Persisted so the
@@ -99,6 +95,13 @@ export interface RuntimeEventSlice {
   runtimeRequestsByThread: Record<string, OpenRuntimeRequest[]>;
   /** Latest provider-reported context usage per GUI thread. */
   runtimeContextByThread: Record<string, ThreadContextUsage>;
+  /**
+   * Live provider-reported background tasks per thread (REPLACE semantics from
+   * `background_tasks.changed`). Session-scoped only: never hydrated from the
+   * DB, and dropped when the session exits, because the work dies with the
+   * agent process.
+   */
+  runtimeBackgroundTasksByThread: Record<string, readonly BackgroundTask[]>;
   /**
    * Per-thread monotonic counter that bumps only on grouping-affecting changes
    * (item add/remove/payload mutation). Excludes `content.delta` so that
@@ -197,6 +200,7 @@ export function createInitialRuntimeEventState(): Pick<
   | "runtimeItemsByIdByThread"
   | "runtimeRequestsByThread"
   | "runtimeContextByThread"
+  | "runtimeBackgroundTasksByThread"
   | "runtimeStructuralVersionByThread"
   | "runtimeCompletedTurnsByThread"
   | "runtimeOpenTurnByThread"
@@ -208,6 +212,7 @@ export function createInitialRuntimeEventState(): Pick<
     runtimeItemsByIdByThread: {},
     runtimeRequestsByThread: {},
     runtimeContextByThread: {},
+    runtimeBackgroundTasksByThread: {},
     runtimeStructuralVersionByThread: {},
     runtimeCompletedTurnsByThread: {},
     runtimeOpenTurnByThread: {},
@@ -236,6 +241,7 @@ export const createRuntimeEventSlice: SliceCreator<RuntimeEventSlice> = (set) =>
         !(threadId in state.runtimeItemsByIdByThread) &&
         !(threadId in state.runtimeRequestsByThread) &&
         !(threadId in state.runtimeContextByThread) &&
+        !(threadId in state.runtimeBackgroundTasksByThread) &&
         !(threadId in state.runtimeStructuralVersionByThread) &&
         !(threadId in state.runtimeCompletedTurnsByThread) &&
         !(threadId in state.runtimeOpenTurnByThread)
@@ -250,6 +256,8 @@ export const createRuntimeEventSlice: SliceCreator<RuntimeEventSlice> = (set) =>
         state.runtimeRequestsByThread;
       const { [threadId]: _droppedContext, ...runtimeContextByThread } =
         state.runtimeContextByThread;
+      const { [threadId]: _droppedBackgroundTasks, ...runtimeBackgroundTasksByThread } =
+        state.runtimeBackgroundTasksByThread;
       const { [threadId]: _droppedVersion, ...runtimeStructuralVersionByThread } =
         state.runtimeStructuralVersionByThread;
       const { [threadId]: _droppedTurns, ...runtimeCompletedTurnsByThread } =
@@ -261,6 +269,7 @@ export const createRuntimeEventSlice: SliceCreator<RuntimeEventSlice> = (set) =>
         runtimeItemsByIdByThread,
         runtimeRequestsByThread,
         runtimeContextByThread,
+        runtimeBackgroundTasksByThread,
         runtimeStructuralVersionByThread,
         runtimeCompletedTurnsByThread,
         runtimeOpenTurnByThread,
@@ -271,13 +280,7 @@ export const createRuntimeEventSlice: SliceCreator<RuntimeEventSlice> = (set) =>
     set((state) => {
       const items = state.runtimeItemsByIdByThread[threadId];
       if (!items) return {};
-      let nextItems: Record<string, RuntimeChatItem> | undefined;
-      for (const [id, item] of Object.entries(items)) {
-        if (options?.preserveObservedLive === true && item.observedLive === true) continue;
-        if (!isStaleSubAgentItem(item)) continue;
-        nextItems ??= { ...items };
-        nextItems[id] = terminateSubAgentItem(item);
-      }
+      const nextItems = terminateStaleSubAgentItems(items, options);
       if (!nextItems) return {};
       return {
         runtimeItemsByIdByThread: {
@@ -392,6 +395,8 @@ export const createRuntimeEventSlice: SliceCreator<RuntimeEventSlice> = (set) =>
       const { [threadId]: _itemIds, ...runtimeItemIdsByThread } = state.runtimeItemIdsByThread;
       const { [threadId]: _items, ...runtimeItemsByIdByThread } = state.runtimeItemsByIdByThread;
       const { [threadId]: _context, ...runtimeContextByThread } = state.runtimeContextByThread;
+      const { [threadId]: _backgroundTasks, ...runtimeBackgroundTasksByThread } =
+        state.runtimeBackgroundTasksByThread;
       const { [threadId]: _version, ...runtimeStructuralVersionByThread } =
         state.runtimeStructuralVersionByThread;
       const { [threadId]: _turns, ...runtimeCompletedTurnsByThread } =
@@ -401,6 +406,7 @@ export const createRuntimeEventSlice: SliceCreator<RuntimeEventSlice> = (set) =>
         runtimeItemIdsByThread,
         runtimeItemsByIdByThread,
         runtimeContextByThread,
+        runtimeBackgroundTasksByThread,
         runtimeStructuralVersionByThread,
         runtimeCompletedTurnsByThread,
         runtimeOpenTurnByThread,
@@ -503,33 +509,3 @@ export const createRuntimeEventSlice: SliceCreator<RuntimeEventSlice> = (set) =>
       };
     }),
 });
-
-function isStaleSubAgentItem(item: RuntimeChatItem): boolean {
-  if (item.type !== "tool_call") return false;
-  const payload = item.payload as ToolCallPayload | undefined;
-  if (!isDelegatedAgentTool(payload)) return false;
-  return item.state !== "completed" || payload?.status === "running";
-}
-
-function terminateSubAgentItem(item: RuntimeChatItem): RuntimeChatItem {
-  const payload: ToolCallPayload = (item.payload as ToolCallPayload | undefined) ?? {
-    name: "Task",
-    status: "error",
-  };
-  const nextPayload: ToolCallPayload = {
-    ...payload,
-    status: "error",
-    ...(payload.isCrossagent &&
-    (payload.crossagentStatus === undefined || payload.crossagentStatus === "running")
-      ? { crossagentStatus: "failed" as const }
-      : {}),
-    ...(payload.result === undefined
-      ? { result: { error: i18n._(STALE_SUB_AGENT_ERROR_MESSAGE) } }
-      : {}),
-  };
-  return {
-    ...item,
-    state: "completed",
-    payload: nextPayload,
-  };
-}

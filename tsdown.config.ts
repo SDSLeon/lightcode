@@ -212,7 +212,11 @@ export default defineConfig([
     define: buildDefines,
     deps: {
       ...deps,
-      alwaysBundle: [...deps.alwaysBundle, /^@modelcontextprotocol\/sdk(?:\/|$)/, /^zod(?:\/|$)/],
+      alwaysBundle: [
+        ...deps.alwaysBundle,
+        /^@modelcontextprotocol\/(?:client|server|core)(?:\/|$)/,
+        /^zod(?:\/|$)/,
+      ],
     },
   },
   {
@@ -229,7 +233,11 @@ export default defineConfig([
     define: buildDefines,
     deps: {
       ...deps,
-      alwaysBundle: [...deps.alwaysBundle, /^@modelcontextprotocol\/sdk(?:\/|$)/, /^zod(?:\/|$)/],
+      alwaysBundle: [
+        ...deps.alwaysBundle,
+        /^@modelcontextprotocol\/(?:client|server|core)(?:\/|$)/,
+        /^zod(?:\/|$)/,
+      ],
     },
   },
 ]);

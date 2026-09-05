@@ -95,6 +95,10 @@ export function StackedFileCard(props: {
   const [loadFailed, setLoadFailed] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   const loadedKeyRef = useRef<string | null>(null);
+  // Mirror of loadedKeyRef for rendering: the "no changes" row shows once a
+  // load has settled. Refs can't be read during render, so this state is set
+  // alongside the terminal loading updates in the async callbacks below.
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
   const tooLarge = file.insertions + file.deletions > LARGE_DIFF_THRESHOLD;
   const longPressHandlers = useLongPress(
     touch
@@ -133,6 +137,7 @@ export function StackedFileCard(props: {
         const rawDiff = result.diff;
         if (!rawDiff.trim()) {
           setLoading(false);
+          setHasAttemptedLoad(true);
           return;
         }
 
@@ -162,7 +167,10 @@ export function StackedFileCard(props: {
       } catch {
         if (!cancelled) setLoadFailed(true);
       }
-      if (!cancelled) setLoading(false);
+      if (!cancelled) {
+        setLoading(false);
+        setHasAttemptedLoad(true);
+      }
     }
 
     void load();
@@ -399,7 +407,7 @@ export function StackedFileCard(props: {
                 </Button>
               </div>
             )}
-            {!loading && !loadFailed && !tooLarge && !diffFile && loadedKeyRef.current !== null && (
+            {!loading && !loadFailed && !tooLarge && !diffFile && hasAttemptedLoad && (
               <div className="px-4 py-3 text-xs text-muted">
                 <Trans>No changes to display</Trans>
               </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Trans } from "@lingui/react/macro";
 import { BrandWordmark } from "@/renderer/components/common/BrandWordmark";
 import { WelcomeAppIcon } from "@/renderer/components/common/WelcomeAppIcon";
@@ -37,9 +37,9 @@ export function TouchPairing({ pairing }: { readonly pairing: Pairing }) {
   // in state, not a ref, so ordinary re-renders can't truncate it mid-flight.
   const [intro, setIntro] = useState(true);
 
-  useEffect(() => {
-    if (pairing.busy) setIntro(false);
-  }, [pairing.busy]);
+  // Same render-phase latch as DesktopPairing: the landing animation belongs
+  // to this screen's first paint and never replays once pairing starts.
+  if (pairing.busy && intro) setIntro(false);
 
   return (
     <WelcomeBackdrop className="min-h-full">

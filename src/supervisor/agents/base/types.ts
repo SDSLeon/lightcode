@@ -7,6 +7,7 @@ import type {
   AgentStatus,
   AgentUpdateInfo,
   AuthState,
+  BackgroundTask,
   ProjectLocation,
   PromptSegment,
   RuntimeEvent,
@@ -140,6 +141,8 @@ export interface StructuredSessionHandle {
    * prompt, and fresh `startTurn` accounting.
    */
   prepareSteerInterrupt?(): Promise<void>;
+  /** Authoritative provider-reported background work still live in this session. */
+  getBackgroundTasks?(): readonly BackgroundTask[];
   interruptTurn?(): Promise<void>;
   controlGoal?(control: ThreadGoalControl): Promise<void>;
   /**
@@ -741,6 +744,8 @@ export interface AgentAdapter
     Partial<AgentAcpAuth>,
     Partial<AgentCliHookPluginSupport>,
     Partial<AgentNativePluginSupport> {
+  /** Run this provider inside WSL when its project lives on native Windows. */
+  readonly windowsProjectExecution?: "wsl";
   readonly skillSupport?: AgentSkillSupport;
 }
 
