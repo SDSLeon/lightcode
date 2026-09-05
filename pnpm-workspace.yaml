@@ -240,6 +240,8 @@ minimumReleaseAge: 10080
 # Each selector is scoped to the affected major so it only rewrites versions
 # inside the advisory range and never force-upgrades a different major line.
 overrides:
+  # Keep optional analytics peers on the patched Next.js server too.
+  "next@>=16.0.0 <16.3.3": "16.3.3"
   # Tiptap 3.30 requires model 1.25.11; mixed model instances break Notes transforms.
   "prosemirror-model@>=1.0.0 <1.25.11": "1.25.11"
   "axios@<1.16.0": "^1.16.0"
