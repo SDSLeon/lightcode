@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Download, ArrowLeft, Monitor, Apple, Terminal, Moon, AlertTriangle } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localizedPath } from "@/lib/i18n/config";
