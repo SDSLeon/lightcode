@@ -40,9 +40,6 @@ publicHoistPattern:
 # resolution still works when the dependency graph lives in pnpm's global
 # virtual store.
 packageExtensions:
-  "@testing-library/jest-dom@6.9.1":
-    dependencies:
-      vitest: 4.1.10
   "@huggingface/transformers@4.2.0":
     dependencies:
       onnxruntime-common: 1.24.3
