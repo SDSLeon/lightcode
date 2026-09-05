@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import * as schema from "../db.schema";
 import { resetMainCreatedThreads } from "./mainCreatedThreads";
 import {
   assertRequiredDatabaseSchema,
@@ -64,7 +63,7 @@ export function initDatabase(dbPath: string) {
   sqlite.pragma("busy_timeout = 5000");
 
   _sqlite = sqlite;
-  _db = drizzle({ client: sqlite, schema });
+  _db = drizzle({ client: sqlite });
 
   // Create tables if they don't exist.
   sqlite.exec(`
