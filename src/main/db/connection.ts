@@ -1,6 +1,5 @@
 import { existsSync } from "node:fs";
 import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import { resetMainCreatedThreads } from "./mainCreatedThreads";
 import {
   assertRequiredDatabaseSchema,
@@ -8,7 +7,6 @@ import {
   runDatabaseMigrations,
 } from "./migrations";
 
-let _db: ReturnType<typeof drizzle> | undefined;
 let _sqlite: InstanceType<typeof Database> | undefined;
 
 /**
@@ -63,7 +61,6 @@ export function initDatabase(dbPath: string) {
   sqlite.pragma("busy_timeout = 5000");
 
   _sqlite = sqlite;
-  _db = drizzle({ client: sqlite });
 
   // Create tables if they don't exist.
   sqlite.exec(`
@@ -275,18 +272,10 @@ export function initDatabase(dbPath: string) {
   sqlite.prepare("DELETE FROM remote_command_receipts WHERE updated_at < ?").run(receiptCutoff);
 
   console.log("[db] initialized");
-  return _db;
+  return sqlite;
 }
 
-export function getDb() {
-  if (!_db) throw new Error("Database not initialized");
-  return _db;
-}
-
-/**
- * Raw better-sqlite3 handle for modules that issue prepared statements directly.
- * Throws with the same message as {@link getDb} when the database is not open.
- */
+/** better-sqlite3 handle; every DB module issues prepared statements against it. */
 export function getSqlite(): InstanceType<typeof Database> {
   if (!_sqlite) throw new Error("Database not initialized");
   return _sqlite;
@@ -321,6 +310,5 @@ export function closeDatabase() {
     sqlite.close();
   }
   _sqlite = undefined;
-  _db = undefined;
   resetMainCreatedThreads();
 }

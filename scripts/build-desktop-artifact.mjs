@@ -41,12 +41,11 @@ const { supportEmail } = requireFromHere("../branding/contact.json");
 const RUNTIME_DEPS = [
   "@agentclientprotocol/sdk",
   "@anthropic-ai/claude-agent-sdk",
-  "@modelcontextprotocol/sdk",
+  "@modelcontextprotocol/client",
   "@opencode-ai/sdk",
   "@sentry/electron",
   "@sentry/node",
   "better-sqlite3",
-  "drizzle-orm",
   "json5",
   "micromatch",
   "node-pty",

@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, ArrowUp, Download, Hash, Plus, Wrench } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import Link from "next/link";
 import {
   CHANGELOG,
