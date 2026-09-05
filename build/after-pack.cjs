@@ -12,13 +12,11 @@ const {
   chmodSync,
   readFileSync,
   readdirSync,
-  mkdirSync,
-  cpSync,
   writeFileSync,
   rmSync,
 } = require("node:fs");
 const { spawnSync } = require("node:child_process");
-const { join, resolve } = require("node:path");
+const { join } = require("node:path");
 
 // electron-builder's Arch enum is numeric: ia32=0, x64=1, armv7l=2, arm64=3,
 // universal=4. Map to the node-pty prebuilds/<plat>-<arch> directory names.
@@ -69,8 +67,7 @@ function platformTag(electronPlatformName) {
 // spawn-helper in an arm64 app. macOS treats that nested helper as an Intel-based
 // component and displays its end-of-support warning even though Poracode itself
 // and the helper it actually loads are arm64. Remove all foreign prebuilds from
-// each thin package before signing. Older better-sqlite3 packages used a similar
-// bin/<platform>-<arch>-<abi> layout, so prune those defensively as well.
+// each thin package before signing. SQLite 13 also ships one N-API prebuild per target.
 function pruneForeignNativePrebuilds(resourcesDir, electronPlatformName, archName) {
   const expectedPrefix = `${platformTag(electronPlatformName)}-${archName}`;
   const roots = [
@@ -79,8 +76,8 @@ function pruneForeignNativePrebuilds(resourcesDir, electronPlatformName, archNam
       keep: (entry) => entry === expectedPrefix,
     },
     {
-      path: join(resourcesDir, "app.asar.unpacked", "node_modules", "better-sqlite3", "bin"),
-      keep: (entry) => entry === expectedPrefix || entry.startsWith(`${expectedPrefix}-`),
+      path: join(resourcesDir, "app.asar.unpacked", "node_modules", "better-sqlite3", "prebuilds"),
+      keep: (entry) => entry === `${expectedPrefix}.node`,
     },
   ];
 
@@ -97,48 +94,7 @@ function pruneForeignNativePrebuilds(resourcesDir, electronPlatformName, archNam
   return removed;
 }
 
-// The packaging script (build-desktop-artifact.mjs) rebuilds better-sqlite3 for
-// every target arch and stages each under <stageRoot>/native/<arch>/. A single
-// multi-arch electron-builder pass packs only one of those binaries into BOTH
-// installers, so the off-host arch would otherwise ship a wrong-arch
-// better_sqlite3.node and crash. Inject the arch-correct staged binary into this
-// arch's app.asar.unpacked (where the asar-unpacked module loads it), before
-// code signing. Required for x64/arm64 — throw if the staged binary is missing.
-function injectBetterSqliteBinary(context, resourcesDir, archName) {
-  if (archName !== "x64" && archName !== "arm64") return;
-  const projectDir =
-    context.packager?.info?.projectDir ??
-    context.packager?.projectDir ??
-    resolve(context.appOutDir, "..", "..");
-  const staged = join(projectDir, "native", archName, "better_sqlite3.node");
-  if (!existsSync(staged)) {
-    throw new Error(
-      `[afterPack] FATAL: staged better-sqlite3 binary for ${archName} missing at ${staged}; ` +
-        `refusing to ship a wrong-arch package.`,
-    );
-  }
-  const destDir = join(
-    resourcesDir,
-    "app.asar.unpacked",
-    "node_modules",
-    "better-sqlite3",
-    "build",
-    "Release",
-  );
-  mkdirSync(destDir, { recursive: true });
-  cpSync(staged, join(destDir, "better_sqlite3.node"));
-  console.log(`[afterPack] injected ${archName} better_sqlite3.node`);
-}
-
-// Fail-fast guard: a packaged app is only shippable if its native modules can
-// actually load at runtime. better-sqlite3's compiled binary must be present
-// AND the module must be asar-UNPACKED (electron resolves an unpacked module's
-// __dirname into app.asar.unpacked; if the module is packed inside app.asar,
-// `bindings` searches inside the archive and the app crashes on launch with
-// "Could not locate the bindings file"). node-pty must have a loadable binary
-// for the target arch (it loads build/Release/pty.node OR a prebuild). If any
-// invariant is violated we THROW so electron-builder aborts before producing or
-// publishing a broken installer.
+// Abort packaging when a required native binary or unpacked SQLite module is missing.
 function assertNativeBinaries(resourcesDir, electronPlatformName, arch) {
   const archName = ARCH_NAME[arch];
   if (!archName) {
@@ -148,13 +104,12 @@ function assertNativeBinaries(resourcesDir, electronPlatformName, arch) {
 
   const unpacked = join(resourcesDir, "app.asar.unpacked", "node_modules");
 
-  // 1. better-sqlite3 compiled binary present in the unpacked tree.
+  // 1. SQLite 13 loads the bundled N-API prebuild for the target architecture.
   const betterSqliteBinary = join(
     unpacked,
     "better-sqlite3",
-    "build",
-    "Release",
-    "better_sqlite3.node",
+    "prebuilds",
+    `${platTag}-${archName}.node`,
   );
   if (!existsSync(betterSqliteBinary)) {
     throw new Error(
@@ -338,10 +293,7 @@ module.exports = async function afterPack(context) {
       `[afterPack] FATAL: could not locate resources dir for platform ${context.electronPlatformName}`,
     );
   }
-  // Replace the (possibly off-host-arch) binary electron-builder packed with the
-  // arch-correct one staged per target arch.
   const archName = ARCH_NAME[context.arch];
-  injectBetterSqliteBinary(context, resourcesDir, archName);
   const removed = pruneForeignNativePrebuilds(resourcesDir, context.electronPlatformName, archName);
   for (const path of removed) {
     console.log(`[afterPack] pruned foreign native prebuild ${path}`);

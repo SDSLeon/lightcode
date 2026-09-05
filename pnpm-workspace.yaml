@@ -13,7 +13,8 @@ enableGlobalVirtualStore: true
 allowBuilds:
   "@google/genai": false
   "@sentry/cli": true
-  better-sqlite3: true
+  # SQLite 13 ships N-API prebuilds; do not synthesize a node-gyp install step.
+  better-sqlite3: false
   electron: true
   electron-winstaller: true
   esbuild: true
@@ -23,7 +24,6 @@ allowBuilds:
   sharp: true
 onlyBuiltDependencies:
   - "@sentry/cli"
-  - better-sqlite3
   - electron
   - electron-winstaller
   - esbuild

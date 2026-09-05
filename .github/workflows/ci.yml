@@ -150,8 +150,8 @@ jobs:
         shard: [1, 2, 3, 4, 5, 6, 7, 8]
     # Unit tests run via vitest in node/jsdom and never launch the Electron
     # runtime, so skip the flaky Chromium binary download and the root
-    # postinstall, which rebuilds better-sqlite3 for Electron. The database
-    # tests need Node-ABI better-sqlite3 and node-pty bindings rebuilt below.
+    # postinstall, which validates native dependencies under Electron. SQLite
+    # ships N-API prebuilds; only node-pty needs a Linux build below.
     # ELECTRON_OVERRIDE_DIST_PATH lets `require("electron")` resolve to a path
     # string without the binary present, so suites that import the module (but
     # never spawn it) load instead of throwing from electron/index.js.
@@ -181,7 +181,7 @@ jobs:
         # of failing cleanly, so retry the rebuild like other network steps.
         run: |
           for attempt in 1 2 3; do
-            if pnpm rebuild better-sqlite3 node-pty; then
+            if pnpm rebuild node-pty; then
               exit 0
             fi
             if [ "$attempt" -eq 3 ]; then
