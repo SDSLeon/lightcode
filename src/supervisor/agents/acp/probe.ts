@@ -17,10 +17,16 @@ import {
   RequestError,
   type Client,
   type AuthMethod,
+  type AuthMethodAgent,
   type SessionNotification,
   type SessionMode,
 } from "@agentclientprotocol/sdk";
-import type { AgentSlashCommand, AuthState, ThreadMode } from "@/shared/contracts";
+import type {
+  AgentEnvVarAuthMethod,
+  AgentSlashCommand,
+  AuthState,
+  ThreadMode,
+} from "@/shared/contracts";
 import { sortEffortsByCanonicalOrder } from "@/shared/effortOrder";
 import { terminateChildProcessTree } from "@/shared/processTree";
 import {
@@ -59,7 +65,9 @@ function isAcpAuthRequiredError(error: unknown): boolean {
 // ── Types ────────────────────────────────────────────────────────
 
 export interface AcpProbeResult {
-  authMethods?: AuthMethod[];
+  // SDK 1.4 removed env_var from the spec; installed agents still use the
+  // credential flow represented by Poracode's existing auth-method contract.
+  authMethods?: Array<AuthMethod | (AgentEnvVarAuthMethod & AuthMethodAgent)>;
   authLogoutSupported?: boolean;
   sessionEstablished?: boolean;
   supportsResume?: boolean;

@@ -16,7 +16,15 @@ vi.mock("@/renderer/state/panelResizeSignal", () => ({
   subscribePanelResize: () => () => undefined,
 }));
 
-function Harness(props: {
+function Harness({
+  scrollEl,
+  controlsRef,
+  virtualScrollToBottom,
+  initialScrollSettled = true,
+  initialScrollRevealDelayMs = 0,
+  tailEntryId,
+  onInitialScrollSettled,
+}: {
   scrollEl: HTMLDivElement;
   controlsRef: React.RefObject<ChatScrollControlsHandle | null>;
   virtualScrollToBottom: () => void;
@@ -25,22 +33,22 @@ function Harness(props: {
   tailEntryId?: string | null;
   onInitialScrollSettled?: () => void;
 }) {
-  const scrollRef = useRef(props.scrollEl);
+  const scrollRef = useRef(scrollEl);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const virtualScrollToBottomRef = useRef(props.virtualScrollToBottom);
+  const virtualScrollToBottomRef = useRef(virtualScrollToBottom);
   return (
     <ChatScrollControls
-      ref={props.controlsRef}
+      ref={controlsRef}
       scrollRef={scrollRef}
       contentRef={contentRef}
       layoutChangeToken={null}
-      tailEntryId={props.tailEntryId ?? "entry-1"}
+      tailEntryId={tailEntryId ?? "entry-1"}
       threadId="thread-1"
       tailLoaderVisible={false}
-      initialScrollSettled={props.initialScrollSettled ?? true}
-      initialScrollRevealDelayMs={props.initialScrollRevealDelayMs ?? 0}
+      initialScrollSettled={initialScrollSettled}
+      initialScrollRevealDelayMs={initialScrollRevealDelayMs}
       virtualScrollToBottomRef={virtualScrollToBottomRef}
-      onInitialScrollSettled={props.onInitialScrollSettled ?? (() => undefined)}
+      onInitialScrollSettled={onInitialScrollSettled ?? (() => undefined)}
     />
   );
 }

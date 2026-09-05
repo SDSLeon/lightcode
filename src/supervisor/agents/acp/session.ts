@@ -666,10 +666,10 @@ export class AcpStructuredSession implements StructuredSessionHandle {
         requestPermission(params: RequestPermissionRequest) {
           return session.handlePermissionRequest(params);
         },
-        unstable_createElicitation(params: CreateElicitationRequest) {
+        createElicitation(params: CreateElicitationRequest) {
           return session.handleElicitationRequest(params);
         },
-        unstable_completeElicitation(params: CompleteElicitationNotification) {
+        completeElicitation(params: CompleteElicitationNotification) {
           session.handleElicitationComplete(params);
           return Promise.resolve();
         },

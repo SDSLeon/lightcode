@@ -11310,6 +11310,10 @@ msgstr "Надсилати загальний текст замість назв
 msgid "Send message"
 msgstr "Надіслати повідомлення"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "Надіслати ввід у термінал"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "Вибір надіслано в термінал."

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ClientSideConnection, type AnyMessage } from "@agentclientprotocol/sdk";
 import {
   humanizeAcpModeName,
   humanizeModelId,
@@ -8,8 +9,49 @@ import {
   mapAcpSlashCommands,
   mapAcpThoughtLevels,
   normalizeAcpModeId,
+  type AcpProbeResult,
 } from "./probe";
+import { dedupeAcpAuthMethods } from "./authMethods";
 import { resolveThoughtLevelToggleValues } from "./thoughtLevel";
+
+describe("ACP authentication compatibility", () => {
+  it("preserves legacy env-var credentials through the SDK initialize response", async () => {
+    const method: NonNullable<AcpProbeResult["authMethods"]>[number] = {
+      type: "env_var",
+      id: "fixture-key",
+      name: "Fixture API key",
+      vars: [{ name: "FIXTURE_API_KEY", secret: true }],
+      _meta: { legacy: true },
+    };
+    const incoming = new TransformStream<AnyMessage>();
+    const outgoing = new TransformStream<AnyMessage>();
+    const writer = incoming.writable.getWriter();
+    const reader = outgoing.readable.getReader();
+    const connection = new ClientSideConnection(
+      () => ({
+        sessionUpdate: async () => {},
+        requestPermission: async () => ({ outcome: { outcome: "cancelled" } }),
+      }),
+      { readable: incoming.readable, writable: outgoing.writable },
+    );
+    try {
+      const initialized = connection.initialize({ protocolVersion: 1, clientCapabilities: {} });
+      const request = (await reader.read()).value;
+      if (!request || !("id" in request)) throw new Error("Missing initialize request");
+      await writer.write({
+        jsonrpc: "2.0",
+        id: request.id,
+        result: { protocolVersion: 1, authMethods: [method] },
+      });
+      const result = await initialized;
+      expect(dedupeAcpAuthMethods(result.authMethods ?? [])).toEqual([method]);
+    } finally {
+      await writer.close();
+      await reader.cancel();
+      await connection.closed;
+    }
+  });
+});
 
 describe("mapAcpSlashCommands", () => {
   it("maps ACP skill commands into the Skills section without changing their native id", () => {

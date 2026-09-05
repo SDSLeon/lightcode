@@ -11314,6 +11314,10 @@ msgstr "Send generic text instead of conversation titles through Apple's push se
 msgid "Send message"
 msgstr "Send message"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "Send terminal input"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "Sent selection to terminal."

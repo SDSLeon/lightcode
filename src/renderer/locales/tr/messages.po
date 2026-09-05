@@ -11310,6 +11310,10 @@ msgstr "Konuşma başlıkları yerine Apple push hizmeti üzerinden genel metin 
 msgid "Send message"
 msgstr "Mesaj gönder"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "Terminale girdi gönder"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "Seçim terminale gönderildi."

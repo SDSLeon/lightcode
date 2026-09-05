@@ -11309,6 +11309,10 @@ msgstr "Envoyez un texte générique au lieu des titres de conversation via le s
 msgid "Send message"
 msgstr "Envoyer un message"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "Envoyer une entrée au terminal"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "Sélection envoyée au terminal."

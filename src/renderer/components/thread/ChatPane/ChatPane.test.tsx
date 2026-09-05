@@ -23,9 +23,10 @@ const { hydrateFileCheckpoints, finalizeFileCheckpoint } = vi.hoisted(() => ({
   hydrateFileCheckpoints: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
   finalizeFileCheckpoint: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 }));
-const { legendScrollToEnd, legendScrollToIndex } = vi.hoisted(() => ({
+const { legendScrollToEnd, legendScrollToIndex, mockLegendSizes } = vi.hoisted(() => ({
   legendScrollToEnd: vi.fn<(options?: { animated?: boolean }) => void>(),
   legendScrollToIndex: vi.fn<(options: { index: number; viewPosition?: number }) => void>(),
+  mockLegendSizes: new Map<string, number>(),
 }));
 
 vi.mock("@/renderer/state/chatRuntimePersister", () => ({
@@ -63,25 +64,27 @@ vi.mock("@legendapp/list/react", async () => {
       forwardedRef: React.ForwardedRef<unknown>,
     ) {
       const scrollRef = React.useRef<HTMLDivElement>(null);
-      const sizesRef = React.useRef(new Map<string, number>());
+      // Test-only row heights shared at module scope (like the sibling
+      // MessageList mock): render reads them directly instead of through a
+      // ref, which the compiler forbids during render.
       const totalSizeListenerRef = React.useRef<(() => void) | null>(null);
       const onLoadRef = React.useRef(props.onLoad);
       React.useImperativeHandle(forwardedRef, () => ({
         getScrollableNode: () => scrollRef.current,
         getState: () => ({
-          sizes: sizesRef.current,
+          sizes: mockLegendSizes,
           positionAtIndex: (index: number) =>
             props.data
               .slice(0, index)
               .reduce(
                 (top, item, itemIndex) =>
-                  top + (sizesRef.current.get(props.keyExtractor(item, itemIndex)) ?? 100),
+                  top + (mockLegendSizes.get(props.keyExtractor(item, itemIndex)) ?? 100),
                 0,
               ),
           sizeAtIndex: (index: number) => {
             const item = props.data[index];
             return item
-              ? (sizesRef.current.get(props.keyExtractor(item, index)) ?? 100)
+              ? (mockLegendSizes.get(props.keyExtractor(item, index)) ?? 100)
               : Number.NaN;
           },
           listen: (_name: string, listener: () => void) => {
@@ -102,7 +105,7 @@ vi.mock("@legendapp/list/react", async () => {
           return Promise.resolve();
         },
         setItemSize: (itemKey: string, size: { height: number }) => {
-          sizesRef.current.set(itemKey, size.height);
+          mockLegendSizes.set(itemKey, size.height);
           const content = scrollRef.current?.querySelector(".legend-list-content-container");
           let top = 0;
           for (let index = 0; index < props.data.length; index += 1) {
@@ -112,7 +115,7 @@ vi.mock("@legendapp/list/react", async () => {
               (element) => element instanceof HTMLElement && element.dataset.mockLegendKey === key,
             );
             if (container instanceof HTMLElement) container.style.top = `${top}px`;
-            top += sizesRef.current.get(key) ?? 100;
+            top += mockLegendSizes.get(key) ?? 100;
           }
           totalSizeListenerRef.current?.();
         },
@@ -148,8 +151,7 @@ vi.mock("@legendapp/list/react", async () => {
                     .reduce(
                       (top, preceding, precedingIndex) =>
                         top +
-                        (sizesRef.current.get(props.keyExtractor(preceding, precedingIndex)) ??
-                          100),
+                        (mockLegendSizes.get(props.keyExtractor(preceding, precedingIndex)) ?? 100),
                       0,
                     )}px`,
                 }}
@@ -226,6 +228,7 @@ afterAll(() => {
 describe("ChatPane", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLegendSizes.clear();
     toastDangerSpy.mockClear();
     vi.useRealTimers();
     MockResizeObserver.reset();

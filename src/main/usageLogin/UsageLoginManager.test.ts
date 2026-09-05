@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { allUsageProviderDescriptors } from "@poracode/agents-usage";
 import { hasUsageSecret } from "@/shared/usageSecretStore";
 
-vi.mock("electron", () => ({ clipboard: { writeText: vi.fn<(text: string) => void>() } }));
+vi.mock("electron", () => ({
+  clipboard: { writeText: vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined) },
+}));
 // Only the opencode cookie config references this; the device-flow tests don't.
 vi.mock("./openCodeLoginProbe", () => ({
   isOpenCodeLoginCookieLive: vi.fn<(cookieHeader: string) => Promise<boolean>>(),

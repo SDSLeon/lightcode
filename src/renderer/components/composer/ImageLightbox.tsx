@@ -116,19 +116,22 @@ export function ImageLightboxView(props: {
     pointerId: number;
     pointerStart: Point;
     panStart: Point;
+    /** Image index the drag started on; a stale drag never pans a new image. */
+    index: number;
   } | null>(null);
   const current = images[index];
 
-  // Reset index if initialIndex changes (new lightbox open)
-  useEffect(() => {
-    setIndex(initialIndex);
-  }, [initialIndex]);
-
-  useEffect(() => {
+  // Reset the index when a new lightbox opens, and reset zoom/pan whenever
+  // the visible image changes (prop or keyboard/button nav) — tracked during
+  // render instead of sync setStates in effects.
+  const [prevImageKey, setPrevImageKey] = useState({ initial: initialIndex, current: index });
+  if (prevImageKey.initial !== initialIndex || prevImageKey.current !== index) {
+    const nextIndex = prevImageKey.initial !== initialIndex ? initialIndex : index;
+    setPrevImageKey({ initial: initialIndex, current: nextIndex });
+    if (nextIndex !== index) setIndex(nextIndex);
     setScale(MIN_SCALE);
     setPan({ x: 0, y: 0 });
-    dragRef.current = null;
-  }, [index]);
+  }
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -168,12 +171,13 @@ export function ImageLightboxView(props: {
       pointerId: event.pointerId,
       pointerStart: { x: event.clientX, y: event.clientY },
       panStart: pan,
+      index,
     };
   }
 
   function handlePointerMove(event: ReactPointerEvent<HTMLImageElement>) {
     const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (!drag || drag.pointerId !== event.pointerId || drag.index !== index) return;
     event.preventDefault();
     setPan(
       clampPan(
