@@ -132,11 +132,14 @@ function GoalObjectiveText({
     if (!element) return;
 
     const measure = () => {
-      setIsOverflowing(element.scrollWidth > element.clientWidth);
+      // `objective` re-runs the measurement for the new text. Empty text can
+      // never overflow, so it clears the tooltip here and skips the observer
+      // work below; the effect still re-runs (and observes) once text arrives.
+      setIsOverflowing(objective.length > 0 && element.scrollWidth > element.clientWidth);
     };
     measure();
 
-    if (typeof ResizeObserver === "undefined") return;
+    if (objective.length === 0 || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
