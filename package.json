@@ -173,7 +173,7 @@
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
-    "@types/better-sqlite3": "^7.6.13",
+    "@types/better-sqlite3": "9.6.0",
     "@types/micromatch": "^4.0.10",
     "@types/node": "26.4.1",
     "@types/qrcode": "^1.5.6",
