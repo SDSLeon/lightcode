@@ -79,7 +79,7 @@
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "1.4.0",
-    "@anthropic-ai/claude-agent-sdk": "^0.3.233",
+    "@anthropic-ai/claude-agent-sdk": "0.3.251",
     "@aparajita/capacitor-secure-storage": "^8.0.0",
     "@capacitor/app": "^8.1.0",
     "@capacitor/push-notifications": "^8.1.1",
