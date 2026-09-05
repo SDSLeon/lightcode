@@ -46,9 +46,9 @@ packageExtensions:
   "@huggingface/transformers@4.2.0":
     dependencies:
       onnxruntime-common: 1.24.3
-  "@heroui/react@3.2.2":
+  "@heroui/react@3.2.4":
     dependencies:
-      "@internationalized/date": 3.12.2
+      "@internationalized/date": 3.12.3
   "react-aria-components@1.17.0":
     dependencies:
       "@internationalized/string": 3.2.9
