@@ -65,6 +65,8 @@ packageExtensions:
 nodeLinker: isolated
 
 minimumReleaseAgeExclude:
+  # Security fixes for query serialization and array limit handling.
+  - "qs@6.16.0"
   # The OpenCode connector tracks the current SDK used by Desktop's compatibility path.
   - "@opencode-ai/sdk@1.18.3 || 1.18.10 || 1.18.27"
   - "@anthropic-ai/claude-agent-sdk@0.3.205 || 0.3.218 || 0.3.219 || 0.3.233"
@@ -244,7 +246,12 @@ overrides:
   "esbuild@<0.28.1": "0.28.1"
   "shell-quote@<1.9.0": "^1.9.0"
   "cross-spawn@<6.0.6": "6.0.6"
-  "@xmldom/xmldom@<0.8.13": "0.8.13"
+  # XML injection and parser denial-of-service fixes, preserving each minor line.
+  "@xmldom/xmldom@>=0.8.0 <0.8.15": "0.8.15"
+  "@xmldom/xmldom@>=0.9.0 <0.9.12": "0.9.12"
+  # Query-cache memory growth/prototype writes and query-string limits.
+  "browserslist@>=4.0.0 <4.28.7": "4.28.7"
+  "qs@>=6.0.0 <6.16.0": "6.16.0"
   # DOMPurify custom-element hook bypasses (#141, #197).
   "dompurify@>=3.0.0 <3.4.13": "3.4.13"
   # 2026-06-15 advisory batch (alerts #88-#102).
@@ -266,10 +273,10 @@ overrides:
   # (#138-#140), plus the node adapter's encoded-backslash traversal (#137).
   "hono@<4.12.34": "4.12.34"
   "@hono/node-server@<2.0.10": "2.0.10"
-  # fast-uri host confusion through a backslash authority delimiter (#143).
-  "fast-uri@>=3.0.0 <3.1.5": "3.1.5"
+  # fast-uri host confusion and SSRF normalization fixes.
+  "fast-uri@>=3.0.0 <3.1.6": "3.1.6"
   # nanoid zero-size infinite loop (#201).
-  "nanoid@<3.3.17": "3.3.17"
+  "nanoid@>=3.0.0 <3.3.18": "3.3.18"
   # ip-address address parsing and validation advisories (#186-#188).
   "ip-address@>=10.0.0 <10.3.1": "10.3.1"
   # sharp 0.35.x upgrades libvips past the inherited CVE batch (#142, #154).
