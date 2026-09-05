@@ -307,6 +307,15 @@ describe("probeMcpServer", () => {
     });
   });
 
+  it("reports an oversized stdio response without waiting for the probe timeout", async () => {
+    const script = String.raw`
+      process.stdin.resume();
+      process.stdout.write("x".repeat(11 * 1024 * 1024));
+    `;
+    const result = await probeMcpServer(stdioServer(script, [], 5_000), environment);
+    expect(result).toMatchObject({ status: "unavailable", error: { code: "protocol-error" } });
+  });
+
   it("times out and terminates an unresponsive stdio server", async () => {
     const directory = mkdtempSync(join(tmpdir(), "poracode-mcp-probe-"));
     const pidFile = join(directory, "pid.txt");
