@@ -181,6 +181,7 @@
     "@types/react-dom": "19.2.5",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "6.1.1",
+    "@vitest/coverage-v8": "5.0.0",
     "acorn": "^8.18.0",
     "babel-plugin-react-compiler": "1.0.0",
     "concurrently": "^10.0.5",
@@ -202,7 +203,7 @@
     "tsdown": "^0.22.14",
     "typescript": "^7.0.2",
     "vite": "8.2.2",
-    "vitest": "4.1.11",
+    "vitest": "5.0.0",
     "wait-on": "^9.1.0"
   },
   "engines": {

@@ -225,6 +225,11 @@ minimumReleaseAgeExclude:
   - "undici-types@7.24.6"
   # The platform aliases are prerelease versions of this same package name.
   - "@openai/codex"
+  # 2026-09-05 Vitest 5 major; user-approved guard bypass.
+  - "vitest@5.0.0"
+  - "@vitest/coverage-v8@5.0.0"
+  - "@vitest/mocker@5.0.0"
+  - "@vitest/spy@5.0.0"
 
 # Supply-chain guard: refuse to install any package version published less
 # than this many minutes ago. 7 days catches the typical window in which
