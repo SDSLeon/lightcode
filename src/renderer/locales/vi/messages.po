@@ -752,6 +752,11 @@ msgstr "Đã có hồ sơ Cursor trùng tên này."
 msgid "A frozen worktree source requires a full commit hash"
 msgstr "Nguồn cây làm việc đã đóng băng yêu cầu hàm băm đầy đủ của commit"
 
+#: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "A locked screen stops all desktop control, so the display is kept on while a Computer Use session is running. You can still lock the screen yourself."
+msgstr "Màn hình bị khóa sẽ chặn mọi thao tác điều khiển máy tính, vì vậy màn hình được giữ sáng trong khi phiên sử dụng máy tính đang chạy. Bạn vẫn có thể tự khóa màn hình."
+
 #: src/renderer/views/SettingsOverlay/parts/AgentProfileList.tsx
 msgid "A profile with this name already exists."
 msgstr "Đã có hồ sơ trùng tên này."
@@ -6559,6 +6564,11 @@ msgstr "Giữ một thứ tự nhà cung cấp cho mọi nơi. Tắt để sắp
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Keep Poracode in the system tray when it launches at startup."
 msgstr "Giữ Poracode trong khay hệ thống khi ứng dụng khởi chạy cùng Windows."
+
+#: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Keep the Mac awake during Computer Use"
+msgstr "Giữ Mac không ngủ khi sử dụng máy tính"
 
 #: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts

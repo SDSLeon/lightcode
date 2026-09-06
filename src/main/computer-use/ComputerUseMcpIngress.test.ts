@@ -63,6 +63,14 @@ function callTool(
   });
 }
 
+async function readToolJson(response: Response): Promise<unknown> {
+  const body = (await response.json()) as {
+    result: { content: { type: string; text?: string }[] };
+  };
+  const text = body.result.content.find((part) => part.type === "text")?.text ?? "";
+  return JSON.parse(text);
+}
+
 afterEach(() => {
   ingress?.dispose();
   ingress = null;
@@ -203,6 +211,41 @@ describe("ComputerUseMcpIngress", () => {
       { kind: "session", threadId: "thread-1", active: true },
       { kind: "session", threadId: "thread-1", active: false },
     ]);
+  });
+
+  it("reports keepAwake on enable while the host holds the display awake", async () => {
+    let held = false;
+    ingress = new ComputerUseMcpIngress({
+      driver: createDriver(),
+      onActivity: (event) => {
+        if (event.kind === "session") held = event.active;
+      },
+      isDisplayKeptAwake: () => held,
+    });
+    const info = await ingress.start();
+
+    expect(await readToolJson(await callTool(info, "enable", {}))).toEqual({
+      enabled: true,
+      keepAwake: true,
+    });
+    expect(await readToolJson(await callTool(info, "disable", {}))).toEqual({ enabled: false });
+  });
+
+  it("omits keepAwake when the host is not keeping the display awake", async () => {
+    ingress = new ComputerUseMcpIngress({
+      driver: createDriver(),
+      isDisplayKeptAwake: () => false,
+    });
+    const info = await ingress.start();
+
+    expect(await readToolJson(await callTool(info, "enable", {}))).toEqual({ enabled: true });
+  });
+
+  it("omits keepAwake when the host exposes no wake-lock state", async () => {
+    ingress = new ComputerUseMcpIngress({ driver: createDriver() });
+    const info = await ingress.start();
+
+    expect(await readToolJson(await callTool(info, "enable", {}))).toEqual({ enabled: true });
   });
 
   it("does not attach a badge target to a refused background action", async () => {
@@ -397,6 +440,68 @@ describe("ComputerUseMcpIngress", () => {
     expect(
       onActivity.mock.calls.map(([event]) => (event.kind === "action" ? event.toolName : null)),
     ).toEqual(["press_key", "press_key"]);
+  });
+
+  it("treats a default launch_app as a background badge and an explicit one as takeover", async () => {
+    const onActivity = vi.fn<NonNullable<ComputerUseMcpIngressOptions["onActivity"]>>();
+    const launchApp = vi.fn<ComputerUseDriver["launchApp"]>().mockResolvedValue({
+      ok: true,
+      delivery: { delivered: "background", route: "launch", verified: "confirmed" },
+    });
+    ingress = new ComputerUseMcpIngress({ driver: createDriver({ launchApp }), onActivity });
+    const info = await ingress.start();
+
+    expect((await callTool(info, "launch_app", { app: "Calculator" })).status).toBe(200);
+    expect(launchApp).toHaveBeenCalledWith({ app: "Calculator", mode: "background" });
+    expect(onActivity.mock.calls.map(([event]) => event)).toEqual([
+      {
+        kind: "action",
+        threadId: "thread-1",
+        toolName: "launch_app",
+        delivery: "background",
+        active: true,
+      },
+      {
+        kind: "action",
+        threadId: "thread-1",
+        toolName: "launch_app",
+        delivery: "background",
+        target: "Calculator",
+        active: false,
+      },
+    ]);
+
+    onActivity.mockClear();
+    launchApp.mockResolvedValue({
+      ok: true,
+      delivery: { delivered: "foreground", route: "launch", verified: "confirmed" },
+    });
+    expect(
+      (await callTool(info, "launch_app", { app: "Calculator", mode: "foreground" })).status,
+    ).toBe(200);
+    expect(launchApp).toHaveBeenLastCalledWith({ app: "Calculator", mode: "foreground" });
+    expect(
+      onActivity.mock.calls.map(([event]) => (event.kind === "action" ? event.delivery : null)),
+    ).toEqual(["foreground", "foreground"]);
+  });
+
+  it("reports a launch that unexpectedly escalated to the foreground", async () => {
+    const onActivity = vi.fn<NonNullable<ComputerUseMcpIngressOptions["onActivity"]>>();
+    ingress = new ComputerUseMcpIngress({
+      driver: createDriver({
+        launchApp: vi.fn<ComputerUseDriver["launchApp"]>().mockResolvedValue({
+          ok: true,
+          delivery: { delivered: "foreground", route: "launch", verified: "confirmed" },
+        }),
+      }),
+      onActivity,
+    });
+    const info = await ingress.start();
+
+    expect((await callTool(info, "launch_app", { app: "Calculator" })).status).toBe(200);
+    expect(
+      onActivity.mock.calls.map(([event]) => (event.kind === "action" ? event.delivery : null)),
+    ).toEqual(["background", "foreground", "foreground", "background"]);
   });
 
   it("marks explicitly requested foreground input while the action is running", async () => {

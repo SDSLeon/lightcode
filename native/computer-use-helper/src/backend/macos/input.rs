@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+use std::ffi::c_void;
+use std::ptr::NonNull;
+use std::sync::{Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
 
-use objc2_app_kit::{
-    NSApplicationActivationOptions, NSEvent, NSEventModifierFlags, NSRunningApplication,
-};
-use objc2_core_foundation::CGPoint;
+use objc2_app_kit::{NSApplicationActivationOptions, NSRunningApplication};
+use objc2_core_foundation::{CFString, CFType, CGPoint};
 use objc2_core_graphics::{
     CGEvent, CGEventField, CGEventFlags, CGEventSource, CGEventSourceStateID, CGEventTapLocation,
     CGEventType, CGMouseButton, CGScrollEventUnit,
@@ -422,38 +424,236 @@ fn named_keycode(key: NamedKey) -> Option<(u16, CGEventFlags)> {
     Some((code, CGEventFlags::empty()))
 }
 
-fn current_layout_character_keycode(
-    event_source: &CGEventSource,
-    character: char,
-) -> Option<(u16, CGEventFlags)> {
-    let expected = character.to_string();
-    let modifiers = [
-        (CGEventFlags::empty(), NSEventModifierFlags::empty()),
-        (CGEventFlags::MaskShift, NSEventModifierFlags::Shift),
-        (CGEventFlags::MaskAlternate, NSEventModifierFlags::Option),
+// `UCKeyTranslate` keyboard-layout lookup.
+//
+// The previous implementation created an `NSEvent` per keycode and asked it for
+// `charactersByApplyingModifiers`. That call needs AppKit's main-thread
+// machinery, so in this helper (a background process with no `NSApplication`,
+// serving requests off the main thread) it blocked until the dispatcher timed
+// out. `UCKeyTranslate` is a pure function over the `uchr` layout data and is
+// safe to call from any thread.
+#[link(name = "Carbon", kind = "framework")]
+unsafe extern "C" {
+    fn TISCopyCurrentKeyboardLayoutInputSource() -> *mut c_void;
+    fn TISGetInputSourceProperty(source: *const c_void, key: *const CFString) -> *mut c_void;
+    #[allow(non_upper_case_globals)]
+    static kTISPropertyInputSourceID: *const CFString;
+    #[allow(non_upper_case_globals)]
+    static kTISPropertyUnicodeKeyLayoutData: *const CFString;
+    fn LMGetKbdType() -> u8;
+    fn UCKeyTranslate(
+        layout: *const c_void,
+        virtual_key_code: u16,
+        key_action: u16,
+        modifier_key_state: u32,
+        keyboard_type: u32,
+        options: u32,
+        dead_key_state: *mut u32,
+        max_length: usize,
+        actual_length: *mut usize,
+        unicode_string: *mut u16,
+    ) -> i32;
+    fn CFDataGetBytePtr(data: *const c_void) -> *const u8;
+}
+
+#[link(name = "ApplicationServices", kind = "framework")]
+unsafe extern "C" {
+    fn AXUIElementCreateApplication(pid: libc::pid_t) -> *mut c_void;
+    fn AXUIElementCopyAttributeValue(
+        element: *const c_void,
+        attribute: *const CFString,
+        value: *mut *mut CFType,
+    ) -> i32;
+}
+
+#[link(name = "CoreFoundation", kind = "framework")]
+unsafe extern "C" {
+    fn CFRelease(value: *const c_void);
+    fn CFEqual(left: *const c_void, right: *const c_void) -> u8;
+}
+
+/// Carbon modifier bits. `UCKeyTranslate` wants `(carbonFlags >> 8) & 0xFF`.
+const CARBON_SHIFT: u32 = 0x0200;
+const CARBON_OPTION: u32 = 0x0800;
+const UC_KEY_ACTION_DOWN: u16 = 0;
+/// `kUCKeyTranslateNoDeadKeysBit` as a mask.
+const UC_KEY_TRANSLATE_NO_DEAD_KEYS: u32 = 1;
+/// Keypad virtual keycodes. They are excluded from the character map so a
+/// character token resolves to the main keyboard (matching the ANSI fallback);
+/// the keypad is reachable through the explicit `numpad*` named keys.
+const KEYPAD_KEYCODES: [u16; 18] = [
+    65, 67, 69, 71, 75, 76, 78, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92,
+];
+
+/// An owned CoreFoundation reference released on drop.
+struct CfOwned(NonNull<c_void>);
+
+impl CfOwned {
+    fn from_created(pointer: *mut c_void) -> Option<Self> {
+        NonNull::new(pointer).map(Self)
+    }
+
+    fn as_ptr(&self) -> *const c_void {
+        self.0.as_ptr()
+    }
+}
+
+impl Drop for CfOwned {
+    fn drop(&mut self) {
+        // SAFETY: `self.0` came from a Create/Copy-rule call and is released once.
+        unsafe { CFRelease(self.0.as_ptr()) };
+    }
+}
+
+type LayoutMap = HashMap<char, (u16, CGEventFlags)>;
+
+struct CachedLayout {
+    source_id: String,
+    characters: LayoutMap,
+}
+
+fn layout_cache() -> &'static Mutex<Option<CachedLayout>> {
+    static CACHE: OnceLock<Mutex<Option<CachedLayout>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(None))
+}
+
+fn input_source_string(source: &CfOwned, key: *const CFString) -> Option<String> {
+    // SAFETY: A Get-rule property read on a live input source; the value is a
+    // `CFStringRef` owned by the source.
+    let value = unsafe { TISGetInputSourceProperty(source.as_ptr(), key) };
+    let value = NonNull::new(value.cast::<CFString>())?;
+    // SAFETY: The pointer is a live CFString owned by the input source.
+    Some(unsafe { value.as_ref() }.to_string())
+}
+
+fn translate_keycode(
+    layout: *const c_void,
+    keycode: u16,
+    modifier_key_state: u32,
+    keyboard_type: u32,
+) -> Option<char> {
+    let mut dead_key_state = 0_u32;
+    let mut buffer = [0_u16; 8];
+    let mut length = 0_usize;
+    // SAFETY: `layout` points at live `uchr` data owned by the input source, and
+    // the output buffer and length/dead-key slots are writable for this call.
+    let status = unsafe {
+        UCKeyTranslate(
+            layout,
+            keycode,
+            UC_KEY_ACTION_DOWN,
+            modifier_key_state,
+            keyboard_type,
+            UC_KEY_TRANSLATE_NO_DEAD_KEYS,
+            &mut dead_key_state,
+            buffer.len(),
+            &mut length,
+            buffer.as_mut_ptr(),
+        )
+    };
+    if status != 0 || length != 1 {
+        return None;
+    }
+    let character = char::decode_utf16(buffer[..length].iter().copied())
+        .next()?
+        .ok()?;
+    (!character.is_control()).then_some(character)
+}
+
+/// Builds the character -> (keycode, implicit flags) map for one layout.
+///
+/// Plain keys are inserted first so an unmodified keycode always wins over a
+/// shifted or option-shifted one that produces the same character.
+fn layout_characters(source: &CfOwned) -> Option<LayoutMap> {
+    // SAFETY: A Get-rule property read on a live input source.
+    let data =
+        unsafe { TISGetInputSourceProperty(source.as_ptr(), kTISPropertyUnicodeKeyLayoutData) };
+    if data.is_null() {
+        return None;
+    }
+    // SAFETY: The property is a `CFDataRef` holding `uchr` layout bytes.
+    let layout = unsafe { CFDataGetBytePtr(data) }.cast::<c_void>();
+    if layout.is_null() {
+        return None;
+    }
+    // SAFETY: A read-only query of the current physical keyboard type.
+    let keyboard_type = u32::from(unsafe { LMGetKbdType() });
+    let mut characters = LayoutMap::new();
+    for (carbon, flags) in [
+        (0, CGEventFlags::empty()),
+        (CARBON_SHIFT, CGEventFlags::MaskShift),
+        (CARBON_OPTION, CGEventFlags::MaskAlternate),
         (
+            CARBON_SHIFT | CARBON_OPTION,
             CGEventFlags::MaskShift | CGEventFlags::MaskAlternate,
-            NSEventModifierFlags::Shift | NSEventModifierFlags::Option,
         ),
-    ];
-    for (event_flags, event_modifiers) in modifiers {
+    ] {
+        let modifier_key_state = (carbon >> 8) & 0xFF;
         for keycode in 0_u16..=127 {
-            let Some(event) = CGEvent::new_keyboard_event(Some(event_source), keycode, true) else {
+            if KEYPAD_KEYCODES.contains(&keycode) {
                 continue;
-            };
-            CGEvent::set_flags(Some(&event), event_flags);
-            let Some(event) = NSEvent::eventWithCGEvent(&event) else {
-                continue;
-            };
-            if event
-                .charactersByApplyingModifiers(event_modifiers)
-                .is_some_and(|characters| characters.to_string() == expected)
+            }
+            if let Some(character) =
+                translate_keycode(layout, keycode, modifier_key_state, keyboard_type)
             {
-                return Some((keycode, event_flags));
+                characters.entry(character).or_insert((keycode, flags));
             }
         }
     }
-    None
+    (!characters.is_empty()).then_some(characters)
+}
+
+/// HIToolbox's input-source APIs are not thread safe: calling
+/// `TISCopyCurrentKeyboardLayoutInputSource` from two threads at once aborts the
+/// process inside `islGetInputSourceListWithAdditions`. The cache mutex is taken
+/// before any TIS call so every layout query in this process is serialized.
+fn current_layout_character_keycode(character: char) -> Option<(u16, CGEventFlags)> {
+    let mut cache = layout_cache().lock().ok()?;
+    // SAFETY: A Copy-rule call returning a +1 input source or null.
+    let source = CfOwned::from_created(unsafe { TISCopyCurrentKeyboardLayoutInputSource() })?;
+    // SAFETY: Reading an immutable CoreFoundation constant exported by Carbon.
+    let source_id = input_source_string(&source, unsafe { kTISPropertyInputSourceID })?;
+    if cache
+        .as_ref()
+        .is_none_or(|cached| cached.source_id != source_id)
+    {
+        *cache = Some(CachedLayout {
+            source_id,
+            characters: layout_characters(&source)?,
+        });
+    }
+    cache.as_ref()?.characters.get(&character).copied()
+}
+
+/// The app's current `AXFocusedWindow`, used to report a truthful
+/// `in_app_focus_changed` note. `ax::focus_window` only reports whether the
+/// attribute write was accepted, not whether focus actually moved.
+fn focused_window(pid: Option<u32>) -> Option<CfOwned> {
+    let pid = pid?;
+    // SAFETY: A Create-rule AX element for a process id.
+    let application =
+        CfOwned::from_created(unsafe { AXUIElementCreateApplication(pid as libc::pid_t) })?;
+    let attribute = CFString::from_str("AXFocusedWindow");
+    let mut value = std::ptr::null_mut();
+    // SAFETY: The element is live, the attribute is a live CFString, and `value`
+    // is a writable Copy-rule output slot.
+    let status =
+        unsafe { AXUIElementCopyAttributeValue(application.as_ptr(), &*attribute, &mut value) };
+    if status != 0 {
+        return None;
+    }
+    CfOwned::from_created(value.cast::<c_void>())
+}
+
+fn focus_changed(before: Option<&CfOwned>, after: Option<&CfOwned>) -> bool {
+    match (before, after) {
+        (Some(before), Some(after)) => {
+            // SAFETY: Both pointers are live AX element references.
+            unsafe { CFEqual(before.as_ptr(), after.as_ptr()) == 0 }
+        }
+        (None, None) => false,
+        _ => true,
+    }
 }
 
 fn ansi_character_keycode(character: char) -> Option<(u16, CGEventFlags)> {
@@ -540,10 +740,10 @@ fn ansi_character_keycode(character: char) -> Option<(u16, CGEventFlags)> {
     ))
 }
 
-fn keycode(event_source: &CGEventSource, token: KeyToken) -> Option<(u16, CGEventFlags)> {
+fn keycode(token: KeyToken) -> Option<(u16, CGEventFlags)> {
     match token {
         KeyToken::Named(key) => named_keycode(key),
-        KeyToken::Char(character) => current_layout_character_keycode(event_source, character)
+        KeyToken::Char(character) => current_layout_character_keycode(character)
             .or_else(|| ansi_character_keycode(character)),
     }
 }
@@ -591,15 +791,19 @@ pub fn keyboard(
         if activation.refused.is_some() {
             return Ok(activation);
         }
-    } else if !ax::focus_window(window, false)? {
-        return Ok(InteractiveResult::refused(
-            window.clone(),
-            Refusal::background_unavailable(
-                "The target app did not accept an in-app accessibility focus change.",
-            ),
-        ));
     } else {
-        notes.push("in_app_focus_changed".into());
+        let before = focused_window(window.pid);
+        if !ax::focus_window(window, false)? {
+            return Ok(InteractiveResult::refused(
+                window.clone(),
+                Refusal::background_unavailable(
+                    "The target app did not accept an in-app accessibility focus change.",
+                ),
+            ));
+        }
+        if focus_changed(before.as_ref(), focused_window(window.pid).as_ref()) {
+            notes.push("in_app_focus_changed".into());
+        }
     }
     let event_source = source()?;
     match action {
@@ -628,7 +832,7 @@ pub fn keyboard(
         KeyboardAction::Chord(chord) => {
             for token in &chord.keys {
                 cancel.check()?;
-                let Some((keycode, implicit_flags)) = keycode(&event_source, *token) else {
+                let Some((keycode, implicit_flags)) = keycode(*token) else {
                     return Err(HelperError::invalid_input(format!(
                         "The key {token:?} has no macOS virtual-key mapping."
                     )));
@@ -658,4 +862,66 @@ pub fn keyboard(
         delivery.notes.extend(notes);
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Instant;
+
+    use super::*;
+    use crate::protocol::keys::parse_chord;
+
+    /// Regression guard: the layout lookup used to create `NSEvent`s off the
+    /// main thread, which blocked until the dispatcher timeout.
+    #[test]
+    fn character_keycodes_resolve_quickly() {
+        let start = Instant::now();
+        assert!(keycode(KeyToken::Char('a')).is_some());
+        let first = start.elapsed();
+        assert!(
+            first < Duration::from_millis(200),
+            "first character lookup took {first:?}"
+        );
+
+        for character in ['a', 'z', 'A', '0', '1', '9', '+', '!', ':'] {
+            let start = Instant::now();
+            let resolved = keycode(KeyToken::Char(character));
+            let elapsed = start.elapsed();
+            assert!(resolved.is_some(), "{character} has no keycode");
+            assert!(
+                elapsed < Duration::from_millis(1),
+                "cached lookup of {character} took {elapsed:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn shifted_characters_carry_the_shift_flag() {
+        for character in ['A', 'Z', '+', '!', ':'] {
+            let (_, flags) = keycode(KeyToken::Char(character)).expect("keycode");
+            assert!(
+                flags.contains(CGEventFlags::MaskShift),
+                "{character} resolved without a shift flag"
+            );
+        }
+        for character in ['a', '1', ';', '='] {
+            let (_, flags) = keycode(KeyToken::Char(character)).expect("keycode");
+            assert!(
+                !flags.contains(CGEventFlags::MaskShift),
+                "{character} resolved with an unexpected shift flag"
+            );
+        }
+    }
+
+    #[test]
+    fn command_digit_chord_resolves_to_a_command_flag() {
+        let chord = parse_chord("cmd+1").expect("chord");
+        let token = *chord.keys.first().expect("base key");
+        assert_eq!(token, KeyToken::Char('1'));
+        let (keycode, implicit) = keycode(token).expect("keycode");
+        let flags = flags(chord.modifiers, implicit);
+        assert!(flags.contains(CGEventFlags::MaskCommand));
+        assert!(!flags.contains(CGEventFlags::MaskShift));
+        assert_eq!(keycode, 18, "ANSI digit 1 is virtual keycode 18");
+    }
 }

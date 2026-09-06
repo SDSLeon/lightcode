@@ -752,6 +752,11 @@ msgstr "Профіль Cursor із таким іменем уже існує."
 msgid "A frozen worktree source requires a full commit hash"
 msgstr "Для замороженого джерела worktree потрібен повний хеш коміту"
 
+#: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "A locked screen stops all desktop control, so the display is kept on while a Computer Use session is running. You can still lock the screen yourself."
+msgstr "Заблокований екран повністю зупиняє керування робочим столом, тому під час сеансу керування комп'ютером дисплей залишається увімкненим. Ви й далі можете заблокувати екран вручну."
+
 #: src/renderer/views/SettingsOverlay/parts/AgentProfileList.tsx
 msgid "A profile with this name already exists."
 msgstr "Профіль із таким іменем уже існує."
@@ -6559,6 +6564,11 @@ msgstr "Використовувати один порядок провайде�
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Keep Poracode in the system tray when it launches at startup."
 msgstr "Під час запуску разом із системою залишати Poracode в області сповіщень."
+
+#: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Keep the Mac awake during Computer Use"
+msgstr "Не давати Mac заснути під час керування комп'ютером"
 
 #: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts

@@ -192,6 +192,9 @@ pub struct HelloInfo {
     pub display_server: Option<String>,
     pub capabilities: Capabilities,
     pub permissions: Permissions,
+    /// Whether the console screen is locked right now. Hosts that cannot tell
+    /// report `false`.
+    pub screen_locked: bool,
     pub notes: Vec<String>,
 }
 
@@ -213,6 +216,7 @@ pub fn build_hello(info: HelloInfo) -> Hello {
         display_server: info.display_server,
         capabilities: info.capabilities,
         permissions: info.permissions,
+        screen_locked: info.screen_locked,
         notes: info.notes,
     }
 }
@@ -319,7 +323,16 @@ pub trait Backend: Send + Sync {
         Ok(capability_unavailable(window.clone(), "set_element_value"))
     }
 
-    fn launch_app(&self, app: &str, cancel: &CancelToken) -> Result<LaunchResult>;
+    /// Launch an app. `mode` is the caller's request: `background` must not
+    /// take the user's focus. A backend that cannot honor `background` still
+    /// launches and reports `delivered: "foreground"` honestly.
+    fn launch_app(&self, app: &str, mode: InputMode, cancel: &CancelToken) -> Result<LaunchResult>;
+
+    /// Notes that describe the whole desktop session rather than one window
+    /// (for example a locked screen). Appended to every passive observation.
+    fn session_notes(&self) -> Vec<String> {
+        Vec::new()
+    }
 }
 
 /// Backend for hosts we cannot drive at all (no display, unknown OS).
@@ -343,6 +356,7 @@ impl Backend for UnsupportedBackend {
                 accessibility: PermissionState::Unknown,
                 screen_recording: PermissionState::Unknown,
             },
+            screen_locked: false,
             notes: vec![self.reason.clone()],
         }
     }
@@ -383,7 +397,12 @@ impl Backend for UnsupportedBackend {
         self.unavailable()
     }
 
-    fn launch_app(&self, _app: &str, _cancel: &CancelToken) -> Result<LaunchResult> {
+    fn launch_app(
+        &self,
+        _app: &str,
+        _mode: InputMode,
+        _cancel: &CancelToken,
+    ) -> Result<LaunchResult> {
         self.unavailable()
     }
 }

@@ -42,6 +42,11 @@ export interface ComputerUseMcpIngressOptions {
   driver?: ComputerUseDriver;
   driverOptions?: CreateComputerUseDriverOptions;
   onActivity?: (event: ComputerUseActivityEvent) => void;
+  /**
+   * Whether the host is currently holding the display awake for computer use.
+   * Read synchronously right after a session event so `enable` can report it.
+   */
+  isDisplayKeptAwake?: () => boolean;
 }
 
 export class ComputerUseMcpIngress {
@@ -110,6 +115,9 @@ export class ComputerUseMcpIngress {
                 threadId,
                 active,
               }),
+            ...(this.options.isDisplayKeptAwake
+              ? { isDisplayKeptAwake: this.options.isDisplayKeptAwake }
+              : {}),
           }
         : {}),
     };

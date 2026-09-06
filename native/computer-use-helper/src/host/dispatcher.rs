@@ -29,6 +29,10 @@ use super::writer::LineWriter;
 
 const MAX_ABANDONED_THREADS: usize = 3;
 
+/// Prefix of the `get_window_state` note that explains why `screenshots` is
+/// empty even though the caller asked for one.
+const CAPTURE_FAILED_NOTE: &str = "capture_failed";
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Lane {
     Input,
@@ -328,24 +332,46 @@ pub fn dispatch_request(
         "get_window_state" => {
             let input: GetWindowStateInput = parse(&request.input)?;
             let window = backend.resolve_window(&input.window)?;
-            let mut notes = Vec::new();
+            let mut notes = backend.session_notes();
             let mut screenshots = Vec::new();
             if input.wants_screenshot() {
-                let captured = backend.capture(&window, cancel)?;
-                notes.extend(captured.notes);
-                let screenshot = encode_screenshot(
-                    &captured.frame,
-                    &window,
-                    captured.method,
-                    &EncodeOptions {
-                        max_dimension: input.max_dimension(),
-                        format: input.format.unwrap_or_default(),
-                    },
-                )?;
-                if let Some(note) = downscale_note(&screenshot) {
-                    notes.push(note);
+                match backend.capture(&window, cancel) {
+                    Ok(captured) => {
+                        notes.extend(captured.notes);
+                        let screenshot = encode_screenshot(
+                            &captured.frame,
+                            &window,
+                            captured.method,
+                            &EncodeOptions {
+                                max_dimension: input.max_dimension(),
+                                format: input.format.unwrap_or_default(),
+                            },
+                        )?;
+                        if let Some(note) = downscale_note(&screenshot) {
+                            notes.push(note);
+                        }
+                        screenshots.push(screenshot);
+                    }
+                    // A window whose pixels are unavailable — a locked macOS
+                    // console, a missing Screen Recording grant, a compositor
+                    // that will not redirect it — can still be read through the
+                    // accessibility tree. Degrade to text-only rather than
+                    // failing an observation the caller can still use, and say
+                    // why in a note. A caller that asked only for a screenshot
+                    // gets the error, and so does any other failure class
+                    // (cancellation, a stale window) where the tree is no more
+                    // trustworthy than the capture.
+                    Err(error)
+                        if input.wants_text()
+                            && matches!(
+                                error.code,
+                                ErrorCode::CaptureFailed | ErrorCode::PermissionDenied
+                            ) =>
+                    {
+                        notes.push(format!("{CAPTURE_FAILED_NOTE}: {}", error.message));
+                    }
+                    Err(error) => return Err(error),
                 }
-                screenshots.push(screenshot);
             }
             cancel.check()?;
             let accessibility = if input.wants_text() {
@@ -457,7 +483,7 @@ pub fn dispatch_request(
         }
         "launch_app" => {
             let input: LaunchAppInput = parse(&request.input)?;
-            serialize(backend.launch_app(&input.app, cancel)?)
+            serialize(backend.launch_app(&input.app, input.mode, cancel)?)
         }
         "find_elements" => {
             let input: FindElementsInput = parse(&request.input)?;
@@ -512,6 +538,154 @@ mod tests {
             minimized: None,
             source: None,
         }
+    }
+
+    /// Resolves one window, always fails capture with a configurable error, and
+    /// always has an accessibility tree.
+    struct CaptureFailsBackend {
+        error: HelperError,
+    }
+
+    impl Backend for CaptureFailsBackend {
+        fn hello(&self) -> HelloInfo {
+            unreachable!()
+        }
+        fn list_windows(&self) -> Result<Vec<crate::protocol::window::WindowInfo>> {
+            Ok(vec![window()])
+        }
+        fn resolve_window(
+            &self,
+            _window: &WindowRef,
+        ) -> Result<crate::protocol::window::WindowInfo> {
+            Ok(window())
+        }
+        fn capture(
+            &self,
+            _window: &crate::protocol::window::WindowInfo,
+            _cancel: &CancelToken,
+        ) -> Result<crate::capture::CaptureResult> {
+            Err(self.error.clone())
+        }
+        fn snapshot_tree(
+            &self,
+            _window: &crate::protocol::window::WindowInfo,
+            _max_nodes: usize,
+            _cancel: &CancelToken,
+        ) -> Result<crate::protocol::actions::AccessibilityState> {
+            Ok(crate::protocol::actions::AccessibilityState {
+                source: "test".into(),
+                tree: "window \"test\"".into(),
+                snapshot_id: "snap-1".into(),
+                element_count: 1,
+                truncated: false,
+            })
+        }
+        fn activate(
+            &self,
+            _window: &crate::protocol::window::WindowInfo,
+        ) -> Result<crate::protocol::actions::InteractiveResult> {
+            unreachable!()
+        }
+        fn pointer(
+            &self,
+            _window: &crate::protocol::window::WindowInfo,
+            _action: PointerAction,
+            _options: InputOptions,
+            _cancel: &CancelToken,
+        ) -> Result<crate::protocol::actions::InteractiveResult> {
+            unreachable!()
+        }
+        fn keyboard(
+            &self,
+            _window: &crate::protocol::window::WindowInfo,
+            _action: KeyboardAction,
+            _options: InputOptions,
+            _cancel: &CancelToken,
+        ) -> Result<crate::protocol::actions::InteractiveResult> {
+            unreachable!()
+        }
+        fn launch_app(
+            &self,
+            _app: &str,
+            _mode: crate::protocol::actions::InputMode,
+            _cancel: &CancelToken,
+        ) -> Result<crate::protocol::actions::LaunchResult> {
+            unreachable!()
+        }
+    }
+
+    fn window_state(error: HelperError, input: Value) -> Result<Value> {
+        dispatch_request(
+            &CaptureFailsBackend { error },
+            &Request {
+                id: 1,
+                action: "get_window_state".into(),
+                input,
+            },
+            &CancelToken::default(),
+        )
+    }
+
+    #[test]
+    fn returns_the_tree_with_a_capture_failed_note_when_capture_fails() {
+        let result = window_state(
+            HelperError::capture_failed("The desktop is locked."),
+            json!({
+                "window": { "id": 1 },
+                "include_screenshot": true,
+                "include_text": true,
+            }),
+        )
+        .expect("text-only degrade");
+        assert_eq!(result["screenshots"].as_array().expect("array").len(), 0);
+        assert_eq!(result["accessibility"]["snapshotId"], "snap-1");
+        assert_eq!(
+            result["notes"],
+            json!(["capture_failed: The desktop is locked."])
+        );
+    }
+
+    #[test]
+    fn degrades_for_a_denied_screen_recording_grant_too() {
+        let result = window_state(
+            HelperError::permission_denied("Screen Recording permission is required."),
+            json!({
+                "window": { "id": 1 },
+                "include_screenshot": true,
+                "include_text": true,
+            }),
+        )
+        .expect("text-only degrade");
+        assert!(
+            result["notes"][0]
+                .as_str()
+                .expect("note")
+                .starts_with("capture_failed: Screen Recording")
+        );
+    }
+
+    #[test]
+    fn still_fails_when_only_a_screenshot_was_requested() {
+        let error = window_state(
+            HelperError::capture_failed("The desktop is locked."),
+            json!({ "window": { "id": 1 }, "include_screenshot": true }),
+        )
+        .expect_err("screenshot-only request");
+        assert_eq!(error.code, ErrorCode::CaptureFailed);
+    }
+
+    #[test]
+    fn never_degrades_a_cancellation_into_a_partial_observation() {
+        let error = window_state(
+            HelperError::new(ErrorCode::Cancelled, "cancelled"),
+            json!({
+                "window": { "id": 1 },
+                "include_screenshot": true,
+                "include_text": true,
+            }),
+        )
+        .expect_err("cancelled request");
+        assert_eq!(error.code, ErrorCode::Cancelled);
     }
 
     #[test]
@@ -600,6 +774,7 @@ mod tests {
                         accessibility: PermissionState::NotRequired,
                         screen_recording: PermissionState::NotRequired,
                     },
+                    screen_locked: false,
                     notes: vec![],
                 }
             }
@@ -646,6 +821,7 @@ mod tests {
             fn launch_app(
                 &self,
                 _app: &str,
+                _mode: crate::protocol::actions::InputMode,
                 _cancel: &CancelToken,
             ) -> Result<crate::protocol::actions::LaunchResult> {
                 unreachable!()

@@ -150,6 +150,9 @@ impl Backend for WindowsBackend {
                 accessibility: PermissionState::NotRequired,
                 screen_recording: PermissionState::NotRequired,
             },
+            // Windows has no equivalent probe wired up here; the secure-desktop
+            // refusals already cover locked-workstation input.
+            screen_locked: false,
             notes: vec![
                 "Background delivery uses UI Automation where possible and window messages otherwise."
                     .into(),
@@ -337,7 +340,14 @@ impl Backend for WindowsBackend {
         Ok(Self::refresh_result_window(result))
     }
 
-    fn launch_app(&self, app: &str, cancel: &CancelToken) -> Result<LaunchResult> {
+    /// `mode` is accepted for contract parity. `ShellExecute` activates the
+    /// launched app, so the result honestly reports a foreground delivery.
+    fn launch_app(
+        &self,
+        app: &str,
+        _mode: InputMode,
+        cancel: &CancelToken,
+    ) -> Result<LaunchResult> {
         launch::launch_app(app, cancel)
     }
 }
