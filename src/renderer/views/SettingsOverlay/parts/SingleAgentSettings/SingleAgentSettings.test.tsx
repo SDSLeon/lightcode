@@ -1251,6 +1251,90 @@ describe("SingleAgentSettings", () => {
     await waitFor(() => expect(focusWindowMock).toHaveBeenCalled());
   });
 
+  it("keeps auth pending feedback on the runtime row that started the sign-in", async () => {
+    let resolveAuth!: () => void;
+    authenticateAcpAgentMock.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveAuth = resolve;
+      }),
+    );
+    const authed = makeAntigravityStatus("1.1.27", "1.1.1");
+    statusesState.agentStatuses = [
+      {
+        ...authed,
+        authLogoutSupported: true,
+        presentationAuthStates: { terminal: "authenticated", gui: "missing" },
+        presentationAuthUsesProviderLogin: { terminal: true, gui: true },
+        authMethods: [{ id: "oauth-personal", name: "Log in with Google" }],
+        runtimeVariants: {
+          ...authed.runtimeVariants,
+          acp: {
+            ...authed.runtimeVariants!.acp!,
+            authState: "missing",
+            authLogoutSupported: true,
+            authMethods: [{ id: "oauth-personal", name: "Log in with Google" }],
+          },
+        },
+      },
+    ];
+
+    render(<SingleAgentSettings agentKind="antigravity" />);
+
+    const cliRow = envRow("CLI");
+    const acpRow = envRow("ACP");
+    fireEvent.click(within(acpRow).getByRole("button", { name: /^login/i }));
+
+    expect(within(acpRow).getByRole("status", { name: /logging in/i })).toBeInTheDocument();
+    expect(
+      within(acpRow).getByText(/Waiting for .*Log in with Google authentication/u),
+    ).toBeInTheDocument();
+    // The CLI row shares the environment but not the sign-in, so it keeps its
+    // own controls instead of mirroring the sibling's loader.
+    expect(within(cliRow).queryByRole("status")).not.toBeInTheDocument();
+    expect(within(cliRow).queryByText(/Waiting for/u)).not.toBeInTheDocument();
+    expect(within(cliRow).getByRole("button", { name: /re-login/i })).toBeInTheDocument();
+
+    resolveAuth();
+    await waitFor(() => expect(refreshAgentStatusesMock).toHaveBeenCalled());
+  });
+
+  it("labels each Antigravity model surface with its runtime", () => {
+    const authed = makeAntigravityStatus("1.1.27", "1.1.1");
+    const cliCapabilities = {
+      ...baseCapabilities,
+      runtimeLabel: "CLI",
+      models: [{ id: "gemini-3.1-pro", label: "Gemini 3.1 Pro" }],
+    };
+    const acpCapabilities = {
+      ...baseCapabilities,
+      runtimeLabel: "ACP",
+      showRuntimeLabelInPicker: false,
+      presentationMode: "gui" as const,
+      liveInputMode: "server" as const,
+      models: [{ id: "gemini-3.8-flash", label: "Gemini 3.8 Flash" }],
+    };
+    statusesState.agentStatuses = [
+      {
+        ...authed,
+        capabilities: {
+          ...cliCapabilities,
+          presentationModes: ["terminal", "gui"],
+          presentationCapabilities: { gui: acpCapabilities },
+        },
+        runtimeVariants: {
+          cli: { ...authed.runtimeVariants!.cli!, capabilities: cliCapabilities },
+          acp: { ...authed.runtimeVariants!.acp!, capabilities: acpCapabilities },
+        },
+      },
+    ];
+
+    render(<SingleAgentSettings agentKind="antigravity" />);
+
+    expect(screen.getByText("Visible Antigravity CLI models")).toBeInTheDocument();
+    expect(screen.getByText("Visible Antigravity ACP models")).toBeInTheDocument();
+    expect(screen.queryByText("Visible Antigravity models")).not.toBeInTheDocument();
+  });
+
   it("shows a native Windows install row when Grok is only installed in WSL", async () => {
     const windowsProject = makeProject({
       id: "windows-project",

@@ -10527,6 +10527,16 @@ msgstr "Thay đổi kích thước phần chia"
 msgid "Resize terminal panel"
 msgstr "Thay đổi kích thước bảng điều khiển thiết bị đầu cuối"
 
+#: src/renderer/views/GitReviewOverlay/parts/GitReviewSidebar/parts/useConflictResolver.ts
+msgid "Resolve conflicts in this worktree. First inspect Git status and the active operation; the file list below may be stale. Compare both sides and the base, preserving intended behavior and unrelated edits. During rebase, verify what ours/theirs refer to. Handle rename/delete, binary, and generated-file conflicts using repository conventions. If intent is ambiguous, ask before discarding changes. Validate the resolution with appropriate checks, then stage only resolved paths. Do not commit, continue or abort the operation, or push. Report resolutions, checks, and remaining conflicts.\n"
+"\n"
+"Files:\n"
+"{fileList}"
+msgstr "Giải quyết xung đột trong cây làm việc này. Trước tiên, kiểm tra trạng thái Git và thao tác đang diễn ra; danh sách tệp bên dưới có thể đã cũ. So sánh hai phía và phiên bản cơ sở, giữ nguyên hành vi dự kiến cùng các chỉnh sửa không liên quan. Khi rebase, xác minh ours/theirs chỉ phía nào. Xử lý xung đột đổi tên/xóa, tệp nhị phân và tệp được tạo tự động theo quy ước của kho mã. Nếu ý định chưa rõ, hãy hỏi trước khi loại bỏ thay đổi. Xác minh kết quả bằng các kiểm tra phù hợp, rồi chỉ đưa những đường dẫn đã giải quyết vào vùng chờ. Không commit, tiếp tục hay hủy thao tác, hoặc push. Báo cáo cách giải quyết, kết quả kiểm tra và các xung đột còn lại.\n"
+"\n"
+"Tệp:\n"
+"{fileList}"
+
 #: src/renderer/views/SettingsOverlay/parts/AISettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Resolves merge conflicts during rebase or merge."
@@ -14197,7 +14207,7 @@ msgstr "Chỉ xem — kết nối này không thể quản lý dự án."
 msgid "Violet"
 msgstr "Tím"
 
-#. placeholder {0}: provider.label
+#. placeholder {0}: props.surfaceLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/ModelVisibilityDropdown.tsx
 msgid "Visible {0} models"
 msgstr "Mô hình {0} có thể nhìn thấy"

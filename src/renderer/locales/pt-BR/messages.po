@@ -10527,6 +10527,16 @@ msgstr "Redimensionar divisão"
 msgid "Resize terminal panel"
 msgstr "Redimensionar painel terminal"
 
+#: src/renderer/views/GitReviewOverlay/parts/GitReviewSidebar/parts/useConflictResolver.ts
+msgid "Resolve conflicts in this worktree. First inspect Git status and the active operation; the file list below may be stale. Compare both sides and the base, preserving intended behavior and unrelated edits. During rebase, verify what ours/theirs refer to. Handle rename/delete, binary, and generated-file conflicts using repository conventions. If intent is ambiguous, ask before discarding changes. Validate the resolution with appropriate checks, then stage only resolved paths. Do not commit, continue or abort the operation, or push. Report resolutions, checks, and remaining conflicts.\n"
+"\n"
+"Files:\n"
+"{fileList}"
+msgstr "Resolva os conflitos nesta árvore de trabalho. Primeiro inspecione o status do Git e a operação ativa; a lista de arquivos abaixo pode estar desatualizada. Compare os dois lados e a base, preservando o comportamento pretendido e as alterações não relacionadas. Durante um rebase, verifique a que ours/theirs se referem. Trate conflitos de renomeação/exclusão, arquivos binários e arquivos gerados conforme as convenções do repositório. Se a intenção for ambígua, pergunte antes de descartar alterações. Valide a resolução com as verificações adequadas e depois adicione à área de preparação apenas os caminhos resolvidos. Não faça commit, não continue nem aborte a operação e não faça push. Relate as resoluções, as verificações e os conflitos restantes.\n"
+"\n"
+"Arquivos:\n"
+"{fileList}"
+
 #: src/renderer/views/SettingsOverlay/parts/AISettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Resolves merge conflicts during rebase or merge."
@@ -14197,7 +14207,7 @@ msgstr "Somente leitura — esta conexão não pode gerenciar projetos."
 msgid "Violet"
 msgstr "Violeta"
 
-#. placeholder {0}: provider.label
+#. placeholder {0}: props.surfaceLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/ModelVisibilityDropdown.tsx
 msgid "Visible {0} models"
 msgstr "Modelos {0} visíveis"

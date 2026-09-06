@@ -10526,6 +10526,16 @@ msgstr "调整分割大小"
 msgid "Resize terminal panel"
 msgstr "调整终端面板大小"
 
+#: src/renderer/views/GitReviewOverlay/parts/GitReviewSidebar/parts/useConflictResolver.ts
+msgid "Resolve conflicts in this worktree. First inspect Git status and the active operation; the file list below may be stale. Compare both sides and the base, preserving intended behavior and unrelated edits. During rebase, verify what ours/theirs refer to. Handle rename/delete, binary, and generated-file conflicts using repository conventions. If intent is ambiguous, ask before discarding changes. Validate the resolution with appropriate checks, then stage only resolved paths. Do not commit, continue or abort the operation, or push. Report resolutions, checks, and remaining conflicts.\n"
+"\n"
+"Files:\n"
+"{fileList}"
+msgstr "解决此工作树中的冲突。首先检查 Git 状态和正在进行的操作；下方文件列表可能已过时。比较双方及共同基准，保留预期行为和无关修改。rebase 期间，确认 ours/theirs 分别指什么。按照仓库约定处理重命名/删除、二进制文件和生成文件的冲突。如果意图不明确，先询问再丢弃修改。通过适当检查验证解决结果，然后仅暂存已解决的路径。不要提交、继续或中止操作，也不要推送。报告解决情况、检查结果和剩余冲突。\n"
+"\n"
+"文件：\n"
+"{fileList}"
+
 #: src/renderer/views/SettingsOverlay/parts/AISettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Resolves merge conflicts during rebase or merge."
@@ -14196,7 +14206,7 @@ msgstr "仅查看 — 此连接无法管理项目。"
 msgid "Violet"
 msgstr "紫色"
 
-#. placeholder {0}: provider.label
+#. placeholder {0}: props.surfaceLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/ModelVisibilityDropdown.tsx
 msgid "Visible {0} models"
 msgstr "可见{0}模型"

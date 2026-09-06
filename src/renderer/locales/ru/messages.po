@@ -10527,6 +10527,16 @@ msgstr "Изменить размер разделения"
 msgid "Resize terminal panel"
 msgstr "Изменить размер панели терминала"
 
+#: src/renderer/views/GitReviewOverlay/parts/GitReviewSidebar/parts/useConflictResolver.ts
+msgid "Resolve conflicts in this worktree. First inspect Git status and the active operation; the file list below may be stale. Compare both sides and the base, preserving intended behavior and unrelated edits. During rebase, verify what ours/theirs refer to. Handle rename/delete, binary, and generated-file conflicts using repository conventions. If intent is ambiguous, ask before discarding changes. Validate the resolution with appropriate checks, then stage only resolved paths. Do not commit, continue or abort the operation, or push. Report resolutions, checks, and remaining conflicts.\n"
+"\n"
+"Files:\n"
+"{fileList}"
+msgstr "Разреши конфликты в этом worktree. Сначала проверь состояние Git и текущую операцию: список файлов ниже может быть устаревшим. Сравни обе стороны и базовую версию, сохраняя задуманное поведение и посторонние изменения. При rebase проверь, что означают ours/theirs. Обрабатывай конфликты переименования/удаления, бинарных и сгенерированных файлов согласно правилам репозитория. Если намерение неясно, спроси, прежде чем отбрасывать изменения. Проверь результат подходящими проверками, затем добавь в индекс только разрешённые пути. Не создавай коммит, не продолжай и не отменяй операцию и не выполняй push. Сообщи о решениях, проверках и оставшихся конфликтах.\n"
+"\n"
+"Файлы:\n"
+"{fileList}"
+
 #: src/renderer/views/SettingsOverlay/parts/AISettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Resolves merge conflicts during rebase or merge."
@@ -14197,7 +14207,7 @@ msgstr "Только просмотр — это подключение не м�
 msgid "Violet"
 msgstr "Фиолетовый"
 
-#. placeholder {0}: provider.label
+#. placeholder {0}: props.surfaceLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/ModelVisibilityDropdown.tsx
 msgid "Visible {0} models"
 msgstr "Видимые модели {0}"

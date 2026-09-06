@@ -231,6 +231,19 @@ export function statusEnvKey(status: AgentStatus): string {
   return agentEnvKey(agentEnvForStatus(status));
 }
 
+/**
+ * Key that identifies the Settings row an auth action belongs to. Rows split
+ * per runtime (see `statusForRuntimeVariant`) share one environment, so the
+ * environment key alone would light up every sibling's pending state while a
+ * single runtime signs in. A status scoped to exactly one runtime variant gets
+ * that variant appended; an unscoped status keeps the plain environment key.
+ */
+export function authRowKey(status: AgentStatus): string {
+  const envKey = statusEnvKey(status);
+  const variantIds = status.runtimeVariants ? Object.keys(status.runtimeVariants) : [];
+  return variantIds.length === 1 ? `${envKey}:${variantIds[0]}` : envKey;
+}
+
 export function supportsAcpLogoutStatus(
   status: AgentStatus,
   acpInstanceId: string | undefined,

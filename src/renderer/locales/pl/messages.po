@@ -10527,6 +10527,16 @@ msgstr "Zmień rozmiar podziału"
 msgid "Resize terminal panel"
 msgstr "Zmień rozmiar panelu terminali"
 
+#: src/renderer/views/GitReviewOverlay/parts/GitReviewSidebar/parts/useConflictResolver.ts
+msgid "Resolve conflicts in this worktree. First inspect Git status and the active operation; the file list below may be stale. Compare both sides and the base, preserving intended behavior and unrelated edits. During rebase, verify what ours/theirs refer to. Handle rename/delete, binary, and generated-file conflicts using repository conventions. If intent is ambiguous, ask before discarding changes. Validate the resolution with appropriate checks, then stage only resolved paths. Do not commit, continue or abort the operation, or push. Report resolutions, checks, and remaining conflicts.\n"
+"\n"
+"Files:\n"
+"{fileList}"
+msgstr "Rozwiąż konflikty w tym drzewie roboczym. Najpierw sprawdź stan Git i trwającą operację; poniższa lista plików może być nieaktualna. Porównaj obie strony i wersję bazową, zachowując zamierzone działanie oraz niezwiązane zmiany. Podczas rebase sprawdź, do czego odnoszą się ours/theirs. Obsłuż konflikty zmiany nazwy/usunięcia, plików binarnych i generowanych zgodnie z konwencjami repozytorium. Jeśli zamiar jest niejasny, zapytaj przed odrzuceniem zmian. Zweryfikuj rozwiązanie odpowiednimi kontrolami, a następnie dodaj do indeksu tylko rozwiązane ścieżki. Nie twórz commita, nie kontynuuj ani nie przerywaj operacji i nie wykonuj push. Opisz rozwiązania, kontrole i pozostałe konflikty.\n"
+"\n"
+"Pliki:\n"
+"{fileList}"
+
 #: src/renderer/views/SettingsOverlay/parts/AISettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Resolves merge conflicts during rebase or merge."
@@ -14197,7 +14207,7 @@ msgstr "Tylko do odczytu — to połączenie nie może zarządzać projektami."
 msgid "Violet"
 msgstr "Fioletowy"
 
-#. placeholder {0}: provider.label
+#. placeholder {0}: props.surfaceLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/ModelVisibilityDropdown.tsx
 msgid "Visible {0} models"
 msgstr "Widoczne modele {0}"

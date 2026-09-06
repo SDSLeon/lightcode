@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AgentCapability, AgentStatus } from "@/shared/contracts";
 import {
+  authRowKey,
   statusForRuntimeVariant,
   statusHasAuthenticatedLogout,
   statusNeedsInteractiveLogin,
@@ -222,5 +223,33 @@ describe("statusForRuntimeVariant", () => {
     expect(acp.authMethods).toEqual([{ id: "oauth-personal", name: "Log in with Google" }]);
     expect(statusNeedsInteractiveLogin(acp)).toBe(true);
     expect(statusNeedsInteractiveLogin(cli)).toBe(false);
+  });
+});
+
+describe("authRowKey", () => {
+  const variant = {
+    presentationMode: "terminal" as const,
+    installed: true,
+    authState: "authenticated" as const,
+    authUsesProviderLogin: true,
+    capabilities,
+  };
+
+  it("keeps the plain environment key for a status that is not runtime-scoped", () => {
+    expect(authRowKey(status())).toBe(authRowKey(status({ runtimeVariants: {} })));
+    expect(authRowKey(status({ runtimeVariants: { cli: variant, acp: variant } }))).toBe(
+      authRowKey(status()),
+    );
+  });
+
+  it("separates sibling runtime rows that share one environment", () => {
+    const current = status({
+      envKind: "windows",
+      runtimeVariants: { cli: variant, acp: { ...variant, presentationMode: "gui" } },
+    });
+    const cli = authRowKey(statusForRuntimeVariant(current, "cli"));
+    const acp = authRowKey(statusForRuntimeVariant(current, "acp"));
+    expect(cli).not.toBe(acp);
+    expect(cli).toBe(authRowKey(statusForRuntimeVariant(current, "cli")));
   });
 });

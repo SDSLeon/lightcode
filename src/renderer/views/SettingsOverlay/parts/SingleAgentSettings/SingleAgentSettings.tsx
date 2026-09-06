@@ -55,6 +55,7 @@ import { SAVED_CREDENTIAL_MASK } from "../secretMask";
 import { AgentHeader } from "./parts/AgentHeader";
 import { AgentSettingRow } from "./parts/AgentSettingRow";
 import { ModelVisibilityDropdown } from "./parts/ModelVisibilityDropdown";
+import { modelSurfaceLabel } from "./parts/modelSurfaceLabel";
 import {
   AgentEnvironmentRow,
   AgentInstallEnvironmentRow,
@@ -69,6 +70,7 @@ import {
 } from "../machineScope/MachineScopeRows";
 import { useMachineScopedStatuses } from "../machineScope/useMachineScopedStatuses";
 import {
+  authRowKey,
   findAgentAuthMethod,
   findEnvVarAuthMethod,
   findTerminalLoginStatus,
@@ -391,7 +393,7 @@ export function SingleAgentSettings(props: {
   const authenticateAgent = (auth = agentAuth) => {
     if (!auth || !supportsAcpAgentAuth) return;
     setAuthPending(true);
-    setAuthPendingEnvKey(statusEnvKey(auth.status));
+    setAuthPendingEnvKey(authRowKey(auth.status));
     const authEnv = envLabelForStatus(auth.status);
     const authMethodName = auth.method.name;
     setAuthPendingMessage(
@@ -429,7 +431,7 @@ export function SingleAgentSettings(props: {
     const project = findProjectForStatus(status, projects);
     const env = envLabelForStatus(status);
     setAuthPending(true);
-    setAuthPendingEnvKey(statusEnvKey(status));
+    setAuthPendingEnvKey(authRowKey(status));
     const methodName = method?.name ?? t`login`;
     setAuthPendingMessage(
       env
@@ -477,7 +479,7 @@ export function SingleAgentSettings(props: {
     if (!supportsAcpLogoutStatus(status, acpInstanceId)) return;
     const env = envLabelForStatus(status);
     setAuthPending(true);
-    setAuthPendingEnvKey(statusEnvKey(status));
+    setAuthPendingEnvKey(authRowKey(status));
     setAuthPendingMessage(
       env
         ? t`Signing out ${env}. Detected agents will refresh when it finishes.`
@@ -863,6 +865,7 @@ export function SingleAgentSettings(props: {
     const envKey = statusEnvKey(status);
     const slot = options?.slot;
     const rowStatus = slot ? statusForRuntimeVariant(status, slot.id) : status;
+    const rowKey = authRowKey(rowStatus);
     const methods = collectRowAuthMethods(rowStatus);
     const rowMetadata =
       providerAccount && rowStatus.authState === "authenticated"
@@ -879,7 +882,7 @@ export function SingleAgentSettings(props: {
         acpInstanceId={acpInstanceId}
         agentLabel={agent.label}
         authMethods={methods}
-        authPending={authPendingEnvKey === envKey}
+        authPending={authPendingEnvKey === rowKey}
         binaryUpdatePending={binaryUpdatePendingEnvKeys.has(envKey)}
         canLogout={!isRemoteMachine && statusHasAuthenticatedLogout(rowStatus, acpInstanceId)}
         includeAuthFallback={includeAuthFallbackMetadata}
@@ -889,7 +892,7 @@ export function SingleAgentSettings(props: {
         }
         livePlan={resolveLivePlanLabel(rowMetadata, providerUsage)}
         newestInstalledVersion={hasCombinedRuntimeUpdates ? undefined : newestInstalledVersion}
-        pendingMessage={authPendingEnvKey === envKey ? authPendingMessage : undefined}
+        pendingMessage={authPendingEnvKey === rowKey ? authPendingMessage : undefined}
         status={rowStatus}
         onLogin={(method) => {
           if (isAgentAuthMethod(method)) {
@@ -1177,7 +1180,11 @@ export function SingleAgentSettings(props: {
                 key={providerMenuKey(provider)}
                 settingsKey={providerVisibilityKey(provider)}
                 provider={provider}
-                showProviderLabel={modelVisibilityProviders.length > 1}
+                {...(modelVisibilityProviders.length > 1
+                  ? {
+                      surfaceLabel: modelSurfaceLabel(provider, agent, providerEntry?.runtimeSlots),
+                    }
+                  : {})}
               />
             ))}
           </div>

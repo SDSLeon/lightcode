@@ -10527,6 +10527,16 @@ msgstr "Змінити розмір розділення"
 msgid "Resize terminal panel"
 msgstr "Змінити розмір панелі термінала"
 
+#: src/renderer/views/GitReviewOverlay/parts/GitReviewSidebar/parts/useConflictResolver.ts
+msgid "Resolve conflicts in this worktree. First inspect Git status and the active operation; the file list below may be stale. Compare both sides and the base, preserving intended behavior and unrelated edits. During rebase, verify what ours/theirs refer to. Handle rename/delete, binary, and generated-file conflicts using repository conventions. If intent is ambiguous, ask before discarding changes. Validate the resolution with appropriate checks, then stage only resolved paths. Do not commit, continue or abort the operation, or push. Report resolutions, checks, and remaining conflicts.\n"
+"\n"
+"Files:\n"
+"{fileList}"
+msgstr "Розв’яжи конфлікти в цьому worktree. Спочатку перевір стан Git і поточну операцію: список файлів нижче може бути застарілим. Порівняй обидві сторони та базову версію, зберігаючи задуману поведінку й сторонні зміни. Під час rebase перевір, що означають ours/theirs. Обробляй конфлікти перейменування/видалення, бінарних і згенерованих файлів за правилами репозиторію. Якщо намір незрозумілий, запитай, перш ніж відкидати зміни. Перевір результат відповідними перевірками, потім додай до індексу лише розв’язані шляхи. Не створюй коміт, не продовжуй і не скасовуй операцію та не виконуй push. Повідом про рішення, перевірки й решту конфліктів.\n"
+"\n"
+"Файли:\n"
+"{fileList}"
+
 #: src/renderer/views/SettingsOverlay/parts/AISettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Resolves merge conflicts during rebase or merge."
@@ -14197,7 +14207,7 @@ msgstr "Лише перегляд — це підключення не може 
 msgid "Violet"
 msgstr "Фіолетовий"
 
-#. placeholder {0}: provider.label
+#. placeholder {0}: props.surfaceLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/ModelVisibilityDropdown.tsx
 msgid "Visible {0} models"
 msgstr "Видимі моделі {0}"

@@ -10527,6 +10527,16 @@ msgstr "분할 크기 조정"
 msgid "Resize terminal panel"
 msgstr "터미널 패널 크기 조정"
 
+#: src/renderer/views/GitReviewOverlay/parts/GitReviewSidebar/parts/useConflictResolver.ts
+msgid "Resolve conflicts in this worktree. First inspect Git status and the active operation; the file list below may be stale. Compare both sides and the base, preserving intended behavior and unrelated edits. During rebase, verify what ours/theirs refer to. Handle rename/delete, binary, and generated-file conflicts using repository conventions. If intent is ambiguous, ask before discarding changes. Validate the resolution with appropriate checks, then stage only resolved paths. Do not commit, continue or abort the operation, or push. Report resolutions, checks, and remaining conflicts.\n"
+"\n"
+"Files:\n"
+"{fileList}"
+msgstr "이 작업 트리의 충돌을 해결하세요. 먼저 Git 상태와 진행 중인 작업을 확인하세요. 아래 파일 목록은 오래되었을 수 있습니다. 양쪽과 기준 버전을 비교하여 의도한 동작과 관련 없는 수정 사항을 보존하세요. rebase 중에는 ours/theirs가 무엇을 가리키는지 확인하세요. 이름 변경/삭제, 바이너리 및 생성된 파일의 충돌은 저장소 규칙에 따라 처리하세요. 의도가 모호하면 변경 사항을 버리기 전에 질문하세요. 적절한 검사로 해결 결과를 검증한 다음 해결된 경로만 스테이징하세요. 커밋하거나 작업을 계속 또는 중단하거나 push하지 마세요. 해결 내용, 검사 결과, 남은 충돌을 보고하세요.\n"
+"\n"
+"파일:\n"
+"{fileList}"
+
 #: src/renderer/views/SettingsOverlay/parts/AISettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Resolves merge conflicts during rebase or merge."
@@ -14197,7 +14207,7 @@ msgstr "읽기 전용 — 이 연결로는 프로젝트를 관리할 수 없습�
 msgid "Violet"
 msgstr "보라"
 
-#. placeholder {0}: provider.label
+#. placeholder {0}: props.surfaceLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/ModelVisibilityDropdown.tsx
 msgid "Visible {0} models"
 msgstr "표시되는 {0} 모델"
