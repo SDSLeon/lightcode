@@ -2211,6 +2211,42 @@ describe("ChatPane", () => {
     );
   });
 
+  it("releases the revert guard after a persistence failure so confirmation can retry", async () => {
+    const thread = { ...makeThread(), status: "idle" as const };
+    const dbTruncateThreadRuntimeAfter = vi
+      .fn<() => Promise<void>>()
+      .mockRejectedValueOnce(new Error("Checkpoint save failed"))
+      .mockResolvedValue(undefined);
+    Object.assign(window, {
+      poracode: {
+        rollbackThreadConversation: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+        dbTruncateThreadRuntimeAfter,
+        dbSyncAll: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+        setWindowChrome: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+      },
+    });
+    seedUserMessage(thread.id, "Initial prompt", "user-1");
+    seedAssistantMessage(thread.id, "First answer", "assistant-1");
+    seedUserMessage(thread.id, "Follow-up prompt", "user-2");
+    seedAssistantMessage(thread.id, "Second answer", "assistant-2");
+    renderChatPane(thread);
+    await waitFor(() => expect(hydrateThreadRuntimeItems).toHaveBeenCalledWith(thread.id));
+
+    fireEvent.click(screen.getByRole("button", { name: "Revert to this checkpoint" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Revert" }));
+    expect(await screen.findByText("Checkpoint save failed")).toBeInTheDocument();
+    expect(dbTruncateThreadRuntimeAfter).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Revert" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Revert" })).not.toBeInTheDocument(),
+    );
+    expect(dbTruncateThreadRuntimeAfter).toHaveBeenCalledTimes(2);
+    expect(useRevertedPromptStore.getState().byThread[thread.id]).toEqual([
+      { kind: "text", text: "Follow-up prompt" },
+    ]);
+  });
+
   it("rolls back provider by completed turns instead of assistant message count", async () => {
     const thread = { ...makeThread(), status: "idle" as const };
     const rollbackThreadConversation = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);

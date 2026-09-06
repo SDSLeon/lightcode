@@ -334,7 +334,8 @@ export function MessageList({
     async (itemId: string, userItemId: string) => {
       if (revertingRef.current) return false;
       revertingRef.current = true;
-      try {
+      // Promise cleanup lets memoization analysis see this callback's dependencies.
+      return (async () => {
         const state = useAppStore.getState();
         const itemIds = state.runtimeItemIdsByThread[threadId];
         const itemsById = state.runtimeItemsByIdByThread[threadId];
@@ -391,9 +392,9 @@ export function MessageList({
         });
         parentActions?.onContentHeightChange?.();
         return true;
-      } finally {
+      })().finally(() => {
         revertingRef.current = false;
-      }
+      });
     },
     [checkpointActions, parentActions, projectLocation, threadConfig, threadId],
   );
