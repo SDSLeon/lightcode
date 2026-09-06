@@ -1022,17 +1022,17 @@ export function ContinueInProviderDialog(props: {
                           onSlashCommandChange={setSlashQuery}
                           submitOnEnter={!showCommandPanel}
                           onSubmit={(segments) => {
-                            void handleAction("fork", segments);
+                            void handleAction("switch", segments);
                           }}
                         />
                       }
                       placeholder={t`Tell the target provider what to do next...`}
                       prompt=""
                       submitDisabled={!canSubmit}
-                      submitLabel={t`Fork`}
+                      submitLabel={t`Switch`}
                       onPromptChange={() => undefined}
                       onSubmit={() => {
-                        void handleAction("fork");
+                        void handleAction("switch");
                       }}
                       afterControls={
                         <ComposerAddMenu
