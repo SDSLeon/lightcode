@@ -5,6 +5,7 @@ import { createAcpGenericAdapter } from "../acp-generic";
 import type { AgentAdapter } from "../base";
 import { buildAntigravityAcpModelCapabilities } from "./models";
 import { createAntigravityAcpExtension } from "./acpExtension";
+import { transformAntigravityBackgroundToolCall } from "./acpTaskNotifications";
 import { parseAntigravityAcpTurnSignal } from "./acpTurnHold";
 
 const ANTIGRAVITY_ACP_PROBE_TIMEOUT_MS = 60_000;
@@ -62,6 +63,7 @@ export function createAntigravityAcpRuntime(
     // and reports file reads as finished only at end of turn; both parsers
     // live here so the shared mapper stays provider-agnostic.
     textStreamExtension: createAntigravityAcpExtension(),
+    sessionUpdateTransform: transformAntigravityBackgroundToolCall,
     // agy_acp_server holds session/prompt open until every background task
     // exits; the only end-of-reply boundary it publishes is a stderr
     // diagnostic. See ./acpTurnHold.ts.

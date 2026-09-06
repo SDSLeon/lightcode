@@ -45,6 +45,7 @@ import {
 } from "@agentclientprotocol/sdk";
 import type {
   AgentSlashCommand,
+  BackgroundTask,
   ProjectLocation,
   PromptSegment,
   RuntimeEvent,
@@ -417,6 +418,12 @@ export class AcpStructuredSession implements StructuredSessionHandle {
   private agentMcpCapabilities: McpCapabilities | undefined;
   private mapperState: AcpMapperState | undefined;
   /**
+   * Last `background_tasks.changed` list emitted by this session. Any
+   * text-stream extension may produce that event; the session only mirrors
+   * it for snapshot/getBackgroundTasks consumers.
+   */
+  private reportedBackgroundTasks: readonly BackgroundTask[] = [];
+  /**
    * Client-hosted ACP terminal subsystem. Lazily created so test harnesses
    * that bypass the constructor (and override `projectLocation`/`cwd` after
    * prototype instantiation) still get a coherent manager on first use.
@@ -541,6 +548,11 @@ export class AcpStructuredSession implements StructuredSessionHandle {
 
   private emitRuntimeEvents(events: RuntimeEvent[]): void {
     if (events.length === 0) return;
+    for (const event of events) {
+      if (event.type === "background_tasks.changed") {
+        this.reportedBackgroundTasks = event.tasks;
+      }
+    }
     if (!this.listener?.onRuntimeEvent) {
       this.bufferedRuntimeEvents.push(...events);
       return;
@@ -548,6 +560,10 @@ export class AcpStructuredSession implements StructuredSessionHandle {
     for (const event of events) {
       this.listener.onRuntimeEvent(event);
     }
+  }
+
+  getBackgroundTasks(): readonly BackgroundTask[] {
+    return this.reportedBackgroundTasks;
   }
 
   private emitListenerUpdate(update: StructuredSessionUpdate): void {
@@ -1308,6 +1324,12 @@ export class AcpStructuredSession implements StructuredSessionHandle {
   async dispose(): Promise<void> {
     if (this.isDisposed) return;
     this.isDisposed = true;
+
+    if (this.reportedBackgroundTasks.length > 0) {
+      this.emitRuntimeEvents([
+        { type: "background_tasks.changed", threadId: this.threadId, tasks: [] },
+      ]);
+    }
 
     for (const source of this.externalSessionUpdateSources ?? []) source.dispose();
     this.externalSessionUpdateSources?.clear();
