@@ -31,9 +31,11 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const requireFromHere = createRequire(import.meta.url);
 const channelTable = requireFromHere("./electron-builder.shared.cjs");
-const { restoreMacUpdaterManifests, snapshotMacUpdaterManifests } = requireFromHere(
-  "./mac-updater-manifest.cjs",
-);
+const {
+  restoreMacUpdaterManifests,
+  snapshotMacUpdaterManifests,
+  setMacUpdaterMinimumSystemVersion,
+} = requireFromHere("./mac-updater-manifest.cjs");
 const { supportEmail } = requireFromHere("../branding/contact.json");
 
 // Runtime externals — packages tsdown does NOT inline into dist/main/*.cjs.
@@ -289,6 +291,11 @@ async function main() {
   if (!PLATFORM_FLAG[platform]) {
     throw new Error(`Unknown platform "${platform}". Expected mac/linux/win.`);
   }
+  if (platform === "mac" && publish !== "never") {
+    throw new Error(
+      "macOS update metadata is finalized after packaging. Use --publish never and upload the completed release artifacts separately.",
+    );
+  }
 
   // 1. Build dist artifacts unless caller already did it.
   if (!skipBuild) {
@@ -410,6 +417,10 @@ async function main() {
       restoreMacUpdaterManifests(join(stageRoot, "release"), updaterManifests);
     } else {
       runElectronBuilder(target);
+    }
+
+    if (platform === "mac") {
+      setMacUpdaterMinimumSystemVersion(join(stageRoot, "release"));
     }
 
     // 8. Copy artifacts back to release/.
@@ -555,8 +566,6 @@ linux:
 
 mac:
   minimumSystemVersion: "13.0.0"
-  releaseInfo:
-    minimumSystemVersion: "22.0.0"
   executableName: ${macExecutableName}
   target:
     - target: dmg
