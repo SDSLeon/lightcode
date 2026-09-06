@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithI18n as render } from "@/renderer/testUtils/i18n";
 import type { AgentStatus, GitStatusResult, Thread } from "@/shared/contracts";
 import "@/renderer/components/providers/bootstrap";
+import * as skills from "@/renderer/components/skills/useSkills";
 import { useAppStore } from "@/renderer/state/appStore";
 import { useGitStore } from "@/renderer/state/gitStore";
 import {
@@ -775,6 +776,118 @@ describe("ThreadComposerSection", () => {
           }),
         ]),
       ),
+    );
+  });
+
+  it("waits for skill discovery before consuming a reverted prompt", async () => {
+    const skillState = vi.spyOn(skills, "useSkillSlashCommandState").mockReturnValue({
+      commands: [],
+      resolved: false,
+    });
+    try {
+      const { rerender, onSubmitInput } = renderComposer();
+      typeComposerText(screen.getByRole("textbox"), "existing draft");
+      act(() => {
+        useRevertedPromptStore.getState().restore(guiThread.id, [
+          { kind: "text", text: "Please " },
+          { kind: "skill", name: "review", invocation: "/review", pluginId: "review-plugin" },
+        ]);
+      });
+
+      expect(screen.getByRole("textbox")).toHaveTextContent("existing draft");
+      expect(useRevertedPromptStore.getState().byThread[guiThread.id]).toBeDefined();
+      expect(onSubmitInput).not.toHaveBeenCalled();
+
+      skillState.mockReturnValue({
+        resolved: true,
+        commands: [
+          {
+            id: "review",
+            label: "Review",
+            section: "skills",
+            skillName: "review",
+            skillInvocation: "/skill:review",
+            skillPath: "/skills/review/SKILL.md",
+            skillProvider: "Example",
+            skillScope: "project",
+            pluginId: "review-plugin",
+          },
+        ],
+      });
+      rerender(composerElement({ onSubmitInput }));
+
+      await waitFor(() =>
+        expect(useRevertedPromptStore.getState().byThread[guiThread.id]).toBeUndefined(),
+      );
+      expect(screen.getByRole("textbox")).not.toHaveTextContent("existing draft");
+      fireEvent.click(screen.getByText("send"));
+      await waitFor(() =>
+        expect(onSubmitInput).toHaveBeenCalledWith(expect.any(String), [
+          { kind: "text", content: "Please " },
+          {
+            kind: "skill",
+            name: "review",
+            invocation: "/skill:review",
+            path: "/skills/review/SKILL.md",
+            provider: "Example",
+            scope: "project",
+            pluginId: "review-plugin",
+          },
+        ]),
+      );
+    } finally {
+      skillState.mockRestore();
+    }
+  });
+
+  it("preserves a reverted prompt and its attachment when switching away and back", async () => {
+    const { rerender, onSubmitInput } = renderComposer();
+    act(() => {
+      useRevertedPromptStore.getState().restore(guiThread.id, [
+        { kind: "text", text: "reverted draft" },
+        {
+          kind: "image",
+          path: "C:\\attachments\\reverted.png",
+          mimeType: "image/png",
+          dataUrl: "",
+          source: "attachment",
+        },
+      ]);
+    });
+    await waitFor(() => expect(screen.getByRole("textbox")).toHaveTextContent("reverted draft"));
+    expect(screen.getByAltText("reverted.png")).toBeInTheDocument();
+    expect(useRevertedPromptStore.getState().byThread[guiThread.id]).toBeUndefined();
+
+    rerender(composerElement({ thread: secondGuiThread, onSubmitInput }));
+    expect(screen.getByRole("textbox")).not.toHaveTextContent("reverted draft");
+    expect(screen.queryByAltText("reverted.png")).not.toBeInTheDocument();
+    expect(useAppStore.getState().threadDraftContents[guiThread.id]).toEqual({
+      segments: [{ kind: "text", content: "reverted draft" }],
+      attachments: [
+        {
+          id: expect.any(String),
+          path: "C:\\attachments\\reverted.png",
+          name: "reverted.png",
+          mimeType: "image/png",
+          isImage: true,
+        },
+      ],
+    });
+    expect(onSubmitInput).not.toHaveBeenCalled();
+
+    rerender(composerElement({ onSubmitInput }));
+    await waitFor(() => expect(screen.getByRole("textbox")).toHaveTextContent("reverted draft"));
+    expect(screen.getByAltText("reverted.png")).toHaveAttribute(
+      "src",
+      "poracode-local://local/C:/attachments/reverted.png",
+    );
+    expect(useAppStore.getState().threadDraftContents[guiThread.id]).toBeUndefined();
+    fireEvent.click(screen.getByText("send"));
+    await waitFor(() =>
+      expect(onSubmitInput).toHaveBeenCalledWith("reverted draft", [
+        { kind: "attachment", path: "C:\\attachments\\reverted.png", mimeType: "image/png" },
+        { kind: "text", content: "reverted draft" },
+      ]),
     );
   });
 
