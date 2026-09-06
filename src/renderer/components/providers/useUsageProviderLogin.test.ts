@@ -160,7 +160,8 @@ describe("useUsageProviderLogin", () => {
     const { result } = renderHook(() => useUsageProviderLogin("muse"));
 
     expect(result.current.canCliSignIn).toBe(true);
-    expect(result.current.canBrowserSignIn).toBe(false);
+    // Muse also offers the dashboard browser sign-in; the two paths coexist.
+    expect(result.current.canBrowserSignIn).toBe(true);
     expect(result.current.canApiKeySignIn).toBe(false);
   });
 
