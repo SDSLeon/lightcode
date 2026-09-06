@@ -62,6 +62,7 @@ import { useGitStore } from "@/renderer/state/gitStore";
 import { useSharedSettings } from "@/renderer/state/sharedSettingsStore";
 import { isDraftContentNonEmpty } from "@/renderer/state/slices/types";
 import { useThread } from "@/renderer/state/useThread";
+import { ComposerBubbleRow } from "./ComposerBubbleRow";
 import { ThreadChangesBubble } from "./ThreadChangesBubble";
 import { ThreadDockBubbles } from "./ThreadDockBubbles";
 import { ThreadImagesBubble } from "./ThreadImagesBubble";
@@ -759,7 +760,7 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
         <div className="relative">
           {/* Position an out-of-flow wrapper, not the tooltip triggers. HeroUI then
               measures the real buttons without adding a line box above the composer. */}
-          <div className="absolute right-3 bottom-full z-10 mb-1.5 flex max-w-full flex-wrap items-center justify-end gap-1.5">
+          <ComposerBubbleRow threadId={thread.id}>
             {showDockBubbles ? (
               <ThreadDockBubbles summary={docksSummary} threadId={thread.id} />
             ) : null}
@@ -773,7 +774,7 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
                 {...(thread.worktreePath && branchName ? { worktreeName: branchName } : {})}
               />
             )}
-          </div>
+          </ComposerBubbleRow>
           <div
             className={`grid transition-[grid-template-rows] ease-[cubic-bezier(0.16,1,0.3,1)] ${isComposerCollapsed ? "duration-300" : "duration-200"}`}
             style={{ gridTemplateRows: isComposerCollapsed ? "0fr" : "1fr" }}

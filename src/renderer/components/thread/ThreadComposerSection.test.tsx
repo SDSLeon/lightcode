@@ -349,12 +349,15 @@ describe("ThreadComposerSection", () => {
       }),
     );
 
-    // The bubbles keep the out-of-flow, right-anchored position the changes
-    // bubble owned before they shared one wrapper.
-    const wrapper = container.querySelector("div.absolute.right-3.bottom-full");
+    // The bubbles keep an out-of-flow, right-aligned row above the composer;
+    // the row spans the pane so the scroll button can center on it without
+    // shadowing chat content.
+    const wrapper = container.querySelector("div.absolute.inset-x-0.bottom-full");
     expect(wrapper).not.toBeNull();
-    expect(wrapper).toHaveClass("z-10", "mb-1.5", "flex", "items-center");
-    expect(screen.getByRole("button", { name: "Review changes" })).toBeInTheDocument();
+    expect(wrapper).toHaveClass("z-10", "mb-1.5", "pointer-events-none");
+    const row = screen.getByRole("button", { name: "Review changes" }).closest(".flex-wrap");
+    expect(row).toHaveClass("justify-end", "items-center", "*:pointer-events-auto");
+    expect(wrapper).toContainElement(row as HTMLElement);
   });
 
   function composerElement(opts?: {
