@@ -537,6 +537,7 @@ export function mapAcpSessionUpdate(
         isSubAgent,
         state.resolveTerminalOutput,
         state.resolveTerminalOutputByCommand,
+        state.resolveLocalImage,
       );
       const terminalId = findTerminalIdInContent((toolCall as { content?: unknown }).content);
       state.toolCallItems.set(toolCall.toolCallId, {
@@ -644,6 +645,7 @@ export function mapAcpSessionUpdate(
         status,
         state.resolveTerminalOutput,
         state.resolveTerminalOutputByCommand,
+        state.resolveLocalImage,
       );
       const hasOpenSubAgentContent =
         item.isSubAgent &&

@@ -86,6 +86,7 @@ import { AcpSessionConfigSync } from "./sessionConfigSync";
 // ── Helpers ──────────────────────────────────────────────────────
 
 import { isMissingPathError, toAcpFsRequestError } from "./sessionFsErrors";
+import { createAcpLocalImageResolver } from "./sessionLocalImages";
 import { AcpPlanModeToolTracker } from "./sessionPlanMode";
 import {
   isAcpHomeScopeLocation,
@@ -333,6 +334,8 @@ export class AcpStructuredSession implements StructuredSessionHandle {
   private readonly optimisticMcpTransports: readonly McpTransportKind[] | undefined;
   private readonly fsAgentHomeDirs: readonly string[];
   private readonly fsTextCapability: boolean;
+  /** Reads referenced local images for the canonical mapper (per-session cache). */
+  private readonly resolveLocalImage: (pathOrFileUri: string) => string | undefined;
   private planModeToolTrackerInstance: AcpPlanModeToolTracker | undefined;
   /** Poracode thread id (stable identifier we report in RuntimeEvents). */
   private readonly threadId: string;
@@ -529,6 +532,7 @@ export class AcpStructuredSession implements StructuredSessionHandle {
     this.optimisticMcpTransports = options?.optimisticMcpTransports;
     this.fsAgentHomeDirs = options?.fsAgentHomeDirs ?? [];
     this.fsTextCapability = options?.fsTextCapability !== false;
+    this.resolveLocalImage = createAcpLocalImageResolver(this.projectLocation);
   }
 
   /** Initialize the canonical mapper once we have a stable thread id. */
@@ -542,6 +546,10 @@ export class AcpStructuredSession implements StructuredSessionHandle {
         this.terminalManager.getTerminalOutput(terminalId);
       this.mapperState.resolveTerminalOutputByCommand = (command) =>
         this.terminalManager.resolveAcpTerminalOutputByCommand(command);
+      // Agents that report an image result by reference (a `uri`-only image
+      // block, or only a read-kind tool call's `locations`) need a filesystem
+      // read the pure mapper can't do itself.
+      this.mapperState.resolveLocalImage = this.resolveLocalImage;
     }
     return this.mapperState;
   }
