@@ -8,6 +8,6 @@
 
 // Version 2 guarantees background requests never take foreground control and
 // returns canonical accessibility roles. Version 1 clients can still connect.
-pub const PROTOCOL_VERSION: u32 = 2;
+pub const PROTOCOL_VERSION: u32 = 3;
 pub const MIN_CLIENT_PROTOCOL_VERSION: u32 = 1;
 pub const HELPER_VERSION: &str = env!("CARGO_PKG_VERSION");

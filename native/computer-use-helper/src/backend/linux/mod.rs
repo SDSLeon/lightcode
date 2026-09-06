@@ -323,6 +323,7 @@ impl Backend for LinuxBackend {
                     PermissionState::NotRequired
                 },
             },
+            screen_locked: false,
             notes,
         }
     }
@@ -527,7 +528,16 @@ impl Backend for LinuxBackend {
         ))
     }
 
-    fn launch_app(&self, app: &str, cancel: &CancelToken) -> Result<LaunchResult> {
+    /// `mode` is accepted for contract parity. Neither `gio launch` nor a bare
+    /// exec offers a "do not activate" switch and the resulting window normally
+    /// takes focus, so the launch is reported as foreground rather than
+    /// claiming a background delivery it cannot guarantee.
+    fn launch_app(
+        &self,
+        app: &str,
+        _mode: InputMode,
+        cancel: &CancelToken,
+    ) -> Result<LaunchResult> {
         let app = validate_launch_target(app)?;
         let before: HashSet<i64> = self
             .list_windows()?
@@ -585,19 +595,12 @@ impl Backend for LinuxBackend {
                 })
                 .cloned();
             if let Some(window) = window {
-                return Ok(LaunchResult {
-                    ok: true,
-                    window: Some(window),
-                    note: None,
-                });
+                return Ok(LaunchResult::launched(Some(window), Delivered::Foreground));
             }
             thread::sleep(Duration::from_millis(100));
         }
-        Ok(LaunchResult {
-            ok: true,
-            window: None,
-            note: Some("Application launched, but no window appeared within 3 seconds.".into()),
-        })
+        Ok(LaunchResult::launched(None, Delivered::Foreground)
+            .with_note("Application launched, but no window appeared within 3 seconds."))
     }
 }
 

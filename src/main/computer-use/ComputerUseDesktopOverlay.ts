@@ -33,6 +33,13 @@ interface OverlayWindow {
 
 export interface ComputerUseDesktopOverlayOptions {
   onExit(threadIds: string[]): void;
+  /**
+   * Every reduced activity state, including the `hidden` <-> non-hidden
+   * transitions. Lets side effects that follow session activity but are not
+   * overlay windows (e.g. the display wake lock) observe the same reduction
+   * instead of re-deriving it from raw events.
+   */
+  onActivityState?(state: ComputerUseActivityState): void;
 }
 
 export class ComputerUseDesktopOverlay {
@@ -52,6 +59,7 @@ export class ComputerUseDesktopOverlay {
       onChange: (state) => {
         this.state = state;
         this.applyState();
+        this.options.onActivityState?.(state);
       },
     });
   }

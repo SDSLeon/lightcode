@@ -240,6 +240,10 @@ pub struct DragInput {
 #[derive(Debug, Clone, Deserialize)]
 pub struct LaunchAppInput {
     pub app: String,
+    /// `background` (the default) launches without bringing the app forward.
+    /// `foreground` is the classic activating launch and takes the user's focus.
+    #[serde(default)]
+    pub mode: InputMode,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -328,6 +332,9 @@ pub enum Route {
     Message,
     Event,
     Input,
+    /// The host launcher (`open`, `Start-Process`, `gio launch`) rather than an
+    /// input or accessibility route.
+    Launch,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -410,6 +417,7 @@ pub enum RefusalCode {
     ElementActionUnsupported,
     UnsupportedButton,
     CapabilityUnavailable,
+    ScreenLocked,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -451,6 +459,14 @@ impl Refusal {
             RefusalCode::StaleSnapshot,
             "The element id belongs to a snapshot that is no longer cached.",
             "Call find_elements (or get_window_state with include_text:true) again and use the fresh element ids.",
+        )
+    }
+
+    pub fn screen_locked() -> Self {
+        Self::new(
+            RefusalCode::ScreenLocked,
+            "The desktop is locked, so foreground input would land on the lock screen instead of the target window.",
+            "Ask the user to unlock the screen and wait; do not retry until they do. A locked desktop exposes no window content or controls, so no background action can substitute: captures come back blank and the accessibility tree is reduced to an app proxy with only the menu bar. Background coordinate events are still accepted by the OS, but their effect cannot be observed.",
         )
     }
 
@@ -612,6 +628,54 @@ pub struct LaunchResult {
     pub window: Option<WindowInfo>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub note: Option<String>,
+    /// Reports whether the launch actually took the user's focus, so the
+    /// activity overlay can show the background badge instead of the takeover
+    /// border. Absent only on hosts that predate the field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub delivery: Option<Delivery>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refused: Option<Refusal>,
+}
+
+impl LaunchResult {
+    /// A launch that ran. `delivered` must describe what the host launcher
+    /// really did, not what the caller asked for.
+    pub fn launched(window: Option<WindowInfo>, delivered: Delivered) -> Self {
+        let verified = if window.is_some() {
+            Verified::Confirmed
+        } else {
+            Verified::Unverified
+        };
+        Self {
+            ok: true,
+            window,
+            note: None,
+            delivery: Some(Delivery::new(delivered, Route::Launch).with_verified(verified)),
+            refused: None,
+        }
+    }
+
+    pub fn with_note(mut self, note: impl Into<String>) -> Self {
+        self.note = Some(note.into());
+        self
+    }
+
+    pub fn with_delivery_note(mut self, note: impl Into<String>) -> Self {
+        if let Some(delivery) = &mut self.delivery {
+            delivery.notes.push(note.into());
+        }
+        self
+    }
+
+    pub fn refused(refusal: Refusal) -> Self {
+        Self {
+            ok: false,
+            window: None,
+            note: None,
+            delivery: None,
+            refused: Some(refusal),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -748,6 +812,10 @@ pub struct Hello {
     pub display_server: Option<String>,
     pub capabilities: Capabilities,
     pub permissions: Permissions,
+    /// True when the console session's screen is locked (or this session does
+    /// not own the console). Background control keeps working; foreground
+    /// operations are refused with `screen_locked`.
+    pub screen_locked: bool,
     pub notes: Vec<String>,
 }
 
@@ -859,12 +927,39 @@ mod tests {
                 accessibility: PermissionState::NotRequired,
                 screen_recording: PermissionState::NotRequired,
             },
+            screen_locked: false,
             notes: vec![],
         };
         let value = serde_json::to_value(hello).unwrap();
         assert_eq!(value["protocolVersion"], 1);
         assert_eq!(value["capabilities"]["backgroundPointer"], false);
         assert_eq!(value["permissions"]["screenRecording"], "not_required");
+        assert_eq!(value["screenLocked"], false);
+    }
+
+    #[test]
+    fn launch_result_reports_the_delivery_that_really_happened() {
+        let background =
+            serde_json::to_value(LaunchResult::launched(None, Delivered::Background)).unwrap();
+        assert_eq!(background["ok"], true);
+        assert_eq!(background["delivery"]["delivered"], "background");
+        assert_eq!(background["delivery"]["route"], "launch");
+        assert_eq!(background["delivery"]["verified"], "unverified");
+
+        let refused =
+            serde_json::to_value(LaunchResult::refused(Refusal::screen_locked())).unwrap();
+        assert_eq!(refused["ok"], false);
+        assert_eq!(refused["refused"]["code"], "screen_locked");
+        assert!(refused.get("delivery").is_none());
+    }
+
+    #[test]
+    fn launch_app_input_defaults_to_background_mode() {
+        let input: LaunchAppInput = serde_json::from_str(r#"{"app":"TextEdit"}"#).unwrap();
+        assert_eq!(input.mode, InputMode::Background);
+        let input: LaunchAppInput =
+            serde_json::from_str(r#"{"app":"TextEdit","mode":"foreground"}"#).unwrap();
+        assert_eq!(input.mode, InputMode::Foreground);
     }
 
     #[test]

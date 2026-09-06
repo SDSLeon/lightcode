@@ -4,6 +4,7 @@ import type {
   ComputerUseWindowState,
 } from "./types";
 import { dispatchTool as dispatchNormalizedTool } from "./dispatch";
+import { compactStateNotes } from "./resultTrim";
 import { TOOLS } from "./toolSpecs";
 
 export { COMPUTER_USE_MCP_INSTRUCTIONS } from "./instructions";
@@ -19,7 +20,9 @@ const INTERACTIVE_TOOL_NAMES = new Set(
   TOOLS.filter((tool) => tool.annotations?.destructiveHint).map((tool) => tool.name),
 );
 
-const FOREGROUND_ONLY_TOOL_NAMES = new Set(["activate_window", "launch_app"]);
+// `launch_app` is not here: it takes a `mode` like the input tools and
+// defaults to a background launch that never raises the app.
+const FOREGROUND_ONLY_TOOL_NAMES = new Set(["activate_window"]);
 
 const TOOL_ALIASES = new Map([
   ["apps", "list_apps"],
@@ -110,7 +113,14 @@ export function formatToolResult(
   const observedState = observation?.ok ? observation.state : undefined;
   const state = directState ?? observedState;
   if (state) {
-    const compactState = { ...state, screenshots: state.screenshots.map(screenshotMetadata) };
+    // Screenshot payloads move to image content, and capture prose is reduced
+    // to the coordinate rule the agent actually needs.
+    const compactNotes = compactStateNotes(state.notes);
+    const compactState = {
+      ...state,
+      screenshots: state.screenshots.map(screenshotMetadata),
+      ...(compactNotes ? { notes: compactNotes } : {}),
+    };
     const metadata = directState
       ? compactState
       : {

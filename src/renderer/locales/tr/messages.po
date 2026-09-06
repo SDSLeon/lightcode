@@ -752,6 +752,11 @@ msgstr "Bu ada sahip bir Cursor profili zaten var."
 msgid "A frozen worktree source requires a full commit hash"
 msgstr "Dondurulmuş bir çalışma ağacı kaynağı tam commit karması gerektirir"
 
+#: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "A locked screen stops all desktop control, so the display is kept on while a Computer Use session is running. You can still lock the screen yourself."
+msgstr "Kilitli ekran tüm masaüstü denetimini durdurur; bu nedenle Bilgisayar Kullanımı oturumu çalışırken ekran açık tutulur. Ekranı yine de kendiniz kilitleyebilirsiniz."
+
 #: src/renderer/views/SettingsOverlay/parts/AgentProfileList.tsx
 msgid "A profile with this name already exists."
 msgstr "Bu ada sahip bir profil zaten var."
@@ -6559,6 +6564,11 @@ msgstr "Her yerde tek bir sağlayıcı sırası kullanın. Makine başına düze
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Keep Poracode in the system tray when it launches at startup."
 msgstr "Başlangıçta açıldığında Poracode'u sistem tepsisinde tutun."
+
+#: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Keep the Mac awake during Computer Use"
+msgstr "Bilgisayar Kullanımı sırasında Mac'i uyanık tut"
 
 #: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts

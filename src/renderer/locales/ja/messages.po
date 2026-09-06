@@ -751,6 +751,11 @@ msgstr "この名前のCursorプロファイルはすでに存在します。"
 msgid "A frozen worktree source requires a full commit hash"
 msgstr "固定されたワークツリーのソースには完全なコミットハッシュが必要です"
 
+#: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "A locked screen stops all desktop control, so the display is kept on while a Computer Use session is running. You can still lock the screen yourself."
+msgstr "画面がロックされるとデスクトップ操作は一切できなくなるため、コンピュータ操作のセッション中はディスプレイをオンのままにします。自分で画面をロックすることは引き続き可能です。"
+
 #: src/renderer/views/SettingsOverlay/parts/AgentProfileList.tsx
 msgid "A profile with this name already exists."
 msgstr "この名前のプロファイルはすでに存在します。"
@@ -6558,6 +6563,11 @@ msgstr "すべてのマシンで同じプロバイダー順序を使用します
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Keep Poracode in the system tray when it launches at startup."
 msgstr "スタートアップ時は Poracode をシステムトレイに格納した状態で起動します。"
+
+#: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Keep the Mac awake during Computer Use"
+msgstr "コンピュータ操作中は Mac をスリープさせない"
 
 #: src/renderer/views/SettingsOverlay/parts/GeneralSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts

@@ -57,7 +57,10 @@ fn hello_flag_emits_bare_handshake() {
     let output = helper().arg("--hello").output().expect("run --hello");
     assert!(output.status.success());
     let hello: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(hello["protocolVersion"], 2);
+    assert_eq!(
+        hello["protocolVersion"],
+        poracode_computer_use::protocol::version::PROTOCOL_VERSION
+    );
     assert!(hello["helperVersion"].is_string());
     assert!(hello["platform"].is_string());
     assert!(hello["capabilities"].is_object());
@@ -104,6 +107,7 @@ fn wire_enum_fixture_matches_rust() {
         RefusalCode::ElementActionUnsupported,
         RefusalCode::UnsupportedButton,
         RefusalCode::CapabilityUnavailable,
+        RefusalCode::ScreenLocked,
     ];
 
     assert_eq!(

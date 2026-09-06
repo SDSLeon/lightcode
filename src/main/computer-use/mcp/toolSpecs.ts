@@ -125,11 +125,11 @@ const RAW_TOOLS: ToolSpec[] = [
   {
     name: "launch_app",
     description:
-      "Launch an app by a list_apps id, known app name, or explicit app path. Launching is a foreground operation.",
+      'Launch an app by a list_apps id, known app name, or explicit app path. mode:"background" (the default) launches without taking the user\'s focus; mode:"foreground" activates the app and is a takeover.',
     inputSchema: {
       type: "object",
       required: ["app"],
-      properties: { app: { type: "string" }, observe: OBSERVE_SCHEMA },
+      properties: { app: { type: "string" }, mode: MODE_SCHEMA, observe: OBSERVE_SCHEMA },
     },
   },
   {
@@ -139,7 +139,7 @@ const RAW_TOOLS: ToolSpec[] = [
     inputSchema: {
       type: "object",
       required: ["app", "id"],
-      properties: { app: { type: "string" }, id: { type: "number" } },
+      properties: { app: { type: "string" }, id: { type: "number" }, title: { type: "string" } },
     },
   },
   {
