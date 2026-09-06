@@ -21,23 +21,23 @@ class ScriptedServeHost implements MuseMspTransport {
     [];
   listener: MuseMspTransportListener | undefined;
   private listIndex = 0;
+  private readonly catalogs: ReadonlyArray<Record<string, unknown>>;
   constructor(
-    private readonly catalog: Record<string, unknown> | ReadonlyArray<Record<string, unknown>>,
+    catalog: Record<string, unknown> | ReadonlyArray<Record<string, unknown>>,
     private readonly failHandshake = false,
     private readonly initSchema: Record<string, unknown> = {
       fingerprint: MSP_SCHEMA_FINGERPRINT,
       version: MSP_SCHEMA_VERSION,
     },
     private readonly neverAnswer = false,
-  ) {}
+  ) {
+    this.catalogs = Array.isArray(catalog) ? catalog : [catalog];
+  }
 
   private catalogForList(): Record<string, unknown> {
-    if (Array.isArray(this.catalog)) {
-      const index = Math.min(this.listIndex, this.catalog.length - 1);
-      this.listIndex += 1;
-      return this.catalog[index] ?? {};
-    }
-    return this.catalog;
+    const index = Math.min(this.listIndex, this.catalogs.length - 1);
+    this.listIndex += 1;
+    return this.catalogs[index] ?? {};
   }
 
   setListener(listener: MuseMspTransportListener): void {
