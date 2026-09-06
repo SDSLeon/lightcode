@@ -179,6 +179,11 @@ msgstr "{0}({envName}) が更新されました。"
 msgid "{0} (fork)"
 msgstr "{0}（フォーク）"
 
+#. placeholder {0}: defaultMethod.name
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+#~ msgid "{0} {env}"
+#~ msgstr "{0} {env}"
+
 #. placeholder {0}: days.map((day) => weekdayNames[day]).join(", ")
 #: src/renderer/views/SchedulesView/SchedulesView.tsx
 msgid "{0} at {time}"
@@ -523,13 +528,13 @@ msgstr "{label}使用量 — 使用量パネルを開く"
 
 #. placeholder {0}: method.name
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
-msgid "{loginLabel} {0}"
-msgstr "{loginLabel}{0}"
+#~ msgid "{loginLabel} {0}"
+#~ msgstr "{loginLabel}{0}"
 
 #. placeholder {0}: method.name
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
-msgid "{loginLabel} {0} {env}"
-msgstr "{loginLabel}{0}{env}"
+#~ msgid "{loginLabel} {0} {env}"
+#~ msgstr "{loginLabel}{0}{env}"
 
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 msgid "{loginLabel} {env}"
@@ -2440,12 +2445,12 @@ msgid "Choose how Poracode performs manual merges and automatic PR merges."
 msgstr "Poracode が手動マージと PR の自動マージを行う方法を選択します。"
 
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
-msgid "Choose how to sign in for {env}."
-msgstr "{env}にサインインする方法を選択します。"
+#~ msgid "Choose how to sign in for {env}."
+#~ msgstr "{env}にサインインする方法を選択します。"
 
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
-msgid "Choose how to sign in."
-msgstr "サインイン方法を選択します。"
+#~ msgid "Choose how to sign in."
+#~ msgstr "サインイン方法を選択します。"
 
 #: src/renderer/components/mcp/McpExternalImportModal.tsx
 msgid "Choose import destination"
@@ -3061,7 +3066,7 @@ msgstr "完了"
 msgid "Complete {0} sign-in before this thread can run."
 msgstr "このスレッドを実行する前に、{0}サインインを完了してください。"
 
-#. placeholder {0}: singleMethod.name
+#. placeholder {0}: defaultMethod.name
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 msgid "Complete {0} sign-in for {env}."
 msgstr "{env}の{0}サインインを完了します。"
@@ -3073,7 +3078,7 @@ msgid "Complete {0} sign-in or save {1} credentials."
 msgstr "{0}サインインを完了するか、{1}資格情報を保存します。"
 
 #. placeholder {0}: agentAuth.method.name
-#. placeholder {0}: singleMethod.name
+#. placeholder {0}: defaultMethod.name
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Complete {0} sign-in."
@@ -6277,6 +6282,11 @@ msgstr "インストールする"
 msgid "Install"
 msgstr "インストール"
 
+#. placeholder {0}: slot.badge
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
+#~ msgid "Install {0}"
+#~ msgstr "Install {0}"
+
 #. placeholder {0}: props.agentLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 msgid "Install {0} for {env}."
@@ -6304,6 +6314,10 @@ msgstr "{badge}をインストール"
 #~ msgid "Install @cursor/sdk to configure its API key."
 #~ msgstr "API キーを設定するには @cursor/sdk をインストールしてください。"
 
+#: src/renderer/views/SettingsOverlay/parts/antigravityRuntimeInstall.ts
+msgid "Install ACP"
+msgstr "ACP をインストール"
+
 #: src/renderer/views/SettingsOverlay/parts/cursorRuntimeInstall.ts
 msgid "Install ACP + SDK"
 msgstr "ACP + SDK をインストール"
@@ -6311,6 +6325,10 @@ msgstr "ACP + SDK をインストール"
 #: src/renderer/views/SettingsOverlay/parts/cursorRuntimeInstall.ts
 msgid "Install ACP + SDK in {environment}"
 msgstr "{environment} に ACP + SDK をインストール"
+
+#: src/renderer/views/SettingsOverlay/parts/antigravityRuntimeInstall.ts
+msgid "Install ACP in {environment}"
+msgstr "{environment} に ACP をインストール"
 
 #: src/renderer/views/SettingsOverlay/parts/CursorProviderSettings.tsx
 #~ msgid "Install ACP, SDK, or both, then choose which runtime starts new Cursor GUI chats. Existing chats stay pinned to the runtime that created them."
@@ -7459,6 +7477,14 @@ msgstr "その他のプルリクエストオプション"
 msgid "More schedule options"
 msgstr "その他のスケジュールオプション"
 
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "More sign-in methods"
+msgstr "その他のログイン方法"
+
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "More sign-in methods {env}"
+msgstr "{env} のその他のログイン方法"
+
 #: src/renderer/views/GitReviewOverlay/parts/GitReviewSidebar/parts/CommitSyncPanel.tsx
 msgid "More sync options"
 msgstr "その他の同期オプション"
@@ -8346,6 +8372,7 @@ msgid "Not found"
 msgstr "見つかりません"
 
 #: src/renderer/views/SettingsOverlay/parts/nativeAgentRuntimes.ts
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "not installed"
 msgstr "未インストール"
 
@@ -11665,6 +11692,10 @@ msgstr "{0} からサインアウト"
 #: src/renderer/components/mcp/McpServersManager.tsx
 msgid "Sign out of {serverName}"
 msgstr "{serverName} からサインアウト"
+
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Sign-in methods"
+msgstr "ログイン方法"
 
 #: src/renderer/views/RemoteProjectModal/RemoteProjectModal.tsx
 #~ msgid "sign-in required"

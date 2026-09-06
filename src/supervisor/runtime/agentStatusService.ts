@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { promisify } from "node:util";
 import { z } from "zod";
 import {
@@ -449,6 +449,10 @@ export class AgentStatusService {
     if (payload.scope) {
       return this.runScopedDetection(wslDistros, payload.scope);
     }
+    // Full Settings refresh must not keep serving the previous sweep. Drop the
+    // on-disk status file first so `getAgentStatuses` / `getCachedCapabilities`
+    // cannot return stale models while the new probe runs, then rewrite it.
+    this.clearDiskCache();
     this.startupDetectionLaunched = true;
     for (const distro of wslDistros) {
       this.startupDetectionWslDistros.add(distro);
@@ -651,6 +655,14 @@ export class AgentStatusService {
           : {}),
       },
     };
+  }
+
+  private clearDiskCache(): void {
+    try {
+      unlinkSync(this.options.statusCachePath);
+    } catch {
+      // best-effort: missing or unreadable files are already a cache miss
+    }
   }
 
   private writeDiskCache(windows: AgentStatus[], wsl: AgentStatus[]): void {
