@@ -203,8 +203,8 @@ importers:
         specifier: ^4.2.0
         version: 4.2.0(@types/node@26.4.1)
       '@legendapp/list':
-        specifier: 3.3.9
-        version: 3.3.9(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 3.3.3
+        version: 3.3.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@lingui/core':
         specifier: 6.6.0
         version: 6.6.0(@babel/core@7.29.7(supports-color@10.2.2))(@babel/types@7.29.7)
@@ -1601,8 +1601,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@legendapp/list@3.3.9':
-    resolution: {integrity: sha512-ETxJPA5m59+AF65r9Ko25WMtV1KAWEebYeG0sIOTBtuZxfNpX8rBsLhFDQ8qY1tbPhJsr+U025u0u6irE9z8zw==}
+  '@legendapp/list@3.3.3':
+    resolution: {integrity: sha512-p3g4xG6f//s4XQKhuus2189GCQgOHEIbJXHePqeDxj+6UQQQyij4YBjyArNSCgqoP0c03sxDPSOuCFB128Ql6g==}
     peerDependencies:
       react: '*'
       react-dom: '*'
@@ -8355,7 +8355,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@legendapp/list@3.3.9(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@legendapp/list@3.3.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       react: 19.2.8
       use-sync-external-store: 1.6.0(react@19.2.8)

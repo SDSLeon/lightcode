@@ -405,7 +405,7 @@ export function ChatPane(props: ChatPaneProps) {
             }}
             scrollClassName="min-h-0 h-full overflow-y-auto [overflow-anchor:none] [scrollbar-gutter:stable]"
             scrollStyle={scrollFadeStyle}
-            contentClassName={`min-h-full pb-2 ${isInitialScrollSettled ? "" : "pointer-events-none opacity-0"}`}
+            contentClassName={`min-h-full ${isInitialScrollSettled ? "" : "pointer-events-none opacity-0"}`}
             emptyContent={
               isEmpty && !showTailLoader && showEmptyHint ? (
                 <div className="flex h-full flex-col items-center justify-center gap-2 text-foreground-muted">

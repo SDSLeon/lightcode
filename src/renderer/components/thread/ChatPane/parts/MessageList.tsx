@@ -117,6 +117,7 @@ interface MessageListProps {
 }
 
 const DEFAULT_ROW_ESTIMATE_PX = 59;
+const CONTENT_TAIL_PADDING_PX = 8;
 const INLINE_IMAGE_ROW_CHROME_PX = 27;
 const INLINE_IMAGE_MAX_HEIGHT_REM = 18;
 const INLINE_IMAGE_MAX_VIEWPORT_HEIGHT = 0.4;
@@ -495,6 +496,11 @@ export function MessageList({
         {...(scrollClassName ? { className: scrollClassName } : {})}
         contentContainerClassName={`relative w-full overflow-hidden [--lc-chat-bottom-mask-end-alpha:0] ${contentClassName ?? ""}`}
         contentContainerStyle={{
+          // Declare the tail padding as a style, not a class: LegendList reads
+          // padding from style objects only, and its end-of-list scroll target
+          // and content-size model must match the DOM or the scroller lands
+          // short of the bottom and the scroll-down control never hides.
+          paddingBottom: CONTENT_TAIL_PADDING_PX,
           WebkitMaskImage:
             "linear-gradient(to bottom, black calc(100% - 14px), rgb(0 0 0 / var(--lc-chat-bottom-mask-end-alpha, 0)))",
           maskImage:
