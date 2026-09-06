@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">Spiegelung stoppen</string>
     <string name="browser_mirror_empty">Es sind keine Browser-Tabs geöffnet.</string>
     <string name="browser_mirror_stopped">Die Browser-Spiegelung ist gestoppt.</string>
+    <string name="browser_mirror_move_left">Nach links verschieben</string>
+    <string name="browser_mirror_move_right">Nach rechts verschieben</string>
+    <string name="browser_mirror_privacy_notice">Gespiegelte Seiten können persönliche Inhalte zeigen. Bilder bleiben auf diesem Gerät und werden gelöscht, wenn Sie diesen Bildschirm verlassen.</string>
 </resources>

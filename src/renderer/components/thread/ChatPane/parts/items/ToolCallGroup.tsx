@@ -67,6 +67,7 @@ import {
   readCommandPayloadCommand,
   segmentToolGroupRows,
   summarizeToolCalls,
+  type GroupSection,
   type SameFileEditGroupSummary,
   type ToolGroupRowSegment,
 } from "./toolCallCategorization";
@@ -115,7 +116,28 @@ export const ToolCallGroup = memo(function ToolCallGroup({
   const previousLayoutRef = useRef({ isExpanded, showAll });
   const hasOverflowRows = segments.length > TOOL_CALL_GROUP_MAX_VISIBLE_ROWS;
   // Preserve manual open/close across live-tail item updates.
-  const userToggledRef = useRef(false);
+  const [userToggled, setUserToggled] = useState(false);
+  // Reset expansion during render when the live state or the edit-only
+  // summary changes.
+  const liveResetKey = `${isLive ? "1" : "0"}:${editOnlyGroup ? "1" : "0"}`;
+  const [prevLiveResetKey, setPrevLiveResetKey] = useState(liveResetKey);
+  if (prevLiveResetKey !== liveResetKey) {
+    setPrevLiveResetKey(liveResetKey);
+    if (!isLive) {
+      setIsExpanded(false);
+      setUserToggled(false);
+    } else if (!userToggled) {
+      setIsExpanded(!editOnlyGroup);
+    }
+  }
+
+  // Collapse the overflow window during render when the group stops
+  // overflowing instead of synchronously on effect entry.
+  const [prevHasOverflowRows, setPrevHasOverflowRows] = useState(hasOverflowRows);
+  if (prevHasOverflowRows !== hasOverflowRows) {
+    setPrevHasOverflowRows(hasOverflowRows);
+    if (!hasOverflowRows) setShowAll(false);
+  }
 
   useLayoutEffect(() => {
     const previous = previousLayoutRef.current;
@@ -128,22 +150,12 @@ export const ToolCallGroup = memo(function ToolCallGroup({
     }
   }, [actions, isExpanded, onHeightChange, showAll]);
 
-  useEffect(() => {
-    if (!isLive) {
-      userToggledRef.current = false;
-      setIsExpanded(false);
-      return;
-    }
-    if (!userToggledRef.current) setIsExpanded(!editOnlyGroup);
-  }, [isLive, editOnlyGroup]);
-
-  useEffect(() => {
-    if (!hasOverflowRows) setShowAll(false);
-  }, [hasOverflowRows]);
-
   // Auto-scroll to bottom when new items arrive in live mode (only relevant
   // when the full list is scrollable; collapsed mode slices to the latest rows).
   useEffect(() => {
+    // An empty group renders null (no scroll container), so there is nothing
+    // to pin — and each arrival re-arms the pin via `items.length`.
+    if (items.length === 0) return;
     if (isLive && isExpanded && showAll && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
@@ -174,7 +186,7 @@ export const ToolCallGroup = memo(function ToolCallGroup({
           // row. LegendList can adjust its visible-content anchor during that
           // commit, before the post-commit remeasurement callback runs.
           onVirtualizerLayoutChange?.();
-          userToggledRef.current = true;
+          setUserToggled(true);
           setIsExpanded(next);
         }}
       >
@@ -184,34 +196,16 @@ export const ToolCallGroup = memo(function ToolCallGroup({
               {sameFileEditSummary ? (
                 <SameFileEditGroupTitle summary={sameFileEditSummary} />
               ) : (
-                sections.map((section, idx) => {
-                  const diffLabel = formatDiffSummaryLabel(section.diffSummary, {
-                    animated: true,
-                  });
-                  return (
-                    <Fragment key={section.category}>
-                      {idx > 0 ? (
-                        <span aria-hidden="true" className="select-none opacity-40">
-                          ·
-                        </span>
-                      ) : null}
-                      <span className="flex shrink-0 items-center gap-1">
-                        <section.Icon className="size-3" />
-                        <code className="font-mono tabular-nums [word-spacing:-0.25em] !text-[color:var(--muted)]">
-                          <AnimatedNumber value={section.count} />{" "}
-                          {section.category === "mcp" ? (
-                            <Plural value={section.count} one="MCP" other="MCPs" />
-                          ) : (
-                            section.label
-                          )}
-                        </code>
-                        {diffLabel ? (
-                          <span className="shrink-0 tabular-nums font-medium">{diffLabel}</span>
-                        ) : null}
+                sections.map((section, idx) => (
+                  <Fragment key={section.category}>
+                    {idx > 0 ? (
+                      <span aria-hidden="true" className="select-none opacity-40">
+                        ·
                       </span>
-                    </Fragment>
-                  );
-                })
+                    ) : null}
+                    <GroupSummarySection section={section} showRunning={!isExpanded} />
+                  </Fragment>
+                ))
               )}
             </div>
             <Disclosure.Indicator className={chatRowIndicatorClass} />
@@ -536,6 +530,48 @@ type InlineRow = {
    */
   fetchPath?: string | undefined;
 };
+
+/**
+ * One category summary in the group header ("3 commands"). When the group is
+ * collapsed and the category still has a running item — a detached background
+ * command outliving its turn is the main case — the label carries the same
+ * shimmer treatment as running rows, so collapsed groups don't hide active
+ * work. While expanded, the rows themselves shimmer and the header stays
+ * static.
+ */
+function GroupSummarySection({
+  section,
+  showRunning,
+}: {
+  section: GroupSection;
+  showRunning: boolean;
+}) {
+  const isRunning = showRunning && section.hasRunning === true;
+  const shimmerRef = useShimmer<HTMLElement>(isRunning);
+  const diffLabel = formatDiffSummaryLabel(section.diffSummary, { animated: true });
+  return (
+    <span className="flex shrink-0 items-center gap-1">
+      <section.Icon className="size-3" />
+      <code
+        ref={shimmerRef}
+        className={`font-mono tabular-nums [word-spacing:-0.25em] !text-[color:var(--muted)] ${
+          isRunning ? "poracode-thinking-text" : ""
+        }`}
+        {...(isRunning
+          ? { "data-poracode-shimmer-text": `${section.count} ${section.label}` }
+          : {})}
+      >
+        <AnimatedNumber value={section.count} />{" "}
+        {section.category === "mcp" ? (
+          <Plural value={section.count} one="MCP" other="MCPs" />
+        ) : (
+          section.label
+        )}
+      </code>
+      {diffLabel ? <span className="shrink-0 tabular-nums font-medium">{diffLabel}</span> : null}
+    </span>
+  );
+}
 
 function InlineRowTitle({
   isRunning,

@@ -232,6 +232,9 @@ const updateAgentBinaryMock = vi.hoisted(() =>
 const updateAcpRegistryAgentMock = vi.hoisted(() =>
   vi.fn<() => Promise<{ installed: InstalledAcpRegistryAgent[] }>>(),
 );
+const installAcpRegistryAgentMock = vi.hoisted(() =>
+  vi.fn<() => Promise<{ installed: InstalledAcpRegistryAgent[] }>>(),
+);
 const getAgentHookPluginStatusesMock = vi.hoisted(() =>
   vi.fn<() => Promise<unknown[]>>().mockResolvedValue([]),
 );
@@ -243,6 +246,8 @@ const uninstallAgentHookPluginMock = vi.hoisted(() =>
 );
 
 vi.mock("@/renderer/bridge", () => ({
+  isMac: () => false,
+  isWindows: () => true,
   readBridge: () => ({
     refreshAgentStatuses: refreshAgentStatusesMock,
     setAcpRegistryAgentAuth: setAcpRegistryAgentAuthMock,
@@ -254,6 +259,7 @@ vi.mock("@/renderer/bridge", () => ({
     resolveAgentAccount: resolveAgentAccountMock,
     updateAgentBinary: updateAgentBinaryMock,
     updateAcpRegistryAgent: updateAcpRegistryAgentMock,
+    installAcpRegistryAgent: installAcpRegistryAgentMock,
     getAgentHookPluginStatuses: getAgentHookPluginStatusesMock,
     installAgentHookPlugin: installAgentHookPluginMock,
     uninstallAgentHookPlugin: uninstallAgentHookPluginMock,
@@ -688,6 +694,27 @@ describe("SingleAgentSettings", () => {
     });
   });
 
+  it("shows the concise login command while executing its platform wrapper", () => {
+    statusesState.agentStatuses = [
+      makeStatus("muse", {
+        label: "Muse Code",
+        authState: "missing",
+        loginCommand: "wsl.exe -d 'Ubuntu' --exec bash -l -i -c 'muse login'",
+        loginCommandDisplay: "muse login",
+      }),
+    ];
+
+    render(<SingleAgentSettings agentKind="muse" />);
+
+    expect(screen.getByText("Run muse login to sign in.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /login/i }));
+    expect(runAgentLoginCommandMock).toHaveBeenCalledWith({
+      label: "Muse Code",
+      command: "wsl.exe -d 'Ubuntu' --exec bash -l -i -c 'muse login'",
+      onCommandComplete: expect.any(Function),
+    });
+  });
+
   it("opens WSL login actions in the matching project distro", async () => {
     const wslProject = makeProject({
       id: "wsl-project",
@@ -1023,7 +1050,7 @@ describe("SingleAgentSettings", () => {
     expect(within(row).queryByRole("button", { name: /logout/i })).not.toBeInTheDocument();
   });
 
-  it("shows and updates both Antigravity runtime versions in one settings card", async () => {
+  it("reports both Antigravity runtimes on the environment row, with one update action", async () => {
     statusesState.agentStatuses = [makeAntigravityStatus("1.2.0", "1.0.0")];
     getLatestAgentVersionMock.mockResolvedValue({ version: "1.3.0", source: "npm" });
     listAcpRegistryMock.mockResolvedValue({
@@ -1046,14 +1073,16 @@ describe("SingleAgentSettings", () => {
 
     render(<SingleAgentSettings agentKind="antigravity" />);
 
-    await screen.findByText("agy CLI");
-    const runtimeList = screen.getByRole("list", { name: "Runtime" });
-    const runtimeRows = within(runtimeList).getAllByRole("listitem");
-    expect(runtimeRows[0]).toHaveTextContent("agy CLIv1.2.0 → v1.3.0");
-    expect(runtimeRows[1]).toHaveTextContent("Antigravity ACPv1.0.0 → v1.1.0");
-    expect(screen.getAllByRole("button", { name: "Update" })).toHaveLength(1);
+    // No bespoke runtime panel: the versions ride the same row every other
+    // provider uses.
+    expect(screen.queryByRole("list", { name: "Runtime" })).not.toBeInTheDocument();
+    const row = envRow("This computer");
+    expect(row).toHaveTextContent("CLI v1.2.0 · ACP v1.0.0");
 
-    fireEvent.click(screen.getByRole("button", { name: "Update" }));
+    // Both runtimes are behind, so the single reconciling action does not claim
+    // either one's version.
+    const update = await within(row).findByRole("button", { name: /^Update Antigravity/i });
+    fireEvent.click(update);
 
     await waitFor(() => {
       expect(updateAgentBinaryMock).toHaveBeenCalledWith({
@@ -1065,6 +1094,43 @@ describe("SingleAgentSettings", () => {
         target: { kind: "native" },
       });
     });
+  });
+
+  it("offers to install the Antigravity chat runtime when only the CLI is detected", async () => {
+    const halfInstalled = makeAntigravityStatus("1.2.0", "1.0.0");
+    statusesState.agentStatuses = [
+      {
+        ...halfInstalled,
+        runtimeVariants: {
+          ...halfInstalled.runtimeVariants,
+          acp: { ...halfInstalled.runtimeVariants!.acp!, installed: false, version: undefined },
+        },
+      },
+    ];
+    getLatestAgentVersionMock.mockResolvedValue({ version: "1.3.0", source: "npm" });
+    listAcpRegistryMock.mockResolvedValue({ version: "1.0.0", agents: [] });
+    installAcpRegistryAgentMock.mockResolvedValue({ installed: [] });
+    refreshAgentStatusesMock.mockResolvedValue({
+      windows: [makeAntigravityStatus("1.2.0", "1.0.0")],
+      wsl: [],
+      fromCache: false,
+    });
+
+    render(<SingleAgentSettings agentKind="antigravity" />);
+
+    const row = envRow("This computer");
+    expect(row).toHaveTextContent("CLI v1.2.0 · ACP not installed");
+    // Half-installed used to leave chat unavailable with no way to fix it from
+    // this page — the auto-install is best-effort and silent when it fails.
+    fireEvent.click(within(row).getByRole("button", { name: /Install ACP/i }));
+
+    await waitFor(() =>
+      expect(installAcpRegistryAgentMock).toHaveBeenCalledWith({
+        agentId: "antigravity-acp",
+        target: { kind: "native" },
+      }),
+    );
+    await waitFor(() => expect(refreshAgentStatusesMock).toHaveBeenCalled());
   });
 
   it("shows Login (not the shared account) for an Antigravity env that isn't signed in", async () => {
@@ -1152,6 +1218,51 @@ describe("SingleAgentSettings", () => {
       onCommandComplete: expect.any(Function),
       project: windowsProject,
     });
+  });
+
+  it("offers Muse's WSL-backed installer for a native Windows environment", () => {
+    appState.projects = [
+      makeProject({
+        id: "windows-project",
+        name: "Windows Project",
+        location: { kind: "windows", path: "C:\\project" },
+      }),
+      makeProject({
+        id: "wsl-project",
+        name: "WSL Project",
+        location: {
+          kind: "wsl",
+          distro: "Ubuntu",
+          linuxPath: "/home/demo/project",
+          uncPath: "\\\\wsl.localhost\\Ubuntu\\home\\demo\\project",
+        },
+      }),
+    ];
+    statusesState.agentStatuses = [
+      makeStatus("muse", {
+        label: "Muse Code",
+        installed: false,
+        authState: "missing",
+        envKind: "windows",
+      }),
+    ];
+    statusesState.wslAgentStatuses = [
+      makeStatus("muse", {
+        label: "Muse Code",
+        version: "1.0.2",
+        envKind: "wsl",
+        envDistro: "Ubuntu",
+      }),
+    ];
+
+    render(<SingleAgentSettings agentKind="muse" />);
+
+    const windowsRow = envRow("This computer");
+    fireEvent.click(within(windowsRow).getByRole("button", { name: "Install on This computer" }));
+    const installInput = runAgentInstallCommandMock.mock.calls[0]?.[0] as
+      | { command: (project: Project) => string }
+      | undefined;
+    expect(installInput?.command(appState.projects[0]!)).toContain("wsl.exe --exec bash -lc");
   });
 
   it("shows a WSL install row when Grok is only installed on Windows", async () => {

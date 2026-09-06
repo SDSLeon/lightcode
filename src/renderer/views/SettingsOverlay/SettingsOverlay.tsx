@@ -7,6 +7,7 @@ import { isRemoteSession, readBridge } from "@/renderer/bridge";
 import { useAppStore } from "@/renderer/state/appStore";
 import { usePanelStore } from "@/renderer/state/panelStore";
 import { useAgentStatusesStore } from "@/renderer/state/agentStatusesStore";
+import { useMachines } from "@/renderer/state/machines";
 import { buildWslProjectDistrosKey } from "@/renderer/state/projectKeys";
 import { PageLayout } from "@/renderer/components/layout/PageLayout";
 import { MobileMachineToolbar } from "@/renderer/components/common/MobileMachineToolbar";
@@ -42,6 +43,7 @@ import { SettingsSidebar } from "./parts/SettingsSidebar";
 import { MobileSettingsIndex } from "./parts/MobileSettingsIndex";
 import { WorkspacesSettings } from "./parts/WorkspacesSettings";
 import { AgentSettingsEmpty, SingleAgentSettings } from "./parts/SingleAgentSettings";
+import { AgentsMachineBar } from "./parts/machineScope/AgentsMachineBar";
 import type { SettingsSection } from "./parts/types";
 import { useCompactLayout } from "@/renderer/adaptiveLayout";
 import {
@@ -174,7 +176,6 @@ export function SettingsOverlay(props: { onClose: () => void; onBack?: () => voi
   const [mobileDesktopId, setMobileDesktopId] = useState<string | null>(null);
   const selectedDesktop =
     servers.find((server) => server.desktopId === mobileDesktopId) ?? defaultDesktop;
-  const initialRequestedSectionRef = useRef(requestedSection !== null);
   useProductViewTracking(
     {
       ...settingsSectionProductProperties(activeSection),
@@ -184,28 +185,39 @@ export function SettingsOverlay(props: { onClose: () => void; onBack?: () => voi
     "settings",
   );
   // Apply a deep-link request (e.g. clicking a sidebar usage circle) and clear
-  // it so it doesn't re-fire on the next open.
-  useEffect(() => {
+  // it so it doesn't re-fire on the next open. The section switch derives
+  // from the request, so it adjusts during render; clearing the request is a
+  // store write and stays in the effect. Whether this is the launch-time
+  // request selects the mobile parent — tracked in state (not a ref) so the
+  // render phase can read it.
+  const [prevRequestedSection, setPrevRequestedSection] = useState(requestedSection);
+  const [hadInitialRequest, setHadInitialRequest] = useState(requestedSection !== null);
+  if (prevRequestedSection !== requestedSection) {
+    setPrevRequestedSection(requestedSection);
     if (requestedSection) {
       setActiveSection(requestedSection as SettingsSection);
       setMobileDetailParent(
-        initialRequestedSectionRef.current
+        hadInitialRequest
           ? "main"
           : DESKTOP_MOBILE_SECTIONS.has(requestedSection as SettingsSection)
             ? "desktop"
             : "root",
       );
-      initialRequestedSectionRef.current = false;
+      setHadInitialRequest(false);
       setMobileScreen("detail");
+    }
+  }
+  useEffect(() => {
+    if (requestedSection) {
       clearSettingsSection();
     }
   }, [requestedSection, clearSettingsSection]);
 
-  useEffect(() => {
-    if (mobileDesktopId && !servers.some((server) => server.desktopId === mobileDesktopId)) {
-      setMobileDesktopId(null);
-    }
-  }, [mobileDesktopId, servers]);
+  // Drop a disconnected desktop selection during render so the picker never
+  // paints a frame for a desktop that is no longer paired.
+  if (mobileDesktopId && !servers.some((server) => server.desktopId === mobileDesktopId)) {
+    setMobileDesktopId(null);
+  }
 
   const changeMobileDesktop = (desktopId: string | null) => {
     if (!desktopId) return;
@@ -218,15 +230,15 @@ export function SettingsOverlay(props: { onClose: () => void; onBack?: () => voi
   // twice. Local (not a store): only this overlay coordinates the scroll, and it
   // has to land *after* the section content remounts (`key={activeSection}`).
   const [scrollTarget, setScrollTarget] = useState<{ anchor: string; token: number } | null>(null);
-  const scrollTokenRef = useRef(0);
   const navigateToSection = useCallback(
     (section: SettingsSection, anchor?: string, parent: MobileSettingsParent = "root") => {
       setActiveSection(section);
       setMobileDetailParent(parent);
       setMobileScreen("detail");
       if (anchor) {
-        scrollTokenRef.current += 1;
-        setScrollTarget({ anchor, token: scrollTokenRef.current });
+        // Functional update mints the re-fire token without a ref, keeping this
+        // callback ref-free so it can be passed down during render.
+        setScrollTarget((prev) => ({ anchor, token: (prev?.token ?? 0) + 1 }));
       }
     },
     [],
@@ -274,6 +286,14 @@ export function SettingsOverlay(props: { onClose: () => void; onBack?: () => voi
       .map((status) => status.kind),
   );
   const isAgentsSectionActive = activeSection === "agents" || activeSection.startsWith("agents:");
+  const isMachineScopedSection =
+    activeSection === "agentsGeneral" || activeSection.startsWith("agents:");
+  const showsAgentDiscovery = isAgentsSectionActive && isRefreshingAgents;
+  // Mirrors `AgentsMachineBar`'s own render condition: the floating pill only
+  // appears once a second machine exists, and only then does the scroll area
+  // need to reserve room so its last rows are not covered by it.
+  const machines = useMachines();
+  const showsMachineBar = isMachineScopedSection && machines.length > 1;
   const wslDistros = wslProjectDistrosKey ? wslProjectDistrosKey.split("\0") : [];
   const section = renderSection(
     activeSection,
@@ -365,22 +385,40 @@ export function SettingsOverlay(props: { onClose: () => void; onBack?: () => voi
       <div key={activeSection} className="relative h-full min-h-0">
         {section}
       </div>
-    ) : (
+    ) : compactLayout ? (
       <div
         key={activeSection}
         data-settings-scroll-area="true"
-        className={
-          compactLayout
-            ? "m-settings__body relative"
-            : "relative h-full min-h-0 overflow-y-auto px-6 pb-8 pt-4 [overflow-anchor:none] [scrollbar-gutter:stable]"
-        }
+        className="m-settings__body relative"
       >
         {section}
-        {isAgentsSectionActive && isRefreshingAgents ? (
+        {showsAgentDiscovery ? (
           <div className="absolute inset-0 z-20 bg-background/90 backdrop-blur-sm">
             <AgentDiscoveryScreen wslDistros={wslDistros} onCancel={cancelRefreshAgents} />
           </div>
         ) : null}
+      </div>
+    ) : (
+      <div className="relative flex h-full min-h-0 flex-col">
+        <div
+          key={activeSection}
+          data-settings-scroll-area="true"
+          className={`relative min-h-0 flex-1 overflow-y-auto px-6 pt-4 [overflow-anchor:none] [scrollbar-gutter:stable] ${
+            showsMachineBar ? "pb-20" : "pb-8"
+          }`}
+        >
+          {section}
+          {showsAgentDiscovery ? (
+            <div className="absolute inset-0 z-20 bg-background/90 backdrop-blur-sm">
+              <AgentDiscoveryScreen wslDistros={wslDistros} onCancel={cancelRefreshAgents} />
+            </div>
+          ) : null}
+        </div>
+        {/* Floats over the scroll area rather than living in the section's
+            flow, so it keeps its position and state across agent-section
+            remounts (`key={activeSection}`). Hidden while the discovery
+            overlay covers the page so it does not sit on top of it. */}
+        {isMachineScopedSection && !showsAgentDiscovery ? <AgentsMachineBar /> : null}
       </div>
     );
 

@@ -8,7 +8,7 @@ import {
   type RefObject,
 } from "react";
 import { toast } from "@heroui/react";
-import { ChevronDown, Monitor, TerminalSquare, Webhook } from "lucide-react";
+import { ChevronDown, Monitor, Settings2, Webhook } from "lucide-react";
 import { useLingui } from "@lingui/react/macro";
 import type { AgentStatus, ProjectLocation, PromptSegment, Thread } from "@/shared/contracts";
 import { friendlyError } from "@/shared/messages";
@@ -17,6 +17,7 @@ import {
   changeThreadConfig,
   clearThreadPendingSteer,
 } from "@/renderer/actions/threadRuntimeActions";
+import { openMcpServersSettings } from "@/renderer/actions/panelActions";
 import { modelVisibilityKey } from "@/renderer/components/common/ProviderModelMenu/parts/providerIdentity";
 import { AttachmentBar } from "../composer/AttachmentBar";
 import { ComposerAddMenu } from "../composer/ComposerAddMenu";
@@ -27,6 +28,11 @@ import {
   providerOwnsMcpConfig,
 } from "../composer/composerMcpServers";
 import { openAttachmentLightbox } from "../composer/ImageLightbox";
+import {
+  pluginLabelsForMcpServers,
+  pluginMentionsForAvailableMcp,
+  withoutPluginBackedMcpMentions,
+} from "../composer/pluginBackedMcp";
 import { openPdfPreview } from "../pdf/openPdfPreview";
 import {
   MentionInput,
@@ -54,9 +60,11 @@ import { useComposerUiStore } from "@/renderer/state/composerUiStore";
 import { useGitStore } from "@/renderer/state/gitStore";
 import { useSharedSettings } from "@/renderer/state/sharedSettingsStore";
 import { isDraftContentNonEmpty } from "@/renderer/state/slices/types";
-import { selectActiveSubAgentParentItemIds } from "@/renderer/state/subAgentSelectors";
 import { useThread } from "@/renderer/state/useThread";
 import { ThreadChangesBubble } from "./ThreadChangesBubble";
+import { ThreadDockBubbles } from "./ThreadDockBubbles";
+import { ThreadImagesBubble } from "./ThreadImagesBubble";
+import { useThreadDocksSummary } from "./useThreadDocksSummary";
 import { ThreadComposer, type ComposerControl } from "./ThreadComposer";
 import { supportsUsableFastMode } from "./threadDraftViewHelpers";
 import { ThreadContextIndicator } from "./ThreadContextIndicator";
@@ -96,7 +104,7 @@ type ThreadComposerSectionProps = {
   paneCount: number;
   terminalPaneRef: RefObject<TerminalPaneHandle | null>;
   todoDockCollapsed: boolean;
-  todoDockPlacement: "composer" | "right";
+  docksPlacement: "composer" | "right";
   todoDockState: ThreadTodoDockState | null;
   goalDockState: ThreadGoalDockState | null;
   errorDockStates: ThreadErrorDockState[];
@@ -139,7 +147,6 @@ type ThreadComposerSectionProps = {
   hideActionDocks?: boolean | undefined;
   onOpenProjectRelativePath?: ((path: string, lineNumber?: number) => void) | undefined;
   onTodoDockCollapsedChange: (collapsed: boolean) => void;
-  onTodoDockPlacementChange: (placement: "composer" | "right") => void;
   onTodoDockRetire?: () => void;
 };
 
@@ -208,7 +215,7 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
     projectLocation,
     paneCount,
     todoDockCollapsed,
-    todoDockPlacement,
+    docksPlacement: requestedDocksPlacement,
     todoDockState,
     goalDockState,
     errorDockStates,
@@ -223,6 +230,9 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
   const [hasContent, setHasContent] = useState(false);
   const compactLayout = useCompactLayout();
   const isRemoteSurface = isRemoteSession();
+  // The remote/mobile surface has no right panel to host the docks.
+  const docksPlacement = isRemoteSurface ? "composer" : requestedDocksPlacement;
+  const docksInComposer = docksPlacement === "composer";
   const usesRemoteTransport = isRemoteSurface || thread.remoteServerId !== undefined;
   const showVoiceInputButton =
     useSharedSettings((s) => s.audio.showVoiceInputButton) && !isRemoteSurface;
@@ -294,7 +304,7 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
     ? agentStatusForPresentation(agentStatus, presentationMode, thread.sessionRef)
     : undefined;
   const usesTerminalPresentation = presentationMode === "terminal";
-  const appControlsEnabled =
+  const appControlsAvailable =
     useSharedSettings((s) => s.disabledBuiltInMcpServers["app-controls"]) !== true;
   // Composer MCP servers are bound at session-create time for the active
   // thread, so the "+" menu shows this run's bindings read-only: the enabled
@@ -328,14 +338,12 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
     enabled: true,
   }));
   const mcpMentions: McpMentionItem[] = [
-    ...(appControlsEnabled && !providerOwnsMcp
+    ...(appControlsAvailable && !providerOwnsMcp
       ? [
           {
             id: "app-controls",
-            name: t`Terminal`,
-            searchAliases: ["Terminal"],
-            icon: TerminalSquare,
-            detail: t`Terminal`,
+            name: t`Poracode`,
+            icon: Settings2,
             enabled: true,
           },
         ]
@@ -350,25 +358,20 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
         id: descriptor.id,
         name: t(descriptor.label),
         icon: descriptor.icon,
-        detail: t`MCP server`,
         enabled: true,
       })),
     ...customMcpServers.map((server) => ({
       id: server.id,
       name: server.name,
       icon: Webhook,
-      detail: t`MCP server`,
       enabled: true,
     })),
-    ...(effectiveMcpConfig?.computerUse === true &&
-    readBridge()?.platform !== "linux" &&
-    projectLocation?.kind !== "wsl"
+    ...(effectiveMcpConfig?.computerUse === true && projectLocation?.kind !== "wsl"
       ? [
           {
             id: COMPUTER_USE_MCP_ID,
             name: t`Computer Use`,
             icon: Monitor,
-            detail: t`Computer Use`,
             enabled: true,
           },
         ]
@@ -376,11 +379,23 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
   ];
   const skillCommands = useSkillSlashCommands(projectLocation, thread.agentKind, presentationMode);
   const pluginMentions = usePluginMentionItems(projectLocation, thread.agentKind, presentationMode);
+  // One row per tool: a plugin that wraps a built-in server replaces that
+  // server's own mention instead of sitting next to an identical row, and only
+  // while this thread actually carries that server.
+  const composerPluginMentions = pluginMentionsForAvailableMcp(pluginMentions, mcpMentions);
+  const composerMcpMentions = withoutPluginBackedMcpMentions(mcpMentions, composerPluginMentions);
+  // The "+" menu names the same capability as the mention list: a server a
+  // plugin packages reads as that plugin everywhere in the composer.
+  const composerPluginLabels = pluginLabelsForMcpServers(composerPluginMentions);
   const threadMentionToolsAvailable = useAppStore(
     (s) => s.threadMentionToolsAvailableByThreadId[thread.id],
   );
   const threadMentions = useThreadMentionItems(
-    { kind: "project", projectId: thread.projectId },
+    {
+      kind: "project",
+      projectId: thread.projectId,
+      currentWorktreePath: thread.worktreePath,
+    },
     thread.id,
     threadMentionToolsAvailable,
   );
@@ -444,22 +459,23 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
     thread.status !== "launching";
   const hideInfoDocks = compactLayout || props.hideInfoDocks === true;
   const showTodoInComposer =
-    !hideInfoDocks &&
-    canShowRuntimeChrome &&
-    todoDockState !== null &&
-    todoDockPlacement === "composer";
-  const showGoalInComposer = !hideInfoDocks && canShowRuntimeChrome && goalDockState !== null;
+    !hideInfoDocks && canShowRuntimeChrome && docksInComposer && todoDockState !== null;
+  const showGoalInComposer =
+    !hideInfoDocks && canShowRuntimeChrome && docksInComposer && goalDockState !== null;
+  const showDockBubbles = !hideInfoDocks && canShowRuntimeChrome && !docksInComposer;
+  const docksSummary = useThreadDocksSummary(thread.id, goalDockState, todoDockState);
   const showErrorInComposer =
     !hideInfoDocks &&
     (!usesTerminalPresentation || usesRemoteTransport) &&
     errorDockStates.length > 0 &&
     !hasRuntimeAuthError;
-  const hasActiveSubAgent = useAppStore(
-    (s) =>
-      !hideInfoDocks &&
-      canShowRuntimeChrome &&
-      selectActiveSubAgentParentItemIds(s, thread.id).length > 0,
-  );
+  const hasActiveSubAgent =
+    !hideInfoDocks && canShowRuntimeChrome && docksInComposer && docksSummary.agentCount > 0;
+  const hasBackgroundTasks =
+    !hideInfoDocks &&
+    canShowRuntimeChrome &&
+    docksInComposer &&
+    docksSummary.backgroundTaskCount > 0;
   const collapseTerminalComposerSetting = useSharedSettings((s) => s.collapseTerminalComposer);
   const [composerCollapsed, setComposerCollapsed] = useState(
     compactLayout || collapseTerminalComposerSetting,
@@ -787,12 +803,24 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
           className="poracode-thread-composer-section relative"
           data-compact-collapsed={(compactLayout && isComposerCollapsed) || undefined}
         >
-          {!compactLayout && !awaitingWorktree ? (
-            <ThreadChangesBubble
-              projectId={thread.projectId}
-              {...(thread.worktreePath ? { worktreePath: thread.worktreePath } : {})}
-              {...(thread.worktreePath && branchName ? { worktreeName: branchName } : {})}
-            />
+          {!compactLayout ? (
+            /* Position an out-of-flow wrapper, not the tooltip triggers. HeroUI then
+               measures the real buttons without adding a line box above the composer. */
+            <div className="absolute right-3 bottom-full z-10 mb-1.5 flex max-w-full flex-wrap items-center justify-end gap-1.5">
+              {showDockBubbles ? (
+                <ThreadDockBubbles summary={docksSummary} threadId={thread.id} />
+              ) : null}
+              {!hideInfoDocks && canShowRuntimeChrome && docksInComposer ? (
+                <ThreadImagesBubble threadId={thread.id} />
+              ) : null}
+              {awaitingWorktree ? null : (
+                <ThreadChangesBubble
+                  projectId={thread.projectId}
+                  {...(thread.worktreePath ? { worktreePath: thread.worktreePath } : {})}
+                  {...(thread.worktreePath && branchName ? { worktreeName: branchName } : {})}
+                />
+              )}
+            </div>
           ) : null}
           <AdaptiveThreadComposerDock
             compact={compactLayout}
@@ -831,7 +859,6 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
                     errorDockStates={errorDockStates}
                     onGoalDockDismiss={props.onGoalDockDismiss}
                     onDismissError={props.onDismissError}
-                    onTodoDockPlacementChange={props.onTodoDockPlacementChange}
                     {...(props.onTodoDockRetire
                       ? { onTodoDockRetire: props.onTodoDockRetire }
                       : {})}
@@ -891,6 +918,7 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
                     ].join("|")}
                     fixedContent={
                       hasActiveSubAgent ||
+                      hasBackgroundTasks ||
                       showContextInComposer ||
                       showErrorInComposer ||
                       showGoalInComposer ||
@@ -901,6 +929,7 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
                       showCommandPanel ? (
                         <ThreadComposerDocks
                           hasActiveSubAgent={hasActiveSubAgent}
+                          hasBackgroundTasks={hasBackgroundTasks}
                           showContextInComposer={showContextInComposer}
                           showErrorInComposer={showErrorInComposer}
                           showGoalInComposer={showGoalInComposer}
@@ -919,7 +948,6 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
                           goalDockState={goalDockState}
                           todoDockState={todoDockState}
                           todoDockCollapsed={todoDockCollapsed}
-                          todoDockPlacement={todoDockPlacement}
                           pendingSteer={composerPendingSteer}
                           activeRuntimeRequest={composerRuntimeRequest}
                           filteredCommands={filteredCommands}
@@ -929,7 +957,6 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
                           onDismissError={props.onDismissError}
                           onGoalDockDismiss={props.onGoalDockDismiss}
                           onTodoDockCollapsedChange={props.onTodoDockCollapsedChange}
-                          onTodoDockPlacementChange={props.onTodoDockPlacementChange}
                           {...(props.onTodoDockRetire
                             ? { onTodoDockRetire: props.onTodoDockRetire }
                             : {})}
@@ -989,8 +1016,8 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
                             }
                           : {})}
                         projectId={thread.projectId}
-                        mcpMentions={mcpMentions}
-                        pluginMentions={pluginMentions}
+                        mcpMentions={composerMcpMentions}
+                        pluginMentions={composerPluginMentions}
                         threadMentions={threadMentions}
                         onTextChange={(hasText) => {
                           setHasContent(hasText);
@@ -1083,12 +1110,13 @@ function ThreadComposerSectionInner(props: ThreadComposerSectionProps & { thread
                         <ComposerAddMenu
                           mcpServers={mcpServers}
                           customMcpServers={customMcpServers}
+                          onManageMcpServers={openMcpServersSettings}
+                          pluginLabels={composerPluginLabels}
                           readOnly
                           computerUse={{
                             enabled: effectiveMcpConfig?.computerUse === true,
                             visible:
                               effectiveMcpConfig?.computerUse === true &&
-                              readBridge()?.platform !== "linux" &&
                               projectLocation?.kind !== "wsl",
                             onToggle: () => {},
                           }}

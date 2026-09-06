@@ -72,4 +72,21 @@
     <string name="workspace_permission_denied">Цей сеанс не має дозволу на цю дію.</string>
     <string name="workspace_project_changed">Вибраний проєкт або комп’ютер змінився. Спробуйте ще раз.</string>
     <string name="workspace_invalid_response">Комп’ютер повернув недійсну відповідь робочої області.</string>
+    <string name="workspace_create_entry">Створити файл або папку</string>
+    <string name="workspace_create_file">Створити файл</string>
+    <string name="workspace_create_folder">Створити папку</string>
+    <string name="workspace_file_actions">Дії для %1$s</string>
+    <string name="workspace_rename">Перейменувати</string>
+    <string name="workspace_move">Перемістити</string>
+    <string name="workspace_delete">Видалити</string>
+    <string name="workspace_delete_message">Видалити %1$s? Цю дію неможливо скасувати.</string>
+    <string name="workspace_delete_folder_message">Видалити %1$s і весь вміст? Цю дію неможливо скасувати.</string>
+    <string name="workspace_mutation_uncertain">З’єднання завершилося до підтвердження дії комп’ютером. Папку оновлено; перевірте її перед наступною дією.</string>
+    <string name="workspace_parent_folder">Папка призначення</string>
+    <string name="workspace_entry_name">Назва</string>
+    <string name="workspace_confirm">Підтвердити</string>
+    <string name="workspace_copy_relative_path">Копіювати шлях</string>
+    <string name="workspace_copy_absolute_path">Копіювати повний шлях</string>
+    <string name="workspace_markdown_preview">Перегляд Markdown</string>
+    <string name="workspace_markdown_edit">Редагувати Markdown</string>
 </resources>

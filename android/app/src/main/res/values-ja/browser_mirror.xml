@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">ミラーリングを停止</string>
     <string name="browser_mirror_empty">開いているブラウザタブはありません。</string>
     <string name="browser_mirror_stopped">ブラウザミラーリングは停止しています。</string>
+    <string name="browser_mirror_move_left">左に移動</string>
+    <string name="browser_mirror_move_right">右に移動</string>
+    <string name="browser_mirror_privacy_notice">ミラーリングされたページには個人情報が表示されることがあります。画像はこの端末内にのみ保存され、この画面を離れると消去されます。</string>
 </resources>

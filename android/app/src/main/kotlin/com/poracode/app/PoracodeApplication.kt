@@ -15,6 +15,8 @@ import com.poracode.app.push.PushRouteHostCatalog
 import com.poracode.app.push.PushRuntime
 import com.poracode.app.push.PushTokenVault
 import com.poracode.app.push.PushUnregisterOutbox
+import com.poracode.app.push.RemoteUserNotificationPresentationCenter
+import com.poracode.app.push.allowsForegroundNotification
 import com.poracode.app.push.RepositoryPushHostSource
 import com.poracode.app.session.AppSession
 import com.poracode.app.session.HeavyReviewInterestSource
@@ -27,6 +29,10 @@ import com.poracode.app.session.richchat.RichChatSessionRuntime
 import com.poracode.app.session.threads.ThreadSessionRuntime
 import com.poracode.app.storage.HostCatalog
 import com.poracode.app.storage.HostCatalogCredentialRepository
+import com.poracode.app.storage.DeviceSettingsPreferences
+import com.poracode.app.storage.ProjectSyncPreferences
+import com.poracode.app.storage.SharedPreferencesDeviceSettingsDocumentStore
+import com.poracode.app.storage.SharedPreferencesProjectSyncDocumentStore
 import com.poracode.app.transport.ProjectRemoteApiClient
 import com.poracode.app.transport.ProjectRemoteGatewayFactory
 import com.poracode.app.transport.ProjectWorkspaceRemoteApiClient
@@ -66,6 +72,8 @@ class PoracodeApplication : Application() {
         private set
     lateinit var browserMirror: BrowserMirrorComposition
         private set
+    lateinit var deviceSettings: DeviceSettingsPreferences
+        private set
     private lateinit var richChatComposition: RichChatSessionComposition
     private val heavyReviewSource = HeavyReviewInterestSource()
     private val runtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -73,6 +81,9 @@ class PoracodeApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         PushChannels.create(this)
+        deviceSettings = DeviceSettingsPreferences(
+            SharedPreferencesDeviceSettingsDocumentStore(this),
+        )
         val repository = HostCatalogCredentialRepository(HostCatalog(this))
         val pushDirectory = noBackupFilesDir.resolve("push").apply { mkdirs() }
         val pushStateStore = PushClientStateStore(
@@ -94,6 +105,9 @@ class PoracodeApplication : Application() {
             credentials = repository,
             hasEndpointPermission = ::hasEndpointPermission,
             beforeHostRemoval = { id, credentials -> push.beforeHostRemoval(id, credentials) },
+            remoteNotifications = RemoteUserNotificationPresentationCenter { notification ->
+                deviceSettings.state.value.allowsForegroundNotification(notification.category)
+            },
         )
         projects = ProjectSessionRuntime(
             appState = session.state,
@@ -107,6 +121,9 @@ class PoracodeApplication : Application() {
             scope = runtimeScope,
             dispatcher = Dispatchers.IO,
             refreshSnapshot = session::refreshSnapshot,
+            syncPreferences = ProjectSyncPreferences(
+                SharedPreferencesProjectSyncDocumentStore(this),
+            ),
         )
         ports = PortForwardRuntime(
             hostLease = projects.hostLease,

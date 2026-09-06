@@ -21,4 +21,7 @@
     <string name="thread_lifecycle_close">Kapat</string>
     <string name="thread_lifecycle_failure_ambiguous">Sonuç belirsiz. İleti dizisi listesi yenileniyor.</string>
     <string name="thread_lifecycle_failure_generic">İleti dizisi işlemi tamamlanamadı. Listeyi yenileyip tekrar deneyin.</string>
+    <string name="archived_threads_title">Arşivlenmiş başlıklar</string>
+    <string name="archived_threads_description">Arşivlediğiniz başlıkları geri yükleyin veya kalıcı olarak silin.</string>
+    <string name="archived_threads_empty">Arşivlenmiş başlık yok</string>
 </resources>

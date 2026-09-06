@@ -44,6 +44,7 @@ import com.poracode.app.session.advancedops.AdvancedOpsProductionComposition
 @Composable
 fun AdvancedOperationsScreen(
     composition: AdvancedOpsProductionComposition,
+    defaultContentLanguage: String?,
     onBack: () -> Unit,
 ) {
     val appState by composition.appState.collectAsStateWithLifecycle()
@@ -94,6 +95,7 @@ fun AdvancedOperationsScreen(
                         composition,
                         projects,
                         owners.project?.projectId,
+                        defaultContentLanguage,
                         Modifier.weight(1f),
                     )
                 }
@@ -103,6 +105,7 @@ fun AdvancedOperationsScreen(
                     composition,
                     projects,
                     owners.project?.projectId,
+                    defaultContentLanguage,
                     Modifier.fillMaxSize().padding(padding),
                 )
             } else {

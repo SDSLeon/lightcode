@@ -298,6 +298,12 @@ msgstr "{0} prompt - {when}"
 msgid "{0} prompts - {when}"
 msgstr "{0} prompts - {when}"
 
+#. placeholder {0}: agent.label
+#. placeholder {1}: update.targetVersion
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "{0} queued for update to v{1}"
+msgstr "{0} na fila para atualizar para v{1}"
+
 #. placeholder {0}: item.runCount.toLocaleString()
 #: src/renderer/views/ProfileOverlay/parts/PluginUsage.tsx
 msgid "{0} run"
@@ -316,7 +322,7 @@ msgstr "{0} execuções"
 #~ msgstr "{0} threads"
 
 #. placeholder {0}: formatTokens(snapshot.tokens.total)
-#: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
+#: src/renderer/components/providers/UsageCostLine.tsx
 msgid "{0} tokens"
 msgstr "{0} tokens"
 
@@ -690,7 +696,7 @@ msgid "<0>{passed}</0> of {0} checks passed"
 msgstr "<0>{passed}</0> de {0} verificações aprovadas"
 
 #. placeholder {0}: snapshot.cost.period
-#: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
+#: src/renderer/components/providers/UsageCostLine.tsx
 msgid "~{money}{tokens} · {0} · est."
 msgstr "~{money}{tokens} · {0} · est."
 
@@ -772,6 +778,10 @@ msgstr "Abortar mesclagem"
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 msgid "About"
 msgstr "Sobre"
+
+#: src/renderer/views/SettingsOverlay/parts/settingsOptions.ts
+msgid "Above the composer"
+msgstr "Acima do compositor"
 
 #: src/renderer/views/FileEditorOverlay/parts/FileEditorPane/parts/mergeConflict/codeLensProvider.ts
 msgid "Accept Both Changes"
@@ -1163,6 +1173,8 @@ msgstr "Agente:{description}"
 msgid "Agent: {subagent}"
 msgstr "Agente:{subagent}"
 
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/views/SettingsOverlay/parts/MobileSettingsIndex.tsx
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
@@ -1375,6 +1387,10 @@ msgstr "Outro chat usa esta mesma árvore. A restauração de arquivos pode subs
 msgid "Another operation for this experiment is still running."
 msgstr "Outra operação deste experimento ainda está em andamento."
 
+#: src/renderer/components/thread/ThreadRuntimeRequestPanel/ThreadRuntimeRequestPanel.tsx
+msgid "Answer every question to submit"
+msgstr "Responda a todas as perguntas para enviar"
+
 #: src/renderer/components/providers/antigravity/manifest.ts
 msgid "Antigravity"
 msgstr "Antigravity"
@@ -1420,8 +1436,9 @@ msgid "App Browser"
 msgstr "Navegador de aplicativos"
 
 #: src/renderer/components/mcp/McpServersManager.tsx
-msgid "App Controls"
-msgstr "Controles do aplicativo"
+#: src/renderer/components/plugins/pluginCopy.ts
+#~ msgid "App Controls"
+#~ msgstr "Controles do aplicativo"
 
 #: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/MobileSettingsIndex.tsx
@@ -1569,16 +1586,16 @@ msgid "Attach"
 msgstr "Anexar"
 
 #: src/renderer/components/thread/ContinueInProviderDialog.tsx
-msgid "Attach files"
-msgstr "Anexar arquivos"
+#~ msgid "Attach files"
+#~ msgstr "Anexar arquivos"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserToolbar.tsx
 msgid "Attach to thread"
 msgstr "Anexar ao tópico"
 
 #: src/renderer/components/thread/ThreadTodoDock.tsx
-msgid "Attach todo dock to composer"
-msgstr "Anexar o painel de tarefas ao compositor"
+#~ msgid "Attach todo dock to composer"
+#~ msgstr "Anexar o painel de tarefas ao compositor"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Attached browser selection."
@@ -1769,6 +1786,7 @@ msgstr "Revisão pendente"
 
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 #: src/renderer/components/layout/MobilePageHeader.tsx
 #: src/renderer/views/FileEditorOverlay/FileEditorOverlay.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsView.tsx
@@ -1811,9 +1829,16 @@ msgstr "O processo em segundo plano não está em execução"
 msgid "Background process restarted"
 msgstr "Processo em segundo plano reiniciado"
 
-#: src/renderer/components/thread/ChatPane/parts/items/ActiveSubAgentTile.tsx
-#~ msgid "Background tasks"
-#~ msgstr "Tarefas em segundo plano"
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Background task"
+msgstr "Tarefa em segundo plano"
+
+#: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+msgid "Background tasks"
+msgstr "Tarefas em segundo plano"
 
 #: src/renderer/components/experiment/NewExperimentModal.tsx
 #~ msgid "Base branch"
@@ -1941,6 +1966,11 @@ msgstr "Branches"
 msgid "Bring back to panel"
 msgstr "Trazer de volta ao painel"
 
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Bring every {0} runtime up to date"
+msgstr "Atualizar todos os tempos de execução do {0}"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserDockSlot.tsx
 msgid "Bring it back into this panel, or jump to the window it’s running in."
 msgstr "Traga-o de volta para este painel ou vá para a janela em que ele está sendo executado."
@@ -2028,8 +2058,8 @@ msgstr "Login pelo navegador"
 #~ msgstr "Abas do navegador"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Browser Tools"
-msgstr "Ferramentas do navegador"
+#~ msgid "Browser Tools"
+#~ msgstr "Ferramentas do navegador"
 
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Budget limit reached"
@@ -2041,6 +2071,7 @@ msgid "Building diff…"
 msgstr "Construindo diferenças…"
 
 #: src/renderer/components/mcp/McpServersManager.tsx
+#: src/renderer/components/plugins/PluginDetail.tsx
 #: src/renderer/components/skills/SkillsManager.tsx
 msgid "Built-in"
 msgstr "Integrado"
@@ -2209,6 +2240,7 @@ msgstr "Alterar pasta do projeto"
 msgid "Change project icon"
 msgstr "Alterar ícone do projeto"
 
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 #: src/renderer/components/thread/ThreadDraftComposerArea.tsx
 msgid "Change servers in provider settings"
 msgstr "Altere os servidores nas configurações do provedor"
@@ -2489,8 +2521,8 @@ msgid "Chrome MCP enabled for this thread"
 msgstr "MCP do Chrome ativado para este tópico"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Chrome Tools"
-msgstr "Ferramentas do Chrome"
+#~ msgid "Chrome Tools"
+#~ msgstr "Ferramentas do Chrome"
 
 #: src/renderer/views/GitHubActionsView/GitHubActionsView.tsx
 msgid "CI Actions: Workflows"
@@ -2614,6 +2646,7 @@ msgstr "Clonando…"
 #: src/renderer/components/common/BottomSheet.tsx
 #: src/renderer/components/mcp/McpServersManager.tsx
 #: src/renderer/components/skills/SkillViewModal.tsx
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/views/ExperimentView/parts/ExperimentJudgeRunDialog.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserPanel.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/DevTerminalPanel/parts/MobileTerminalLayout.tsx
@@ -2632,6 +2665,10 @@ msgstr "Fechar terminal {purposeNoun}"
 #: src/mobile/views/ManageProjectsView.tsx
 #~ msgid "Close add project"
 #~ msgstr "Fechar adicionar projeto"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Close background tasks"
+msgstr "Fechar tarefas em segundo plano"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserPanel.tsx
 msgid "Close browser"
@@ -2829,7 +2866,9 @@ msgstr "Código copiado."
 msgid "Codex"
 msgstr "Codex"
 
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/components/thread/ThreadErrorDock.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 msgid "Collapse"
 msgstr "Recolher"
@@ -2849,6 +2888,10 @@ msgstr "Recolher tudo"
 #: src/renderer/views/FileEditorOverlay/parts/ProjectTreeView/ProjectTreeView.tsx
 msgid "Collapse all folders"
 msgstr "Recolher todas as pastas"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Collapse background tasks"
+msgstr "Recolher tarefas em segundo plano"
 
 #: src/renderer/components/thread/ThreadComposerSection.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/MobileQuickCompose.tsx
@@ -2871,6 +2914,10 @@ msgstr "Recolher rodapé"
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserTabStrip.tsx
 msgid "Collapse group"
 msgstr "Recolher grupo"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Collapse images"
+msgstr "Recolher imagens"
 
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/TerminalSettings.tsx
@@ -3057,6 +3104,7 @@ msgstr "Controles do Composer"
 #: src/renderer/components/composer/ComposerAddMenu.tsx
 #: src/renderer/components/mcp/McpServersManager.tsx
 #: src/renderer/components/plugins/pluginCopy.ts
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 #: src/renderer/components/thread/ThreadComposerSection.tsx
 #: src/renderer/components/thread/ThreadDraftComposerArea.tsx
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
@@ -3072,12 +3120,28 @@ msgstr "Uso do computador"
 #~ msgstr "O Computer Use controla a área de trabalho emparelhada. Não use essa máquina enquanto o agente clica ou digita."
 
 #: src/renderer/components/composer/AttachmentBar.tsx
-msgid "Computer Use enabled — controls the paired desktop; don't use that machine while the agent is controlling it"
-msgstr "Computer Use ativado — controla a área de trabalho emparelhada; não use essa máquina enquanto o agente a controla"
+#~ msgid "Computer Use enabled — controls the paired desktop; don't use that machine while the agent is controlling it"
+#~ msgstr "Computer Use ativado — controla a área de trabalho emparelhada; não use essa máquina enquanto o agente a controla"
 
 #: src/renderer/components/composer/AttachmentBar.tsx
-msgid "Computer Use enabled — interactive actions take over the desktop; don't use the machine while the agent is controlling it"
-msgstr "Computer Use ativado — ações interativas assumem o controle da área de trabalho; não use a máquina enquanto o agente a controla"
+#~ msgid "Computer Use enabled — interactive actions take over the desktop; don't use the machine while the agent is controlling it"
+#~ msgstr "Computer Use ativado — ações interativas assumem o controle da área de trabalho; não use a máquina enquanto o agente a controla"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+#~ msgid "Computer Use enabled — the agent drives apps on the paired desktop in the background; it only takes over that desktop's mouse and keyboard when a step explicitly needs the foreground"
+#~ msgstr "Computer Use ativado — o agente controla apps na área de trabalho pareada em segundo plano; ele só assume o controle do mouse e do teclado dessa área de trabalho quando uma etapa exige explicitamente o primeiro plano"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+msgid "Computer Use enabled — the agent drives apps on the paired desktop in the background; it only takes over that desktop's mouse and keyboard when a step explicitly needs the foreground or when that desktop's system-approved portal requires it"
+msgstr "O Uso do Computador está ativado — o agente controla aplicativos na área de trabalho pareada em segundo plano; ele só assume o mouse e o teclado dessa área de trabalho quando uma etapa exige explicitamente o primeiro plano ou quando o portal dessa área de trabalho aprovado pelo sistema exige"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+#~ msgid "Computer Use enabled — the agent drives desktop apps in the background; it only takes over the mouse and keyboard when a step explicitly needs the foreground"
+#~ msgstr "Computer Use ativado — o agente controla aplicativos de desktop em segundo plano; ele só assume o controle do mouse e do teclado quando uma etapa exige explicitamente o primeiro plano"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+msgid "Computer Use enabled — the agent drives desktop apps in the background; it only takes over the mouse and keyboard when a step explicitly needs the foreground or when a system-approved desktop portal requires it"
+msgstr "O Uso do Computador está ativado — o agente controla aplicativos da área de trabalho em segundo plano; ele só assume o mouse e o teclado quando uma etapa exige explicitamente o primeiro plano ou quando um portal da área de trabalho aprovado pelo sistema exige"
 
 #: src/renderer/components/composer/AttachmentBar.tsx
 #~ msgid "Computer Use enabled for this thread"
@@ -3304,8 +3368,12 @@ msgid "Control an external Chrome browser."
 msgstr "Controla um navegador Chrome externo."
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Control desktop apps and complete visual workflows."
-msgstr "Controle aplicativos de desktop e conclua fluxos visuais."
+#~ msgid "Control desktop apps and complete visual workflows."
+#~ msgstr "Controle aplicativos de desktop e conclua fluxos visuais."
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Control desktop apps in the background and complete visual workflows."
+msgstr "Controle aplicativos de desktop em segundo plano e conclua fluxos de trabalho visuais."
 
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
 msgid "Control the desktop."
@@ -3316,8 +3384,8 @@ msgid "Control which files appear in the @file mention search. Per-project overr
 msgstr "Controle quais arquivos aparecem na pesquisa de menção @file. As substituições por projeto estão disponíveis nas configurações de cada projeto."
 
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Controls the paired desktop while the agent clicks or types"
-msgstr "Controla a área de trabalho emparelhada enquanto o agente clica ou digita"
+#~ msgid "Controls the paired desktop while the agent clicks or types"
+#~ msgstr "Controla a área de trabalho emparelhada enquanto o agente clica ou digita"
 
 #: src/renderer/views/PrReviewOverlay/parts/PrTabsPill.tsx
 #: src/renderer/views/PrReviewOverlay/PrReviewOverlay.tsx
@@ -4432,6 +4500,10 @@ msgstr "Encaixar à esquerda"
 msgid "Dock right"
 msgstr "Encaixar à direita"
 
+#: src/renderer/components/layout/PanelDock/panelTabMeta.ts
+msgid "Docks"
+msgstr "Docks"
+
 #: src/renderer/views/SettingsOverlay/parts/AcpRegistrySettings.tsx
 msgid "Docs"
 msgstr "Documentação"
@@ -4513,6 +4585,22 @@ msgstr "Arraste para reordenar; clique duas vezes para editar"
 #: src/renderer/views/SettingsOverlay/parts/RemoteHostFolderPicker.tsx
 msgid "Drives"
 msgstr "Unidades"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Drives apps on the paired desktop in the background; takes over that desktop only when the agent asks for the foreground"
+#~ msgstr "Controla apps na área de trabalho pareada em segundo plano; assume o controle dessa área de trabalho somente quando o agente solicita o primeiro plano"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "Drives apps on the paired desktop in the background; takes over that desktop only when the agent asks for the foreground or its system-approved portal requires it"
+msgstr "Controla aplicativos na área de trabalho pareada em segundo plano; só assume essa área de trabalho quando o agente solicita o primeiro plano ou quando o portal aprovado pelo sistema exige"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Drives desktop apps in the background; takes over the desktop only when the agent asks for the foreground"
+#~ msgstr "Controla aplicativos de desktop em segundo plano; assume o controle da área de trabalho somente quando o agente solicita o primeiro plano"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "Drives desktop apps in the background; takes over the desktop only when the agent asks for the foreground or a system-approved portal requires it"
+msgstr "Controla aplicativos da área de trabalho em segundo plano; só assume a área de trabalho quando o agente solicita o primeiro plano ou quando um portal aprovado pelo sistema exige"
 
 #: src/renderer/components/thread/ThreadComposer.tsx
 msgid "Drop here to attach"
@@ -4697,9 +4785,17 @@ msgstr "Habilitado"
 msgid "Enabled agents, model visibility and order"
 msgstr "Agentes ativados, visibilidade e ordem de modelos"
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Enabled MCP servers stay on for new threads"
+msgstr "Os servidores MCP ativados permanecem ativos para novos tópicos"
+
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Enabled servers stay on for new threads"
-msgstr "Os servidores ativados permanecem ativos para novos tópicos"
+msgid "Enabled plugins stay on for new threads"
+msgstr "Os plugins ativados permanecem ativos para novos tópicos"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Enabled servers stay on for new threads"
+#~ msgstr "Os servidores ativados permanecem ativos para novos tópicos"
 
 #: src/renderer/views/SettingsOverlay/parts/BrowserSettings.tsx
 msgid "Enables <0>cookies</0> and <1>storage</1>. Cookies can contain session tokens and storage often holds auth state — only enable when you trust both the agent and the sites it visits."
@@ -4871,6 +4967,11 @@ msgstr "Excluir da sincronização"
 msgid "Exclude patterns"
 msgstr "Padrões de exclusão"
 
+#. placeholder {0}: parsed.exitCode
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
+msgid "Exit code {0}"
+msgstr "Código de saída {0}"
+
 #: src/renderer/components/thread/ChatPane/parts/items/toolDisplay.ts
 msgid "Exit plan mode"
 msgstr "Sair do modo de plano"
@@ -4890,7 +4991,9 @@ msgstr "Sair do modo de plano"
 msgid "Exited with code {0}. Close to retry."
 msgstr "Saiu com o código {0}. Feche para tentar novamente."
 
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/components/thread/ThreadErrorDock.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 msgid "Expand"
 msgstr "Expandir"
@@ -4902,6 +5005,10 @@ msgstr "Expandir {label}"
 #: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsagePanelHeaderActions.tsx
 msgid "Expand all"
 msgstr "Expandir tudo"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Expand background tasks"
+msgstr "Expandir tarefas em segundo plano"
 
 #: src/renderer/components/thread/ThreadErrorDock.tsx
 msgid "Expand error"
@@ -4919,6 +5026,10 @@ msgstr "Expandir rodapé"
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserTabStrip.tsx
 msgid "Expand group"
 msgstr "Expandir grupo"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Expand images"
+msgstr "Expandir imagens"
 
 #: src/renderer/views/SettingsOverlay/parts/RemoteAccessSettings.tsx
 msgid "Expand to review or revoke access."
@@ -5054,6 +5165,7 @@ msgstr "Factory Droid"
 msgid "failed"
 msgstr "falhou"
 
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/SubAgentOverlay.tsx
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 #: src/renderer/utils/prStatus.ts
@@ -5185,6 +5297,7 @@ msgstr "Arquivo muito grande para exibir ({0, plural, one {# linha alterada} oth
 msgid "File uses an unsupported encoding."
 msgstr "O arquivo usa uma codificação não suportada."
 
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/layout/PanelDock/panelTabMeta.ts
 #: src/renderer/components/thread/ThreadToolRail.tsx
 #: src/renderer/views/MainView/parts/MobileWorkspacePage.tsx
@@ -5315,8 +5428,12 @@ msgid "First-class Kimi Code CLI integration using Poracode's native runtime."
 msgstr "Integração Kimi Code CLI de primeira classe usando o tempo de execução nativo do Poracode."
 
 #: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
-msgid "First-class Muse Code CLI integration using Poracode's native terminal runtime."
-msgstr "Integração Muse Code CLI de primeira classe usando o tempo de execução de terminal nativo do Poracode."
+#~ msgid "First-class Muse Code CLI integration using Poracode's native terminal runtime."
+#~ msgstr "Integração Muse Code CLI de primeira classe usando o tempo de execução de terminal nativo do Poracode."
+
+#: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
+msgid "First-class Muse Code integration using Poracode's native terminal and GUI runtimes."
+msgstr "Integração de primeira classe do Muse Code usando os runtimes nativos de terminal e GUI do Poracode."
 
 #: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
 msgid "First-class OpenCode integration using Poracode's native SDK runtime."
@@ -5723,6 +5840,8 @@ msgid "Go forward in navigation history"
 msgstr "Avançar no histórico de navegação"
 
 #: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Goal"
 msgstr "Objetivo"
@@ -5730,6 +5849,10 @@ msgstr "Objetivo"
 #: src/renderer/components/thread/ThreadGoalControls.tsx
 msgid "Goal objective"
 msgstr "Descrição do objetivo"
+
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#~ msgid "Goal, plan, agents, and background tasks for this thread."
+#~ msgstr "Objetivo, plano, agentes e tarefas em segundo plano desta thread."
 
 #: src/mobile/views/DesktopWorkspacePanel.tsx
 #: src/renderer/components/layout/UnifiedRightPanel.tsx
@@ -5823,6 +5946,11 @@ msgstr "Tópicos recuperáveis ocultos são varridos a cada 5 minutos e descarre
 #: src/renderer/views/MainView/parts/Sidebar/parts/WhatsNewButton.tsx
 msgid "Hide"
 msgstr "Esconder"
+
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+msgid "Hide {label}"
+msgstr "Ocultar {label}"
 
 #: src/renderer/views/SettingsOverlay/parts/UsageProviderRow.tsx
 msgid "Hide {label} circle in sidebar"
@@ -5991,6 +6119,9 @@ msgstr "Imagem"
 msgid "Image preview"
 msgstr "Visualização da imagem"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/ProjectIconPicker.tsx
 msgid "Images"
 msgstr "Imagens"
@@ -6151,6 +6282,10 @@ msgstr "Dentro deste projeto"
 msgid "Inspect canonical runtime items"
 msgstr "Inspecione itens de tempo de execução canônicos"
 
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Inspect threads and terminal panes, and drive git, pull requests, and schedules."
+msgstr "Inspecione tópicos e painéis de terminal e controle git, pull requests e agendamentos."
+
 #: src/renderer/views/LoginTerminalOverlay/LoginTerminalOverlay.tsx
 msgid "install"
 msgstr "instalar"
@@ -6181,6 +6316,10 @@ msgstr "Instale {0} para criar um tópico."
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 msgid "Install {0}."
 msgstr "Instale {0}."
+
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
+msgid "Install {badge}"
+msgstr "Instalar {badge}"
 
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 #~ msgid "Install {env}"
@@ -6383,7 +6522,7 @@ msgstr "Comandos internos e agentes"
 msgid "Interrupted"
 msgstr "Interrompida"
 
-#: src/renderer/state/slices/runtimeEventSlice.ts
+#: src/renderer/state/slices/staleSubAgents.ts
 msgid "Interrupted: agent session ended before completion."
 msgstr "Interrompida: a sessão do agente terminou antes da conclusão."
 
@@ -6827,6 +6966,10 @@ msgstr "Gerenciar"
 #~ msgid "Manage global and project agent skills, including skills imported from other providers."
 #~ msgstr "Gerencie skills globais e de projeto dos agentes, inclusive skills importadas de outros provedores."
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Manage MCP servers"
+msgstr "Gerenciar servidores MCP"
+
 #: src/renderer/views/MainView/parts/Sidebar/parts/SidebarRemoteServers.tsx
 #~ msgid "Manage remote environments"
 #~ msgstr "Gerenciar ambientes remotos"
@@ -6990,10 +7133,13 @@ msgstr "MCP"
 #~ msgid "MCP Market"
 #~ msgstr "MCP Market"
 
-#: src/renderer/components/thread/ThreadComposerSection.tsx
-#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 msgid "MCP server"
 msgstr "Servidor MCP"
+
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "MCP server actions"
+msgstr "Ações de servidores MCP"
 
 #: src/renderer/components/mcp/McpServerEditor.tsx
 msgid "MCP server arguments"
@@ -7043,13 +7189,15 @@ msgstr "Tempo limite do servidor MCP em milissegundos"
 msgid "MCP server URL"
 msgstr "URL do servidor MCP"
 
-#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/plugins/PluginDetail.tsx
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/ProfileSettings.tsx
 msgid "MCP servers"
 msgstr "Servidores MCP"
 
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/McpSection.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/MobileProjectSettingsIndex.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/SettingsSidebar.tsx
@@ -7312,6 +7460,7 @@ msgstr "Modelos"
 msgid "Modes"
 msgstr "Modos"
 
+#: src/renderer/components/layout/UnifiedRightPanel.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/MobileHomeActions.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/SidebarFooterNav.tsx
 #: src/renderer/views/ProfileOverlay/parts/ActivityHeatmap.tsx
@@ -7425,8 +7574,8 @@ msgstr "Mover para árvore de trabalho com alterações"
 #~ msgstr "Mover para árvore de trabalho…"
 
 #: src/renderer/components/thread/ThreadTodoDock.tsx
-msgid "Move todo dock to right panel"
-msgstr "Mover dock de tarefas para o painel direito"
+#~ msgid "Move todo dock to right panel"
+#~ msgstr "Mover dock de tarefas para o painel direito"
 
 #. placeholder {0}: fallback.name
 #: src/renderer/actions/workspaceActions.ts
@@ -7980,9 +8129,13 @@ msgstr "Nenhum agendamento correspondente."
 msgid "No matching threads"
 msgstr "Não há tópicos correspondentes"
 
-#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 msgid "No MCP servers are enabled for this run"
 msgstr "Nenhum servidor MCP está habilitado para esta execução"
+
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "No MCP servers configured"
+msgstr "Nenhum servidor MCP configurado"
 
 #: src/renderer/components/mcp/McpExternalImportModal.tsx
 msgid "No MCP servers found in this scope."
@@ -8025,6 +8178,10 @@ msgstr "Sem padrões."
 #: src/renderer/components/thread/ChatPane/parts/items/WorkflowOverlayBody.tsx
 msgid "No phases yet."
 msgstr "Ainda não há fases."
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "No plugins are enabled for this run"
+msgstr "Nenhum plugin está habilitado para esta execução"
 
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 msgid "No plugins match your search."
@@ -8172,6 +8329,10 @@ msgstr "Sem tópicos"
 msgid "No threads yet."
 msgstr "Nenhuma thread ainda."
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "no verdict arrived — the CLI may have blocked /goal (workspace trust or hooks settings) or the evaluator could not run"
+msgstr "nenhum veredito chegou — a CLI pode ter bloqueado /goal (confiança do espaço de trabalho ou configurações de hooks) ou o avaliador não pôde ser executado"
+
 #: src/renderer/components/providers/usageFormat.ts
 msgid "No windows reported"
 msgstr "Nenhuma janela relatada"
@@ -8221,6 +8382,10 @@ msgstr "Ainda não detectado nesta máquina."
 #: src/renderer/components/thread/AgentDiscoveryScreen.tsx
 msgid "Not found"
 msgstr "Não encontrado"
+
+#: src/renderer/views/SettingsOverlay/parts/nativeAgentRuntimes.ts
+msgid "not installed"
+msgstr "não instalado"
 
 #: src/renderer/components/providers/CombinedRuntimeVersionList.tsx
 #: src/renderer/views/SettingsOverlay/parts/antigravityRuntimeInstall.ts
@@ -8303,7 +8468,6 @@ msgid "Official sources only"
 msgstr "Somente fontes oficiais"
 
 #: src/renderer/components/common/RemoteServerStatusDot.tsx
-#: src/renderer/views/SettingsOverlay/parts/machineScope/MachineSelect.tsx
 msgid "Offline"
 msgstr "Offline"
 
@@ -8498,7 +8662,14 @@ msgstr "Abrir revisão do Git"
 msgid "Open git review as a right-side panel or a full page."
 msgstr "Abra a revisão do Git como um painel do lado direito ou uma página inteira."
 
+#. placeholder {0}: index + 1
+#. placeholder {1}: gallery.length
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Open image {0} of {1}"
+msgstr "Abrir imagem {0} de {1}"
+
 #: src/renderer/components/thread/ChatPane/parts/items/ImageCard.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 msgid "Open image preview"
 msgstr "Abrir prévia da imagem"
 
@@ -8659,6 +8830,10 @@ msgstr "Abra o seletor de modelo"
 msgid "OpenCode"
 msgstr "OpenCode"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "OpenCode request failed, retrying..."
+msgstr "A solicitação do OpenCode falhou, tentando novamente..."
+
 #. placeholder {0}: request.receivedAt
 #. placeholder {1}: index + 1
 #: src/renderer/components/thread/ChatPane/ChatRuntimeDebugPanel.tsx
@@ -8795,8 +8970,8 @@ msgid "Pair a phone, tablet, or browser with this desktop."
 msgstr "Pareie um celular, tablet ou navegador com este desktop."
 
 #: src/renderer/views/SettingsOverlay/parts/machineScope/MachineSelect.tsx
-msgid "Pair a remote machine…"
-msgstr "Parear uma máquina remota…"
+#~ msgid "Pair a remote machine…"
+#~ msgstr "Parear uma máquina remota…"
 
 #: src/mobile/components.tsx src/mobile/remoteConnectionState.ts
 #~ msgid "Pair again"
@@ -9082,9 +9257,10 @@ msgstr "Fixado"
 msgid "Pinned task routes"
 msgstr "Rotas de tarefa fixadas"
 
-#: src/renderer/components/layout/PanelDock/panelTabMeta.ts
 #: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
 #: src/renderer/components/providers/composerControlBuilders.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 #: src/renderer/views/SettingsOverlay/parts/CursorProviderSettings.tsx
 msgid "Plan"
@@ -9106,13 +9282,16 @@ msgid "Play notification sound"
 msgstr "Reproduzir som de notificação"
 
 #: src/renderer/components/skills/SkillsManager.tsx
-#: src/renderer/components/skills/useSkills.ts
 msgid "Plugin"
 msgstr "Plugin"
 
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 msgid "Plugin folder"
 msgstr "Pasta de plugins"
+
+#: src/renderer/components/mcp/McpServersManager.tsx
+msgid "Plugin servers"
+msgstr "Servidores de plugins"
 
 #: src/renderer/components/plugins/pluginCopy.ts
 msgid "plugin.json could not be read as JSON."
@@ -9130,6 +9309,8 @@ msgstr "plugin.json não é válido para a especificação Agent Plugins."
 msgid "plugin.json targets an Agent Plugins version this build does not support."
 msgstr "plugin.json aponta para uma versão do Agent Plugins que esta build não suporta."
 
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
@@ -9152,6 +9333,14 @@ msgstr "Aponte este perfil para um provedor não Anthropic (z.ai, …) com vari�
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Popular editor themes adapted to Poracode. Each follows the light or dark mode above."
 msgstr "Temas de editores populares adaptados ao Poracode. Cada um segue o modo claro ou escuro acima."
+
+#: src/renderer/components/mcp/McpServersManager.tsx
+#: src/renderer/components/plugins/pluginCopy.ts
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
+#: src/renderer/components/thread/ThreadComposerSection.tsx
+#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+msgid "Poracode"
+msgstr "Poracode"
 
 #: src/renderer/views/SettingsOverlay/parts/SshConnectionForm.tsx
 msgid "Poracode and your agents run on the remote machine. SSH is used only to start the remote environment and secure its local tunnel."
@@ -9377,10 +9566,15 @@ msgstr "Política de Privacidade"
 #~ msgid "Private key"
 #~ msgstr "Chave privada"
 
-#. placeholder {0}: agent.label
 #. placeholder {0}: updateAllProgress.agentLabel
+#. placeholder {1}: updateAllProgress.current
+#. placeholder {2}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Probing {0} ({1} of {2})"
+msgstr "Verificando {0} ({1} de {2})"
+
+#. placeholder {0}: agent.label
 #. placeholder {1}: update.targetVersion
-#. placeholder {1}: updateAllProgress.targetVersion
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
 msgid "Probing {0} v{1}"
 msgstr "Verificando {0} v{1}"
@@ -9431,6 +9625,8 @@ msgstr "Perfis"
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/common/MobileProjectPicker.tsx
 #: src/renderer/components/mcp/McpExternalImportModal.tsx
+#: src/renderer/components/plugins/PluginDetail.tsx
+#: src/renderer/components/plugins/PluginMarketplace.tsx
 #: src/renderer/components/thread/ThreadCommandPanel.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsMobileWorkflowList.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsSidebar.tsx
@@ -9806,6 +10002,18 @@ msgstr "Executar todas as tarefas novamente"
 #: src/renderer/views/GitHubActionsView/GitHubActionsRunList.tsx
 msgid "Re-run failed jobs"
 msgstr "Executar novamente as tarefas com falha"
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read and drive Poracode itself: threads, terminal panes, git, pull requests, and schedules."
+msgstr "Leia e controle o próprio Poracode: tópicos, painéis de terminal, git, pull requests e agendamentos."
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read the Terminal panel attached to this worktree and report the evidence."
+msgstr "Leia o painel Terminal desta árvore de trabalho e relate as evidências."
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read the Terminal panel attached to this worktree and report what it is printing."
+msgstr "Leia o painel Terminal desta árvore de trabalho e relate o que ele está imprimindo."
 
 #: src/renderer/views/ExperimentView/parts/ExperimentJudgeRunDialog.tsx
 msgid "Reading each candidate's changes…"
@@ -10270,6 +10478,7 @@ msgstr "O renderizador atingiu uma rejeição de promessa não tratada"
 msgid "Reorder {0}"
 msgstr "Reordenar {0}"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
 msgid "Reorder {label}"
 msgstr "Reordenar {label}"
@@ -10587,6 +10796,7 @@ msgid "Right"
 msgstr "Direita"
 
 #: src/renderer/views/SettingsOverlay/parts/BrowserSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsOptions.ts
 msgid "Right panel"
 msgstr "Painel direito"
 
@@ -10612,12 +10822,20 @@ msgstr "Executar {0}"
 
 #. placeholder {0}: agentStatus.loginCommand
 #: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
-msgid "Run {0} before this thread can run."
-msgstr "Execute {0} antes que este thread possa ser executado."
+#~ msgid "Run {0} before this thread can run."
+#~ msgstr "Execute {0} antes que este thread possa ser executado."
 
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
-msgid "Run {loginCommand} to sign in."
-msgstr "Execute {loginCommand} para fazer login."
+#~ msgid "Run {loginCommand} to sign in."
+#~ msgstr "Execute {loginCommand} para fazer login."
+
+#: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
+msgid "Run {loginCommandDisplay} before this thread can run."
+msgstr "Execute {loginCommandDisplay} antes que este thread possa ser executado."
+
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
+msgid "Run {loginCommandDisplay} to sign in."
+msgstr "Execute {loginCommandDisplay} para fazer login."
 
 #. placeholder {0}: server.label
 #: src/renderer/views/RemoteProjectModal/RemoteProjectModal.tsx
@@ -10730,7 +10948,6 @@ msgstr "Esgota em {runOut}"
 #: src/renderer/components/providers/CombinedRuntimeVersionList.tsx
 #: src/renderer/views/MainView/parts/CreateProject/CloneProjectModal.tsx
 #: src/renderer/views/MainView/parts/CreateProject/CreateProjectModal.tsx
-#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Runtime"
 msgstr "Tempo de execução"
 
@@ -11220,6 +11437,10 @@ msgstr "Enviar texto genérico em vez dos títulos das conversas pelo serviço p
 msgid "Send message"
 msgstr "Enviar mensagem"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "Enviar entrada ao terminal"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "Seleção enviada para o terminal."
@@ -11270,9 +11491,17 @@ msgstr "Definir ou visualizar uma meta experimental"
 msgid "Set shortcut"
 msgstr "Definir atalho"
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Set when this session started — start a new thread to change MCP servers"
+msgstr "Definido quando esta sessão começou — inicie um novo tópico para mudar os servidores MCP"
+
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Set when this session started — start a new thread to change servers"
-msgstr "Definido quando esta sessão começou — inicie uma nova thread para mudar os servidores"
+msgid "Set when this session started — start a new thread to change plugins"
+msgstr "Definido quando esta sessão começou — inicie um novo tópico para mudar os plugins"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Set when this session started — start a new thread to change servers"
+#~ msgstr "Definido quando esta sessão começou — inicie uma nova thread para mudar os servidores"
 
 #: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
 #: src/renderer/views/MainView/parts/MainPageLayout.tsx
@@ -11318,6 +11547,10 @@ msgstr "Atalhos"
 #: src/renderer/components/providers/ProviderUsageRail.tsx
 msgid "Show {0}"
 msgstr "Mostrar {0}"
+
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+msgid "Show {label}"
+msgstr "Mostrar {label}"
 
 #: src/renderer/views/SettingsOverlay/parts/UsageProviderRow.tsx
 msgid "Show {label} circle in sidebar"
@@ -11373,6 +11606,14 @@ msgstr "Mostrar compositor"
 msgid "Show context usage details"
 msgstr "Mostrar detalhes de uso do contexto"
 
+#: src/renderer/components/thread/ThreadDocksPlacementToggle.tsx
+msgid "Show docks above the composer"
+msgstr "Mostrar docks acima do compositor"
+
+#: src/renderer/components/thread/ThreadDocksPlacementToggle.tsx
+msgid "Show docks in the right panel"
+msgstr "Mostrar docks no painel direito"
+
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/UsageSettings.tsx
 msgid "Show estimated cost"
@@ -11382,6 +11623,10 @@ msgstr "Mostrar custo estimado"
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #~ msgid "Show GitHub Actions in the sidebar footer."
 #~ msgstr "Mostrar GitHub Actions no rodapé da barra lateral."
+
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+msgid "Show images"
+msgstr "Mostrar imagens"
 
 #: src/renderer/components/thread/ChatPane/parts/items/InlineFolderPathChip.tsx
 msgid "Show in file explorer"
@@ -12070,8 +12315,8 @@ msgid "Subagent"
 msgstr "Subagente"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Subagent Delegation"
-msgstr "Delegação de subagentes"
+#~ msgid "Subagent Delegation"
+#~ msgstr "Delegação de subagentes"
 
 #: src/renderer/components/thread/ChatPane/parts/items/SubAgentOverlay.tsx
 msgid "Subagent not found."
@@ -12313,8 +12558,8 @@ msgid "Take Screenshot"
 msgstr "Tirar captura de tela"
 
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Takes over the desktop while the agent clicks or types"
-msgstr "Assume a área de trabalho enquanto o agente clica ou digita"
+#~ msgid "Takes over the desktop while the agent clicks or types"
+#~ msgstr "Assume a área de trabalho enquanto o agente clica ou digita"
 
 #: src/renderer/views/SettingsOverlay/parts/MobileRemoteProjectsSheet.tsx
 msgid "Tap + to add a folder or clone a repository on your desktop."
@@ -12341,9 +12586,17 @@ msgstr "Branch de destino"
 msgid "Task"
 msgstr "Tarefa"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Task {id}"
+msgstr "Tarefa {id}"
+
 #: src/renderer/views/SettingsOverlay/parts/crossagent/CrossagentRankedRow.tsx
 msgid "Task match"
 msgstr "Correspondência da tarefa"
+
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
+msgid "Task Notification"
+msgstr "Notificação de tarefa"
 
 #: src/renderer/components/thread/ChatPane/parts/items/toolDisplay.ts
 msgid "Task output"
@@ -12369,8 +12622,7 @@ msgstr "Diga ao provedor alvo o que fazer a seguir..."
 #: src/renderer/commands/registry.ts
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/layout/PanelDock/panelTabMeta.ts
-#: src/renderer/components/thread/ThreadComposerSection.tsx
-#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+#: src/renderer/components/plugins/pluginCopy.ts
 #: src/renderer/components/thread/ThreadToolRail.tsx
 #: src/renderer/views/MainView/parts/MainPageLayout.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserToolbar.tsx
@@ -12671,6 +12923,10 @@ msgstr "Tema e tamanho da fonte do chat"
 msgid "These built-in MCP servers are shared by OpenCode threads. Saving updates running GUI projects; removing a server can interrupt an active turn. Terminal threads pick up changes on their next launch."
 msgstr "Esses servidores MCP integrados são compartilhados entre as conversas do OpenCode. Salvar atualiza os projetos da interface gráfica em execução; remover um servidor pode interromper uma execução ativa. As conversas do terminal recebem as alterações na próxima inicialização."
 
+#: src/renderer/components/mcp/McpServersManager.tsx
+msgid "These servers come from plugins. Enable or disable them from Plugins; they cannot be edited here."
+msgstr "Estes servidores vêm de plugins. Ative ou desative-os em Plugins; eles não podem ser editados aqui."
+
 #: src/renderer/components/common/EffortContextMenu/EffortContextMenu.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/Reasoning.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/ReasoningInline.tsx
@@ -12852,10 +13108,18 @@ msgstr "Este servidor roda neste computador e não está disponível para projet
 msgid "This system-wide shortcut is unavailable. Choose another key combination."
 msgstr "Este atalho global não está disponível. Escolha outra combinação de teclas."
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "This thread switched provider without transferring context: {agent} started without Poracode's read_thread tool, so it cannot read the earlier conversation. Re-enable the app-controls MCP tool, or summarize what it needs."
+msgstr "Este tópico trocou de provedor sem transferir contexto: {agent} iniciou sem a ferramenta read_thread do Poracode, então não consegue ler a conversa anterior. Reative a ferramenta MCP app-controls ou resuma o que ele precisa."
+
 #. placeholder {0}: props.worktreeBranch
 #: src/renderer/views/MainView/parts/Sidebar/parts/DeleteWorktreePopover.tsx
 #~ msgid "This thread uses worktree <0>{0}</0>. Also remove the worktree directory?"
 #~ msgstr "Este tópico usa a árvore de trabalho <0>{0}</0>. Remover também o diretório da árvore de trabalho?"
+
+#: src/renderer/i18n/sharedMessages.ts
+msgid "This thread was forked without transferring context: {agent} started without Poracode's read_thread tool, so it cannot read the original conversation. Re-enable the app-controls MCP tool, or summarize what it needs."
+msgstr "Este tópico foi criado por fork sem transferir contexto: {agent} iniciou sem a ferramenta read_thread do Poracode, então não consegue ler a conversa original. Reative a ferramenta MCP app-controls ou resuma o que ele precisa."
 
 #: src/renderer/views/MainView/parts/Sidebar/parts/DeleteWorktreePopover.tsx
 #~ msgid "This will permanently delete the thread and its worktree."
@@ -12911,6 +13175,16 @@ msgstr "Padrões de thread e escopo inicial"
 msgid "Thread dock"
 msgstr "Doca do tópico"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Thread docks"
+msgstr "Docks da thread"
+
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+msgid "Thread docks placement"
+msgstr "Posição dos docks da thread"
+
 #: src/renderer/components/thread/ThreadView.tsx
 msgid "Thread failed to start."
 msgstr "Falha ao iniciar o tópico."
@@ -12923,6 +13197,14 @@ msgstr "Tópico finalizado ou aguardando sua entrada."
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Thread goal dock"
 msgstr "Doca de meta do tópico"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Thread images"
+msgstr "Imagens da conversa"
+
+#: src/renderer/views/MainView/parts/ProjectAuxiliaryPanel.tsx
+msgid "Thread info"
+msgstr "Informações da conversa"
 
 #: src/renderer/views/MainView/parts/Sidebar/parts/ThreadContextMenu.tsx
 msgid "Thread is already unloaded."
@@ -12953,6 +13235,7 @@ msgstr "Tópico não encontrado"
 msgid "Thread todo dock"
 msgstr "Doca de tarefas do tópico"
 
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 #: src/renderer/views/SettingsOverlay/parts/ThreadSettings.tsx
 #: src/renderer/views/ThreadSearchOverlay/ThreadSearchOverlay.tsx
@@ -13233,8 +13516,10 @@ msgstr "Não foi possível determinar o branch de origem do experimento."
 msgid "Unable to install {0} hooks."
 msgstr "Não foi possível instalar os ganchos do {0}."
 
+#. placeholder {0}: agent.label
 #. placeholder {0}: input.label
 #: src/renderer/actions/agentLoginActions.ts
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Unable to install {0}."
 msgstr "Não foi possível instalar {0}."
 
@@ -13617,10 +13902,20 @@ msgstr "atualização"
 #: src/renderer/components/thread/ThreadAgentUpdateDock.tsx
 #: src/renderer/views/SettingsOverlay/parts/AcpRegistrySettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/CursorSdkRuntimeSetup.tsx
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/HookPluginSettings.tsx
-#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Update"
 msgstr "Atualizar"
+
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Update {0}"
+msgstr "Atualizar {0}"
+
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Update {0} ({env})"
+msgstr "Atualizar {0} ({env})"
 
 #. placeholder {0}: agent.label
 #. placeholder {0}: props.agentLabel
@@ -13630,8 +13925,12 @@ msgid "Update {0} to {updateLabel}"
 msgstr "Atualizar {0} para {updateLabel}"
 
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
-msgid "Update all"
-msgstr "Atualizar tudo"
+#~ msgid "Update all"
+#~ msgstr "Atualizar tudo"
+
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Update all ({outdatedCount})"
+msgstr "Atualizar tudo ({outdatedCount})"
 
 #: src/renderer/views/SettingsOverlay/parts/antigravityRuntimeInstall.ts
 #~ msgid "Update Antigravity"
@@ -13738,10 +14037,23 @@ msgstr "Atualizado {0}"
 msgid "Updating"
 msgstr "Atualizando"
 
+#. placeholder {0}: updateAllProgress.current
+#. placeholder {1}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Updating ({0}/{1})"
+msgstr "Atualizando ({0}/{1})"
+
 #. placeholder {0}: props.agentLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 msgid "Updating {0}"
 msgstr "Atualizando {0}"
+
+#. placeholder {0}: updateAllProgress.agentLabel
+#. placeholder {1}: updateAllProgress.current
+#. placeholder {2}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Updating {0} ({1} of {2})"
+msgstr "Atualizando {0} ({1} de {2})"
 
 #. placeholder {0}: props.agentLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
@@ -13749,9 +14061,7 @@ msgid "Updating {0} ({env})"
 msgstr "Atualizando {0} ({env})"
 
 #. placeholder {0}: agent.label
-#. placeholder {0}: updateAllProgress.agentLabel
 #. placeholder {1}: update.targetVersion
-#. placeholder {1}: updateAllProgress.targetVersion
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
 msgid "Updating {0} to v{1}"
 msgstr "Atualizando {0} para v{1}"
@@ -14208,6 +14518,11 @@ msgstr "Ao fechar a janela, mantenha o Poracode em execução na bandeja do sist
 #: src/renderer/views/SettingsOverlay/parts/TerminalSettings.tsx
 msgid "Where a browser element-picker selection goes in terminal-native threads. A collapsed composer always routes to the terminal."
 msgstr "Para onde vai uma seleção do seletor de elementos do navegador em tópicos nativos do terminal. Um compositor recolhido sempre roteia para o terminal."
+
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Where a thread's goal, plan, agents, and background tasks appear. In the right panel, compact bubbles above the composer open them."
+msgstr "Onde o objetivo, o plano, os agentes e as tarefas em segundo plano de uma thread aparecem. No painel direito, bolhas compactas acima do compositor os abrem."
 
 #: src/renderer/views/WelcomeOverlay.tsx
 msgid "Where do you want to begin?"

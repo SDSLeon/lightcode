@@ -1,10 +1,17 @@
 import type { AgentCapability, AgentInstanceConfig, AgentStatus } from "@/shared/contracts";
 import { capabilitiesForPresentation } from "@/shared/agentSelection";
+import { resolveUnrestrictedPermissionConfig } from "@/shared/agents/unrestrictedPermissions";
 import { createAcpGenericAdapter } from "../acp-generic";
 import type { AgentAdapter } from "../base";
 import { buildAntigravityAcpModelCapabilities } from "./models";
+import { createAntigravityAcpExtension } from "./acpExtension";
+import { parseAntigravityAcpTurnSignal } from "./acpTurnHold";
 
 const ANTIGRAVITY_ACP_PROBE_TIMEOUT_MS = 60_000;
+export const ANTIGRAVITY_ACP_SESSION_BEHAVIOR = {
+  suppressOutputAfterInterrupt: true,
+  suppressStderrLogging: true,
+} as const;
 
 export function createAntigravityAcpRuntime(
   instance: AgentInstanceConfig | undefined,
@@ -32,6 +39,15 @@ export function createAntigravityAcpRuntime(
     },
     // Only modes actually advertised by Google's server belong in the picker.
     synthesizeApprovalPolicies: false,
+    sessionBehavior: ANTIGRAVITY_ACP_SESSION_BEHAVIOR,
+    // Antigravity multiplexes background-task reports through assistant text
+    // and reports file reads as finished only at end of turn; both parsers
+    // live here so the shared mapper stays provider-agnostic.
+    textStreamExtension: createAntigravityAcpExtension(),
+    // agy_acp_server holds session/prompt open until every background task
+    // exits; the only end-of-reply boundary it publishes is a stderr
+    // diagnostic. See ./acpTurnHold.ts.
+    stderrTurnSignalParser: parseAntigravityAcpTurnSignal,
   });
 }
 
@@ -47,11 +63,37 @@ function terminalRuntimeCapabilities(capabilities: AgentCapability): AgentCapabi
   };
 }
 
+/**
+ * Chat's permission modes come from Google's server (`Default` / `Auto Edit` /
+ * `YOLO`), and their ids are not the CLI's — ACP's `yolo` maps to `never`,
+ * where `agy` names the same posture `yolo`. The root status keeps the CLI's
+ * capabilities, and `capabilitiesForPresentation` only overwrites the keys the
+ * GUI override actually declares, so without declaring these two the CLI's
+ * `yolo` default leaks onto a surface that never advertised it — the composer
+ * then renders the raw id and drafts open with no valid selection.
+ */
+function acpApprovalDefaults(
+  policies: AgentCapability["approvalPolicies"],
+): Pick<AgentCapability, "defaultApprovalPolicy" | "bypassPermissions"> {
+  // Empty means the GUI inherits the root's policy list, so its default and
+  // bypass posture must be inherited with it.
+  if (policies.length === 0) return {};
+  const bypass = resolveUnrestrictedPermissionConfig({
+    approvalPolicies: policies,
+    sandboxModes: [],
+  }).approvalPolicy;
+  return {
+    defaultApprovalPolicy: bypass ?? policies[0]!.id,
+    ...(bypass ? { bypassPermissions: { approvalPolicy: bypass } } : {}),
+  };
+}
+
 function acpRuntimeCapabilities(capabilities: AgentCapability): AgentCapability {
   const { presentationCapabilities: _presentationCapabilities, ...base } =
     capabilitiesForPresentation(capabilities, "gui");
   return {
     ...base,
+    ...acpApprovalDefaults(base.approvalPolicies),
     // Antigravity has one Chat runtime. Keep its picker identity canonical
     // ("Antigravity") instead of exposing the transport detail as a suffix.
     runtimeLabel: "ACP",

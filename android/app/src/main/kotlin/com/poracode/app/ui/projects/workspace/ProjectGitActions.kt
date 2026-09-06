@@ -33,6 +33,7 @@ import com.poracode.app.model.GitStatusResult
 import com.poracode.app.model.ProjectLocation
 import com.poracode.app.model.RemoteJson
 import com.poracode.app.protocol.git.GitProcedure
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
@@ -42,6 +43,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 internal fun ProjectGitActions(
     location: ProjectLocation,
     status: GitStatusResult,
+    activeWorktreePaths: List<String>,
     enabled: Boolean,
     busy: Boolean,
     outcome: GitMutationOutcome?,
@@ -74,6 +76,7 @@ internal fun ProjectGitActions(
             GitActionsSheet(
                 location = location,
                 status = status,
+                activeWorktreePaths = activeWorktreePaths,
                 enabled = enabled && !busy,
                 onRequest = onRequest,
                 onClose = { expanded = false },
@@ -110,6 +113,7 @@ private fun GitOutcomeText(resource: Int) {
 private fun GitActionsSheet(
     location: ProjectLocation,
     status: GitStatusResult,
+    activeWorktreePaths: List<String>,
     enabled: Boolean,
     onRequest: (GitOperationRequest) -> Unit,
     onClose: () -> Unit,
@@ -282,7 +286,11 @@ private fun GitActionsSheet(
                     GitActionButton(R.string.git_prune_worktrees, enabled) {
                         submit(
                             GitProcedure.PruneWorktrees,
-                            mapOf("activeWorktreePaths" to kotlinx.serialization.json.JsonArray(emptyList())),
+                            mapOf(
+                                "activeWorktreePaths" to JsonArray(
+                                    activeWorktreePaths.map(::JsonPrimitive),
+                                ),
+                            ),
                         )
                     }
                 }

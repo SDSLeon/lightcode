@@ -1,6 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { toast } from "@heroui/react";
-import { Download, Monitor, TerminalSquare, Webhook, X } from "lucide-react";
+import { Download, Monitor, Settings2, Webhook, X } from "lucide-react";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type {
   AgentHookPluginStatus,
@@ -39,6 +39,11 @@ import {
   providerOwnsMcpConfig,
 } from "@/renderer/components/composer/composerMcpServers";
 import { openAttachmentLightbox } from "@/renderer/components/composer/ImageLightbox";
+import {
+  pluginLabelsForMcpServers,
+  pluginMentionsForAvailableMcp,
+  withoutPluginBackedMcpMentions,
+} from "@/renderer/components/composer/pluginBackedMcp";
 import { openPdfPreview } from "@/renderer/components/pdf/openPdfPreview";
 import {
   MentionInput,
@@ -65,6 +70,7 @@ import { Button } from "@/renderer/components/common/Button";
 import { PixelLoader } from "@/renderer/components/common/PixelLoader";
 import { resolveModelLabel } from "@/renderer/components/providers/modelDisplay";
 import { launchExperiment } from "@/renderer/actions/experimentActions";
+import { openMcpServersSettings } from "@/renderer/actions/panelActions";
 import { updateProjectMcpServers } from "@/renderer/actions/projectActions";
 import {
   ExperimentDraftTargets,
@@ -232,6 +238,7 @@ function HookInstallProposal(props: {
 function DraftComposerAfterControls(props: {
   mcpServers: readonly ComposerMcpMenuItem[];
   customMcpServers: readonly ComposerCustomMcpItem[];
+  pluginLabels: Readonly<Record<string, string>>;
   onPickFiles: () => void;
   showVoiceInputButton: boolean;
   isDisabled: boolean;
@@ -254,6 +261,8 @@ function DraftComposerAfterControls(props: {
       <ComposerAddMenu
         mcpServers={props.mcpServers}
         customMcpServers={props.customMcpServers}
+        onManageMcpServers={openMcpServersSettings}
+        pluginLabels={props.pluginLabels}
         {...(props.readOnlyMcp
           ? {
               readOnly: true,
@@ -435,7 +444,13 @@ export function ThreadDraftComposerArea(props: {
   const authRequired = props.selectedAgent.authState === "missing";
   const isHomeScope = isHomeProjectId(props.project.id);
   const threadMentions = useThreadMentionItems(
-    isHomeScope ? { kind: "workspace" } : { kind: "project", projectId: props.project.id },
+    isHomeScope
+      ? { kind: "workspace", currentWorktreePath: branchSelection?.worktreePath }
+      : {
+          kind: "project",
+          projectId: props.project.id,
+          currentWorktreePath: branchSelection?.worktreePath,
+        },
   );
   // Registry-driven MCP toggles. The "+" add menu now flips the *persistent*
   // enablement (a standing default applied to every new thread), keyed by MCP
@@ -626,13 +641,11 @@ export function ThreadDraftComposerArea(props: {
           props.selectedAgent.capabilities,
           props.presentationMode,
           props.project.location,
-          readBridge()?.platform,
         );
   const computerUseEnabled = props.config.computerUse === true;
   const providerComputerUseEnabled =
     providerOwnsMcpForComposer &&
     disabledBuiltInMcpServers[COMPUTER_USE_MCP_ID] !== true &&
-    readBridge()?.platform !== "linux" &&
     props.project.location.kind !== "wsl" &&
     providerMcpSettingEnabled(props.selectedAgent.capabilities, providerMcpSettings, "computerUse");
   const computerUsePersistent = persistentMcpServers[COMPUTER_USE_MCP_ID] === true;
@@ -651,10 +664,8 @@ export function ThreadDraftComposerArea(props: {
       ? [
           {
             id: "app-controls",
-            name: t`Terminal`,
-            searchAliases: ["Terminal"],
-            icon: TerminalSquare,
-            detail: t`Terminal`,
+            name: t`Poracode`,
+            icon: Settings2,
             enabled: true,
           },
         ]
@@ -679,7 +690,6 @@ export function ThreadDraftComposerArea(props: {
         id: descriptor.id,
         name: t(descriptor.label),
         icon: descriptor.icon,
-        detail: t`MCP server`,
         enabled: providerOwnsMcp ? true : props.config[descriptor.configKey] === true,
       })),
     ...visibleCustomMcpServers
@@ -688,7 +698,6 @@ export function ThreadDraftComposerArea(props: {
         id: server.id,
         name: server.name,
         icon: Webhook,
-        detail: t`MCP server`,
         enabled: true,
       })),
     ...((
@@ -701,20 +710,31 @@ export function ThreadDraftComposerArea(props: {
             id: COMPUTER_USE_MCP_ID,
             name: t`Computer Use`,
             icon: Monitor,
-            detail: t`Computer Use`,
             enabled: providerOwnsMcpForComposer ? true : computerUseEnabled,
           },
         ]
       : []),
   ];
+  // One row per tool: a plugin that wraps a built-in server replaces that
+  // server's own mention instead of sitting next to an identical row, and only
+  // while this draft can offer that server at all.
+  const composerPluginMentions = pluginMentionsForAvailableMcp(pluginMentions, mcpMentions);
+  const composerMcpMentions = withoutPluginBackedMcpMentions(mcpMentions, composerPluginMentions);
+  // The "+" menu and the enabled chips name the same capability as the mention
+  // list: a server a plugin packages reads as that plugin everywhere.
+  const composerPluginLabels = pluginLabelsForMcpServers(composerPluginMentions);
   const onMcpMentionSelect = (id: string) => {
     if (id === COMPUTER_USE_MCP_ID) {
-      onConfigChange({ computerUse: true });
+      if (disabledBuiltInMcpServers[COMPUTER_USE_MCP_ID] !== true && computerUseScope !== "none") {
+        onConfigChange({ computerUse: true });
+      }
       return;
     }
     const descriptor = availableComposerMcpServers.find((server) => server.id === id);
     if (descriptor) onConfigChange(mcpTogglePatch(descriptor.configKey, true));
   };
+  const onMcpMentionSelectRef = useRef(onMcpMentionSelect);
+  onMcpMentionSelectRef.current = onMcpMentionSelect;
   const controls: ComposerControl[] = controlOpenRequest
     ? props.controls.map((control) => {
         if (controlOpenRequest.target === "model" && control.kind === "provider-model") {
@@ -984,27 +1004,34 @@ export function ThreadDraftComposerArea(props: {
   // already-open draft (where openDraft does not remount this component).
   useEffect(() => {
     if (!pendingComposerSeed) return;
+    if (pendingComposerSeed.bindLeadingSkill && !skillCommandsResolved) return;
+    const composer = mentionRef.current;
+    if (!composer) return;
+    let segments: PromptSegment[] | undefined;
     if (pendingComposerSeed.bindLeadingSkill) {
       const match = /^\/([^\s]+)(?:\s+([\s\S]*))?$/.exec(pendingComposerSeed.text);
-      const command = match
-        ? skillCommands.find((candidate) => candidate.id === match[1])
-        : undefined;
-      if (!skillCommandsResolved) return;
+      const command = pendingComposerSeed.leadingSkillPluginId
+        ? pluginMentions.find(
+            (candidate) => candidate.id === pendingComposerSeed.leadingSkillPluginId,
+          )?.command
+        : match
+          ? skillCommands.find((candidate) => candidate.id === match[1])
+          : undefined;
       if (command) {
         const skill = skillSegmentFromSlashCommand(command);
         if (skill) {
-          mentionRef.current?.insertSegments([
+          segments = [
             skill,
             ...(match?.[2] ? [{ kind: "text" as const, content: ` ${match[2]}` }] : []),
-          ]);
+          ];
         }
-        useAppStore.getState().clearComposerSeed(projectId);
-        return;
       }
     }
-    mentionRef.current?.insertText(pendingComposerSeed.text);
+    if (segments) composer.insertSegments(segments);
+    else composer.insertText(pendingComposerSeed.text);
     useAppStore.getState().clearComposerSeed(projectId);
-  }, [pendingComposerSeed, projectId, skillCommands, skillCommandsResolved]);
+    pendingComposerSeed.enableMcpServerIds?.forEach((id) => onMcpMentionSelectRef.current(id));
+  }, [pendingComposerSeed, projectId, pluginMentions, skillCommands, skillCommandsResolved]);
 
   useEffect(() => {
     const composer = mentionRef.current;
@@ -1160,6 +1187,9 @@ export function ThreadDraftComposerArea(props: {
                     <McpChip
                       key={descriptor.id}
                       descriptor={descriptor}
+                      {...(composerPluginLabels[descriptor.id]
+                        ? { label: composerPluginLabels[descriptor.id] }
+                        : {})}
                       onRemove={() =>
                         props.onConfigChange(mcpTogglePatch(descriptor.configKey, false))
                       }
@@ -1199,8 +1229,8 @@ export function ThreadDraftComposerArea(props: {
               const segments = mentionRef.current?.serializeSegments() ?? [];
               latestSegmentsRef.current = segments;
             }}
-            mcpMentions={mcpMentions}
-            pluginMentions={pluginMentions}
+            mcpMentions={composerMcpMentions}
+            pluginMentions={composerPluginMentions}
             threadMentions={threadMentions}
             onMcpMentionSelect={onMcpMentionSelect}
             onPasteImage={(file: File) => {
@@ -1264,6 +1294,7 @@ export function ThreadDraftComposerArea(props: {
         afterControls={
           <DraftComposerAfterControls
             mcpServers={mcpServers}
+            pluginLabels={composerPluginLabels}
             onPickFiles={() => {
               void (
                 props.pickFiles

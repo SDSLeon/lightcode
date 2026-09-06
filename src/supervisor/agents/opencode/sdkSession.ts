@@ -56,9 +56,11 @@ import { subscribeOpenCodeServerEvents } from "./sdkEventHub";
 import {
   closeOpenItems,
   createOpenCodeMapperState,
+  isOpenCodeAbortError,
   isOpenCodeChildSession,
   mapOpenCodeEvent,
   setOpenCodeMainSessionId,
+  setOpenCodeMapperLocation,
   type OpenCodeMapperState,
 } from "./sdkCanonicalMapping";
 import {
@@ -74,6 +76,12 @@ interface PendingPermission {
   sessionID: string;
 }
 
+interface PendingPermissionV2 {
+  kind: "permission-v2";
+  requestID: string;
+  sessionID: string;
+}
+
 interface PendingQuestion {
   kind: "question";
   requestID: string;
@@ -82,7 +90,16 @@ interface PendingQuestion {
   sourceQuestions: QuestionAnswerSourceQuestion[];
 }
 
-type PendingRequest = PendingPermission | PendingQuestion;
+interface PendingQuestionV2 {
+  kind: "question-v2";
+  requestID: string;
+  sessionID: string;
+  answerKeys: OpenCodeQuestionAnswerContext["answerKeys"];
+  optionValues: OpenCodeQuestionAnswerContext["optionValues"];
+  sourceQuestions: QuestionAnswerSourceQuestion[];
+}
+
+type PendingRequest = PendingPermission | PendingPermissionV2 | PendingQuestion | PendingQuestionV2;
 
 export interface OpenCodeQuestionAnswerContext {
   answerKeys: string[];
@@ -107,11 +124,14 @@ function mapStatusUpdate(properties: { sessionID: string; status: { type: string
 } {
   switch (properties.status.type) {
     case "busy":
+    case "retry":
+      // Note: the `retry` status carries `{ attempt, message, action }`, but
+      // thread updates have no clearable field for it — retry detail stays in
+      // the transcript's error rows (canonical mapper) so a stale message can
+      // never persist on the thread after recovery.
       return { status: "working", attention: "working" };
     case "idle":
       return { status: "idle", attention: "none" };
-    case "retry":
-      return { status: "working", attention: "working" };
     default:
       return { status: "idle", attention: "none" };
   }
@@ -219,6 +239,7 @@ export class OpencodeSdkSession implements StructuredSessionHandle {
 
     if (this.isGui) {
       this.mapperState = createOpenCodeMapperState(this.threadId);
+      setOpenCodeMapperLocation(this.mapperState, this.input.projectLocation);
       this.startEventStream();
       this.startServerExitRecovery();
     }
@@ -296,6 +317,14 @@ export class OpencodeSdkSession implements StructuredSessionHandle {
     const acquired = this.requireAcquired();
     const sessionID = this.requireSessionId();
     this.currentConfig = config;
+
+    // Reset the retry-dedup key synchronously at turn entry (before any
+    // await): the SSE stream runs concurrently with `promptAsync`, so a new
+    // turn's first retry arriving mid-flight must not match the previous
+    // turn's stale key and be silently dropped.
+    if (this.mapperState) {
+      this.mapperState.lastEmittedRetryKey = undefined;
+    }
 
     // Hand the runtime's optimistic user_message id to the mapper so the
     // SDK-side `message.updated` (role=user) reuses it instead of minting a
@@ -382,11 +411,12 @@ export class OpencodeSdkSession implements StructuredSessionHandle {
     if (pending.kind === "permission") {
       const reply = parsePermissionReply(response);
       try {
-        await acquired.client.permission.respond({
+        // `permission.respond` is deprecated in favour of the session-less
+        // `permission.reply` (same v1 flow, keyed by requestID).
+        await acquired.client.permission.reply({
           directory: this.sdkDirectory,
-          sessionID: pending.sessionID,
-          permissionID: pending.requestID,
-          response: reply,
+          requestID: pending.requestID,
+          reply,
         });
       } catch {
         // Server-side may have already received another reply or aborted.
@@ -395,13 +425,44 @@ export class OpencodeSdkSession implements StructuredSessionHandle {
       return;
     }
 
-    if (pending.kind === "question") {
+    if (pending.kind === "permission-v2") {
+      const reply = parsePermissionReply(response);
+      try {
+        await acquired.client.v2.session.permission.reply({
+          sessionID: pending.sessionID,
+          requestID: pending.requestID,
+          reply,
+        });
+      } catch (error) {
+        console.warn(
+          "[opencode] v2 permission reply rejected: %s",
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+      this.emitUpdateAfterRequestResolution();
+      return;
+    }
+
+    if (pending.kind === "question" || pending.kind === "question-v2") {
       const answers = parseOpenCodeQuestionAnswers(response, pending);
       try {
         if (answers === undefined) {
-          await acquired.client.question.reject({
-            directory: this.sdkDirectory,
+          if (pending.kind === "question-v2") {
+            await acquired.client.v2.session.question.reject({
+              sessionID: pending.sessionID,
+              requestID: pending.requestID,
+            });
+          } else {
+            await acquired.client.question.reject({
+              directory: this.sdkDirectory,
+              requestID: pending.requestID,
+            });
+          }
+        } else if (pending.kind === "question-v2") {
+          await acquired.client.v2.session.question.reply({
+            sessionID: pending.sessionID,
             requestID: pending.requestID,
+            questionV2Reply: { answers },
           });
         } else {
           await acquired.client.question.reply({
@@ -410,8 +471,14 @@ export class OpencodeSdkSession implements StructuredSessionHandle {
             answers,
           });
         }
-      } catch {
+      } catch (error) {
         // Same — best-effort reply.
+        if (pending.kind === "question-v2") {
+          console.warn(
+            "[opencode] v2 question reply rejected: %s",
+            error instanceof Error ? error.message : String(error),
+          );
+        }
       }
       if (answers !== undefined) {
         this.emitRuntimeEvents(
@@ -670,7 +737,7 @@ export class OpencodeSdkSession implements StructuredSessionHandle {
   private pendingRequestStatus(): { status: ThreadStatus; attention: ThreadAttention } | undefined {
     let hasQuestion = false;
     for (const pending of this.pendingRequests.values()) {
-      if (pending.kind === "permission") {
+      if (pending.kind === "permission" || pending.kind === "permission-v2") {
         return { status: "needs_approval", attention: "needs_approval" };
       }
       hasQuestion = true;
@@ -804,8 +871,8 @@ export class OpencodeSdkSession implements StructuredSessionHandle {
       if (!isChild && !isChildBirth) {
         return;
       }
-      // For child-session events, route only through the mapper — skip the
-      // main-session status/permission/question side-effects below.
+      this.handleRequestLifecycleEvent(event);
+      // Child-session status must not replace the parent thread's status.
       if (this.mapperState) {
         const canonical = mapOpenCodeEvent(event, this.mapperState);
         if (canonical.length > 0) this.emitRuntimeEvents(canonical);
@@ -820,6 +887,10 @@ export class OpencodeSdkSession implements StructuredSessionHandle {
         ...this.sessionRefUpdate(),
       });
       if (upd.status === "idle") this.emitTurnCompletedIfActive();
+      if (this.mapperState) {
+        const canonical = mapOpenCodeEvent(event, this.mapperState);
+        if (canonical.length > 0) this.emitRuntimeEvents(canonical);
+      }
       return;
     }
 
@@ -828,10 +899,36 @@ export class OpencodeSdkSession implements StructuredSessionHandle {
         ...(this.pendingRequestStatus() ?? { status: "idle", attention: "none" }),
         ...this.sessionRefUpdate(),
       });
+      // `session.idle` is the normal turn-settling signal (distinct from
+      // `session.status` idle) — clear here too so the next turn's identical
+      // retry is not suppressed by a stale dedup key.
+      if (this.mapperState) {
+        this.mapperState.lastEmittedRetryKey = undefined;
+      }
       this.emitTurnCompletedIfActive();
       return;
     }
 
+    this.handleRequestLifecycleEvent(event);
+
+    if (event.type === "session.error") {
+      const err = event.properties.error;
+      if (isOpenCodeAbortError(err)) return;
+      const msg =
+        err && typeof err === "object" && "data" in err && err.data
+          ? String((err.data as { message?: string }).message ?? err.name)
+          : (err?.name ?? "OpenCode session error");
+      this.listener?.onError(msg);
+    }
+
+    // Translate to canonical runtime events for the chat pane.
+    if (this.mapperState) {
+      const canonical = mapOpenCodeEvent(event, this.mapperState);
+      if (canonical.length > 0) this.emitRuntimeEvents(canonical);
+    }
+  }
+
+  private handleRequestLifecycleEvent(event: Event): void {
     if (event.type === "permission.asked") {
       const requestId = `opencode-perm-${event.properties.id}` as ThreadServerRequestId;
       this.pendingRequests.set(requestId, {
@@ -842,8 +939,23 @@ export class OpencodeSdkSession implements StructuredSessionHandle {
       this.emitPendingRequestUpdate();
     }
 
+    if (event.type === "permission.v2.asked") {
+      const requestId = `opencode-permv2-${event.properties.id}` as ThreadServerRequestId;
+      this.pendingRequests.set(requestId, {
+        kind: "permission-v2",
+        requestID: event.properties.id,
+        sessionID: event.properties.sessionID,
+      });
+      this.emitPendingRequestUpdate();
+    }
+
     if (event.type === "permission.replied") {
       const requestId = `opencode-perm-${event.properties.requestID}` as ThreadServerRequestId;
+      if (this.pendingRequests.delete(requestId)) this.emitUpdateAfterRequestResolution();
+    }
+
+    if (event.type === "permission.v2.replied") {
+      const requestId = `opencode-permv2-${event.properties.requestID}` as ThreadServerRequestId;
       if (this.pendingRequests.delete(requestId)) this.emitUpdateAfterRequestResolution();
     }
 
@@ -860,24 +972,28 @@ export class OpencodeSdkSession implements StructuredSessionHandle {
       this.emitPendingRequestUpdate();
     }
 
+    if (event.type === "question.v2.asked") {
+      const requestId = `opencode-qv2-${event.properties.id}` as ThreadServerRequestId;
+      const questionMetadata = buildQuestionMetadata(event.properties);
+      this.pendingRequests.set(requestId, {
+        kind: "question-v2",
+        requestID: event.properties.id,
+        sessionID: event.properties.sessionID,
+        answerKeys: questionMetadata.answerKeys,
+        optionValues: questionMetadata.optionValues,
+        sourceQuestions: questionMetadata.sourceQuestions,
+      });
+      this.emitPendingRequestUpdate();
+    }
+
     if (event.type === "question.replied" || event.type === "question.rejected") {
       const requestId = `opencode-q-${event.properties.requestID}` as ThreadServerRequestId;
       if (this.pendingRequests.delete(requestId)) this.emitUpdateAfterRequestResolution();
     }
 
-    if (event.type === "session.error") {
-      const err = event.properties.error;
-      const msg =
-        err && typeof err === "object" && "data" in err && err.data
-          ? String((err.data as { message?: string }).message ?? err.name)
-          : (err?.name ?? "OpenCode session error");
-      this.listener?.onError(msg);
-    }
-
-    // Translate to canonical runtime events for the chat pane.
-    if (this.mapperState) {
-      const canonical = mapOpenCodeEvent(event, this.mapperState);
-      if (canonical.length > 0) this.emitRuntimeEvents(canonical);
+    if (event.type === "question.v2.replied" || event.type === "question.v2.rejected") {
+      const requestId = `opencode-qv2-${event.properties.requestID}` as ThreadServerRequestId;
+      if (this.pendingRequests.delete(requestId)) this.emitUpdateAfterRequestResolution();
     }
   }
 

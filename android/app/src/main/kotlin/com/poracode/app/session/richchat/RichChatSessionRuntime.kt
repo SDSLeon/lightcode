@@ -23,7 +23,9 @@ class RichChatSessionRuntime(
     watchIdFactory: () -> String = { java.util.UUID.randomUUID().toString() },
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
 ) {
+    val hostLease: StateFlow<RichChatHostLease?> get() = session
     private val lifecycle = ForegroundOperationRegistry()
+    @Volatile private var projectTerminalSurfacePresented = false
     private var refreshJob: Job? = null
     private var terminalJob: Job? = null
     val chat = RichChatController(session, gateway, lifecycle)
@@ -72,6 +74,23 @@ class RichChatSessionRuntime(
         dismissTerminal()
         checkpoints.reset()
         chat.closeThread()
+    }
+
+    val isProjectTerminalSurfacePresented: Boolean
+        get() = projectTerminalSurfacePresented
+
+    @Synchronized
+    fun presentProjectTerminalSurface() {
+        projectTerminalSurfacePresented = true
+        cancelRefresh()
+        checkpoints.reset()
+        if (chat.selection.value != null) chat.closeThread()
+    }
+
+    @Synchronized
+    fun dismissProjectTerminalSurface() {
+        projectTerminalSurfacePresented = false
+        dismissTerminal()
     }
 
     @Synchronized
@@ -177,14 +196,11 @@ class RichChatSessionRuntime(
     fun dismissTerminal() {
         terminalJob?.cancel()
         terminalJob = null
-        if (terminal.state.value.lease == null) return
-        scope.launch {
-            try {
-                terminal.unwatch()
-            } finally {
-                terminal.clearTerminal()
-            }
-        }
+        val dismissedLease = terminal.state.value.lease ?: return
+        // Detach synchronously so a rapidly reopened project action cannot see
+        // or write into the previous shell while remote unwatch is in flight.
+        if (!terminal.clearTerminalIfCurrent(dismissedLease)) return
+        scope.launch { terminal.unwatchDetached(dismissedLease) }
     }
 
     @Synchronized

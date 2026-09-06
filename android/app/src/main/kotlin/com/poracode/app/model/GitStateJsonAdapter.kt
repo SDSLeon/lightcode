@@ -92,6 +92,7 @@ object GitStateJsonAdapter {
             authState = obj.string("authState").orEmpty(),
             envKind = envKind,
             envDistro = envDistro,
+            raw = obj,
         )
     }
 
@@ -169,7 +170,12 @@ data class AgentStatusEntry(
     val authState: String,
     val envKind: String,
     val envDistro: String,
+    /** Retains the validated provider capability catalog for native composer controls. */
+    val raw: JsonObject = JsonObject(emptyMap()),
 ) {
+    val capabilities: JsonObject
+        get() = raw["capabilities"] as? JsonObject ?: JsonObject(emptyMap())
+
     companion object {
         const val ENV_WINDOWS = "windows"
         const val ENV_WSL = "wsl"

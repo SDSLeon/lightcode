@@ -10,15 +10,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -37,6 +47,16 @@ internal fun ProjectListPane(
     projects: List<CatalogProject>,
     selectedProjectId: String?,
     onSelect: (String) -> Unit,
+    onOpenSettings: (String) -> Unit,
+    isSynced: (CatalogProject) -> Boolean,
+    onSetSynced: (CatalogProject, Boolean) -> Unit,
+    onOpenWorkspace: (CatalogProject) -> Unit,
+    onOpenTerminal: (CatalogProject, String?) -> Unit,
+    onToggleEnabled: (CatalogProject) -> Unit,
+    onRemove: (CatalogProject) -> Unit,
+    manageEnabled: Boolean,
+    workspaceEnabled: Boolean,
+    terminalEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     if (projects.isEmpty()) {
@@ -106,13 +126,115 @@ internal fun ProjectListPane(
                             )
                         }
                     }
-                    Icon(
-                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                        contentDescription = null,
+                    ProjectRowMenu(
+                        item = item,
+                        synced = isSynced(item),
+                        manageEnabled = manageEnabled,
+                        workspaceEnabled = workspaceEnabled,
+                        terminalEnabled = terminalEnabled,
+                        onOpenSettings = { onOpenSettings(item.identity.projectId) },
+                        onSetSynced = { onSetSynced(item, it) },
+                        onOpenWorkspace = { onOpenWorkspace(item) },
+                        onOpenTerminal = { command -> onOpenTerminal(item, command) },
+                        onToggleEnabled = { onToggleEnabled(item) },
+                        onRemove = { onRemove(item) },
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ProjectRowMenu(
+    item: CatalogProject,
+    synced: Boolean,
+    manageEnabled: Boolean,
+    workspaceEnabled: Boolean,
+    terminalEnabled: Boolean,
+    onOpenSettings: () -> Unit,
+    onSetSynced: (Boolean) -> Unit,
+    onOpenWorkspace: () -> Unit,
+    onOpenTerminal: (String?) -> Unit,
+    onToggleEnabled: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var confirmRemove by remember { mutableStateOf(false) }
+    androidx.compose.foundation.layout.Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Outlined.MoreVert, stringResource(R.string.projects_more_actions))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.projects_settings)) },
+                onClick = { expanded = false; onOpenSettings() },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.workspace_title)) },
+                enabled = workspaceEnabled,
+                onClick = { expanded = false; onOpenWorkspace() },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.terminal_title)) },
+                enabled = terminalEnabled,
+                onClick = { expanded = false; onOpenTerminal(null) },
+            )
+            item.project.scripts?.actions.orEmpty().forEach { action ->
+                DropdownMenuItem(
+                    text = {
+                        Text(stringResource(R.string.projects_run_action, action.name))
+                    },
+                    enabled = terminalEnabled,
+                    onClick = { expanded = false; onOpenTerminal(action.command) },
+                )
+            }
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        stringResource(
+                            if (synced) R.string.projects_stop_syncing
+                            else R.string.projects_include_in_sync,
+                        ),
+                    )
+                },
+                onClick = { expanded = false; onSetSynced(!synced) },
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        stringResource(
+                            if (item.project.disabled == true) R.string.projects_enable
+                            else R.string.projects_disable,
+                        ),
+                    )
+                },
+                enabled = manageEnabled,
+                onClick = { expanded = false; onToggleEnabled() },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.projects_remove)) },
+                enabled = manageEnabled,
+                onClick = { expanded = false; confirmRemove = true },
+            )
+        }
+    }
+    if (confirmRemove) {
+        AlertDialog(
+            onDismissRequest = { confirmRemove = false },
+            title = { Text(stringResource(R.string.projects_remove_confirm_title, item.project.name)) },
+            text = { Text(stringResource(R.string.projects_remove_confirm_message)) },
+            confirmButton = {
+                Button(onClick = { confirmRemove = false; onRemove() }) {
+                    Text(stringResource(R.string.projects_remove))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRemove = false }) {
+                    Text(stringResource(R.string.projects_cancel))
+                }
+            },
+        )
     }
 }
 

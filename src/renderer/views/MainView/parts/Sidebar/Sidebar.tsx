@@ -219,7 +219,21 @@ export function Sidebar() {
   const openHome = useAppStore((s) => s.openHome);
   const appView = useAppStore((s) => s.view);
   const appNameForHome = getAppName(readBridge().channel, import.meta.env.DEV);
-  const [remoteAccessStatus, setRemoteAccessStatus] = useState<RemoteAccessSidebarStatus>("off");
+  const [remoteAccessStatus, setRemoteAccessStatus] = useState<RemoteAccessSidebarStatus>(
+    remoteAccessEnabled ? "starting" : "off",
+  );
+  // Status resets derive from `remoteAccessEnabled`, so adjust during render
+  // (including the "starting" placeholder while the probe below runs); the
+  // polling loop itself stays in the effect.
+  const [prevRemoteAccessEnabled, setPrevRemoteAccessEnabled] = useState(remoteAccessEnabled);
+  if (prevRemoteAccessEnabled !== remoteAccessEnabled) {
+    setPrevRemoteAccessEnabled(remoteAccessEnabled);
+    if (!remoteAccessEnabled) {
+      setRemoteAccessStatus("off");
+    } else {
+      setRemoteAccessStatus((current) => (current === "online" ? current : "starting"));
+    }
+  }
   const { setScrollContainer, scrollFadeStyle } = useScrollFade<HTMLDivElement>({
     maxFadePx: 10,
   });
@@ -237,9 +251,15 @@ export function Sidebar() {
     }
   }, [currentWorktreePath, setWorktreeCollapsed]);
 
+  // Losing the capability or the opt-in drops the status during render so the
+  // icon never paints a stale online state; the polling loop below stays in
+  // the effect.
+  if ((!showRemoteAccess || !remoteAccessEnabled) && remoteAccessStatus !== "off") {
+    setRemoteAccessStatus("off");
+  }
+
   useEffect(() => {
     if (!showRemoteAccess || !remoteAccessEnabled) {
-      setRemoteAccessStatus("off");
       return;
     }
 
@@ -258,7 +278,6 @@ export function Sidebar() {
       }
     };
 
-    setRemoteAccessStatus((current) => (current === "online" ? current : "starting"));
     void readRemoteStatus();
     const interval = window.setInterval(() => {
       void readRemoteStatus();

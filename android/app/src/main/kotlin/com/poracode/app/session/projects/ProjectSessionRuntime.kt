@@ -4,6 +4,7 @@ import com.poracode.app.model.ClientConnectionId
 import com.poracode.app.model.RemoteProject
 import com.poracode.app.session.AppSession
 import com.poracode.app.storage.MultiHostCredentialRepository
+import com.poracode.app.storage.ProjectSyncPreferences
 import com.poracode.app.transport.ProjectRemoteGatewayFactory
 import com.poracode.app.transport.ProjectWorkspaceRemoteGatewayFactory
 import com.poracode.app.transport.RepositoryProjectWorkspaceRemoteGatewayProvider
@@ -25,6 +26,7 @@ class ProjectSessionRuntime(
     scope: CoroutineScope,
     dispatcher: CoroutineDispatcher,
     refreshSnapshot: () -> Unit,
+    val syncPreferences: ProjectSyncPreferences,
     clock: ProjectNotesClock = ProjectNotesClock { Instant.now().toString() },
     refreshDelayMs: Long = DebouncedProjectRefreshScheduler.DEFAULT_DELAY_MS,
 ) {

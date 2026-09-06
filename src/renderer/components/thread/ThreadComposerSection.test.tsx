@@ -251,7 +251,6 @@ describe("ThreadComposerSection", () => {
       disabledBuiltInMcpServers: {},
     });
     useThreadTodoDockStore.setState({
-      defaultPlacement: "composer",
       defaultCollapsed: false,
       byThreadId: {},
     });
@@ -326,6 +325,43 @@ describe("ThreadComposerSection", () => {
     expect(screen.queryByRole("button", { name: "Review changes" })).toBeNull();
   });
 
+  it("floats the composer bubbles in one anchored wrapper above the composer", () => {
+    useGitStore.setState({
+      statuses: {
+        "project-1": {
+          isRepo: true,
+          branch: "main",
+          tracking: "origin/main",
+          hasRemote: true,
+          remoteInfo: null,
+          ahead: 0,
+          behind: 0,
+          staged: [],
+          unstaged: [],
+          totalInsertions: 12,
+          totalDeletions: 3,
+        } as GitStatusResult,
+      },
+    });
+
+    const { container } = render(
+      composerElement({
+        thread: {
+          ...guiThread,
+          worktreePath: "C:\\repo\\.poracode\\worktrees\\feature",
+          worktreeBranch: "poracode/feature",
+        },
+      }),
+    );
+
+    // The bubbles keep the out-of-flow, right-anchored position the changes
+    // bubble owned before they shared one wrapper.
+    const wrapper = container.querySelector("div.absolute.right-3.bottom-full");
+    expect(wrapper).not.toBeNull();
+    expect(wrapper).toHaveClass("z-10", "mb-1.5", "flex", "items-center");
+    expect(screen.getByRole("button", { name: "Review changes" })).toBeInTheDocument();
+  });
+
   function composerElement(opts?: {
     thread?: Thread;
     agentStatus?: AgentStatus;
@@ -346,7 +382,7 @@ describe("ThreadComposerSection", () => {
         paneCount={1}
         terminalPaneRef={{ current: null }}
         todoDockCollapsed={false}
-        todoDockPlacement="composer"
+        docksPlacement="composer"
         todoDockState={null}
         goalDockState={null}
         errorDockStates={opts?.errorDockStates ?? []}
@@ -361,7 +397,6 @@ describe("ThreadComposerSection", () => {
           : {})}
         {...(opts?.saveClipboardImage ? { saveClipboardImage: opts.saveClipboardImage } : {})}
         onTodoDockCollapsedChange={() => undefined}
-        onTodoDockPlacementChange={() => undefined}
       />
     );
   }
@@ -405,7 +440,7 @@ describe("ThreadComposerSection", () => {
     expect(screen.getByTestId("control-kinds")).toBeEmptyDOMElement();
   });
 
-  it("inserts @Terminal as a Poracode MCP directive", async () => {
+  it("does not offer plugin-backed MCPs as @ mentions", () => {
     const rangeRectDescriptor = Object.getOwnPropertyDescriptor(
       Range.prototype,
       "getBoundingClientRect",
@@ -423,21 +458,12 @@ describe("ThreadComposerSection", () => {
       value: () => undefined,
     });
     try {
-      const { onSubmitInput } = renderComposer();
+      renderComposer();
       const input = screen.getByRole("textbox");
       typeComposerText(input, "@ter");
-
-      fireEvent.keyDown(input, { key: "Enter" });
-      expect(input.querySelector('[data-mcp-id="app-controls"]')).not.toBeNull();
-
-      fireEvent.click(screen.getByRole("button", { name: "send" }));
-
-      await waitFor(() =>
-        expect(onSubmitInput).toHaveBeenCalledWith("@Terminal", [
-          { kind: "mcp", id: "app-controls", name: "Terminal" },
-          { kind: "text", content: " " },
-        ]),
-      );
+      expect(screen.queryByRole("option")).not.toBeInTheDocument();
+      typeComposerText(input, "@bro");
+      expect(screen.queryByRole("option")).not.toBeInTheDocument();
     } finally {
       if (rangeRectDescriptor) {
         Object.defineProperty(Range.prototype, "getBoundingClientRect", rangeRectDescriptor);
@@ -522,7 +548,7 @@ describe("ThreadComposerSection", () => {
 
       const input = screen.getByRole("textbox");
       typeComposerText(input, "@cro");
-      expect(screen.getByRole("option")).toHaveTextContent("Crossagents");
+      expect(screen.queryByRole("option")).not.toBeInTheDocument();
 
       typeComposerText(input, "@vis");
       expect(screen.getByRole("option")).toHaveTextContent("Vision-MCP");
@@ -1207,7 +1233,7 @@ describe("ThreadComposerSection", () => {
         paneCount={1}
         terminalPaneRef={{ current: null }}
         todoDockCollapsed={false}
-        todoDockPlacement="composer"
+        docksPlacement="composer"
         todoDockState={null}
         goalDockState={null}
         errorDockStates={[]}
@@ -1215,7 +1241,6 @@ describe("ThreadComposerSection", () => {
         onDismissError={() => undefined}
         onSubmitInput={onSubmitInput}
         onTodoDockCollapsedChange={() => undefined}
-        onTodoDockPlacementChange={() => undefined}
       />,
     );
 
@@ -1437,7 +1462,7 @@ describe("ThreadComposerSection", () => {
         paneCount={1}
         terminalPaneRef={{ current: null }}
         todoDockCollapsed={false}
-        todoDockPlacement="composer"
+        docksPlacement="composer"
         todoDockState={null}
         goalDockState={null}
         errorDockStates={[]}
@@ -1445,7 +1470,6 @@ describe("ThreadComposerSection", () => {
         onDismissError={() => undefined}
         onSubmitInput={onSubmitInput}
         onTodoDockCollapsedChange={() => undefined}
-        onTodoDockPlacementChange={() => undefined}
       />,
     );
 
@@ -1491,6 +1515,37 @@ describe("ThreadComposerSection", () => {
     expect(description).not.toHaveClass("truncate");
     expect(description.parentElement).toHaveAttribute("data-stacked", "true");
     expect(screen.getByRole("button", { name: "Login" })).toBeVisible();
+  });
+
+  it("shows a concise command in the auth dock for wrapped WSL login", () => {
+    render(
+      <ThreadComposerSection
+        threadId={guiThread.id}
+        fallbackThread={guiThread}
+        agentStatus={{
+          ...codexGuiStatus,
+          authState: "missing",
+          loginCommand: "wsl.exe -d 'Ubuntu' --exec bash -l -i -c 'muse login'",
+          loginCommandDisplay: "muse login",
+        }}
+        projectLocation={{ kind: "windows", path: "C:\\repo" }}
+        paneCount={1}
+        terminalPaneRef={{ current: null }}
+        todoDockCollapsed={false}
+        docksPlacement="composer"
+        todoDockState={null}
+        goalDockState={null}
+        errorDockStates={[]}
+        onGoalDockDismiss={() => undefined}
+        onDismissError={() => undefined}
+        onSubmitInput={() => Promise.resolve()}
+        onTodoDockCollapsedChange={() => undefined}
+      />,
+    );
+
+    expect(
+      screen.getByText("Codex: Run muse login before this thread can run."),
+    ).toBeInTheDocument();
   });
 
   it("keeps remote auth docks actionable without desktop-only login controls", async () => {
@@ -1680,7 +1735,7 @@ describe("ThreadComposerSection", () => {
           paneCount={1}
           terminalPaneRef={{ current: null }}
           todoDockCollapsed={false}
-          todoDockPlacement="composer"
+          docksPlacement="composer"
           todoDockState={terminalTodoDockState}
           goalDockState={terminalGoalDockState}
           errorDockStates={[]}
@@ -1688,7 +1743,6 @@ describe("ThreadComposerSection", () => {
           onDismissError={() => undefined}
           onSubmitInput={async () => undefined}
           onTodoDockCollapsedChange={() => undefined}
-          onTodoDockPlacementChange={() => undefined}
         />,
       );
 
@@ -1825,7 +1879,7 @@ describe("ThreadComposerSection", () => {
         paneCount={1}
         terminalPaneRef={{ current: null }}
         todoDockCollapsed={false}
-        todoDockPlacement="composer"
+        docksPlacement="composer"
         todoDockState={null}
         goalDockState={null}
         errorDockStates={[]}
@@ -1833,7 +1887,6 @@ describe("ThreadComposerSection", () => {
         onDismissError={() => undefined}
         onSubmitInput={async () => undefined}
         onTodoDockCollapsedChange={() => undefined}
-        onTodoDockPlacementChange={() => undefined}
       />,
     );
 
@@ -1958,7 +2011,7 @@ describe("ThreadComposerSection", () => {
         paneCount={1}
         terminalPaneRef={{ current: null }}
         todoDockCollapsed={false}
-        todoDockPlacement="composer"
+        docksPlacement="composer"
         todoDockState={null}
         goalDockState={null}
         errorDockStates={[]}
@@ -1966,7 +2019,6 @@ describe("ThreadComposerSection", () => {
         onDismissError={() => undefined}
         onSubmitInput={async () => undefined}
         onTodoDockCollapsedChange={() => undefined}
-        onTodoDockPlacementChange={() => undefined}
       />,
     );
 
@@ -2036,7 +2088,7 @@ describe("ThreadComposerSection", () => {
         paneCount={1}
         terminalPaneRef={{ current: null }}
         todoDockCollapsed={false}
-        todoDockPlacement="composer"
+        docksPlacement="composer"
         todoDockState={null}
         goalDockState={null}
         errorDockStates={[]}
@@ -2044,7 +2096,6 @@ describe("ThreadComposerSection", () => {
         onDismissError={() => undefined}
         onSubmitInput={async () => undefined}
         onTodoDockCollapsedChange={() => undefined}
-        onTodoDockPlacementChange={() => undefined}
       />,
     );
 
@@ -2102,7 +2153,7 @@ describe("ThreadComposerSection", () => {
         paneCount={1}
         terminalPaneRef={{ current: null }}
         todoDockCollapsed={false}
-        todoDockPlacement="composer"
+        docksPlacement="composer"
         todoDockState={null}
         goalDockState={null}
         errorDockStates={[]}
@@ -2110,7 +2161,6 @@ describe("ThreadComposerSection", () => {
         onDismissError={() => undefined}
         onSubmitInput={async () => undefined}
         onTodoDockCollapsedChange={() => undefined}
-        onTodoDockPlacementChange={() => undefined}
       />,
     );
 
@@ -2186,7 +2236,7 @@ describe("ThreadComposerSection", () => {
         paneCount={1}
         terminalPaneRef={{ current: null }}
         todoDockCollapsed={false}
-        todoDockPlacement="composer"
+        docksPlacement="composer"
         todoDockState={null}
         goalDockState={null}
         errorDockStates={[]}
@@ -2194,7 +2244,6 @@ describe("ThreadComposerSection", () => {
         onDismissError={() => undefined}
         onSubmitInput={async () => undefined}
         onTodoDockCollapsedChange={() => undefined}
-        onTodoDockPlacementChange={() => undefined}
       />,
     );
 

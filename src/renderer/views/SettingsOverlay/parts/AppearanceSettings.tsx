@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState, type CSSProperties } from "react";
+import { startTransition, useState, type CSSProperties } from "react";
 import { ChevronDown, RotateCcw } from "lucide-react";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Slider, SliderFill, SliderOutput, SliderThumb, SliderTrack } from "@heroui/react";
@@ -12,7 +12,13 @@ import { useNativeMaterialActive } from "@/renderer/hooks/useGlassState";
 import { Select, ToggleSwitch } from "@/renderer/components/common";
 import { SettingRow, SettingsPage } from "./SettingsForm";
 import { ThemeGallery, ThemeSwatch } from "./ThemeGallery";
-import { fontSizeOptions, themeOptions, useLocalizedOptions } from "./settingsOptions";
+import {
+  fontSizeOptions,
+  themeOptions,
+  threadDocksPlacementOptions,
+  useLocalizedOptions,
+} from "./settingsOptions";
+import type { ThreadDocksPlacement } from "@/shared/settings";
 
 export function AppearanceSettings() {
   const { t } = useLingui();
@@ -45,9 +51,19 @@ export function AppearanceSettings() {
   const glassTintOverride = sidebarGlassTint[appearance];
   const glassTintDefault = sidebarGlassTintDefault(appearance);
   const [glassTint, setGlassTint] = useState(glassTintOverride ?? glassTintDefault);
-  useEffect(() => {
+  // Re-seeding the slider when the stored override (or appearance) changes
+  // derives from those inputs, so adjust during render.
+  const [prevGlassTintSeed, setPrevGlassTintSeed] = useState({
+    appearance,
+    override: glassTintOverride,
+  });
+  if (
+    prevGlassTintSeed.appearance !== appearance ||
+    prevGlassTintSeed.override !== glassTintOverride
+  ) {
+    setPrevGlassTintSeed({ appearance, override: glassTintOverride });
     setGlassTint(glassTintOverride ?? glassTintDefault);
-  }, [glassTintOverride, glassTintDefault]);
+  }
   // HeroUI's Slider emits number | number[]; this control is single-thumb.
   const normalizeSliderValue = (value: number | number[]): number =>
     Array.isArray(value) ? (value[0] ?? glassTint) : value;
@@ -68,6 +84,9 @@ export function AppearanceSettings() {
   };
 
   const themeOpts = useLocalizedOptions(themeOptions);
+  const threadDocksPlacement = useSharedSettings((state) => state.threadDocksPlacement);
+  const setThreadDocksPlacement = useSharedSettings((state) => state.setThreadDocksPlacement);
+  const threadDocksPlacementOpts = useLocalizedOptions(threadDocksPlacementOptions);
 
   return (
     <SettingsPage title={t`Appearance`}>
@@ -121,6 +140,29 @@ export function AppearanceSettings() {
         </button>
         {themeOpen ? <ThemeGallery /> : null}
       </div>
+
+      <SettingRow
+        anchorId="appearance.threadDocksPlacement"
+        title={t`Thread docks`}
+        description={
+          <Trans>
+            Where a thread's goal, plan, agents, and background tasks appear. In the right panel,
+            compact bubbles above the composer open them.
+          </Trans>
+        }
+      >
+        <Select
+          aria-label={t`Thread docks placement`}
+          className="w-[200px] shrink-0"
+          options={threadDocksPlacementOpts}
+          value={threadDocksPlacement}
+          onChange={(value) => {
+            startTransition(() => {
+              setThreadDocksPlacement(value as ThreadDocksPlacement);
+            });
+          }}
+        />
+      </SettingRow>
 
       <SettingRow
         anchorId="appearance.guiChatFontSize"

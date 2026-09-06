@@ -1,34 +1,22 @@
 package com.poracode.app.ui.home
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowUpward
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,55 +32,199 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.poracode.app.R
-import com.poracode.app.model.threads.ThreadCommandId
-import com.poracode.app.model.threads.ThreadLifecycleCommand
+import com.poracode.app.chat.RichPromptSegment
+import com.poracode.app.model.ThreadConfig
 import com.poracode.app.model.threads.ThreadPresentationMode
 import com.poracode.app.session.AppSession
 import com.poracode.app.session.HostPresentation
-import com.poracode.app.session.threads.ThreadOperationResult
+import com.poracode.app.session.projects.ProjectSessionRuntime
+import com.poracode.app.session.richchat.RichChatSessionRuntime
 import com.poracode.app.session.threads.ThreadSessionRuntime
+import com.poracode.app.ui.components.rememberCameraCapture
+import com.poracode.app.ui.richchat.AttachmentUiError
+import com.poracode.app.ui.richchat.RichChatMentionCatalog
+import com.poracode.app.ui.richchat.RichChatSuggestionList
+import com.poracode.app.ui.richchat.UploadedAttachment
+import com.poracode.app.ui.richchat.attachmentSaver
+import com.poracode.app.ui.richchat.promptSegmentsSaver
+import com.poracode.app.ui.richchat.uploadAttachmentForThread
 import java.util.UUID
-import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun HomeQuickComposeOverlay(
     state: AppSession.UiState,
     threads: List<HostPresentation.UnifiedThreadItem>,
     runtime: ThreadSessionRuntime,
+    richChat: RichChatSessionRuntime,
+    projectRuntime: ProjectSessionRuntime,
+    excludedProjectIds: Map<String, Set<String>>,
     onDismiss: () -> Unit,
     onStarted: (String) -> Unit,
 ) {
-    val currentItems = remember(threads, state.hostCatalog.selectedConnectionId) {
-        threads.filter { it.connectionId == state.hostCatalog.selectedConnectionId }
+    val connectionId = state.hostCatalog.selectedConnectionId
+    val currentItems = remember(threads, connectionId) {
+        threads.filter { it.connectionId == connectionId }
     }
-    val projects = remember(state.snapshot?.projects, currentItems) {
+    val projects = remember(
+        state.snapshot?.projects,
+        connectionId,
+        currentItems,
+        excludedProjectIds,
+        state.hostReplay,
+    ) {
+        val excluded = excludedProjectIds[connectionId?.value].orEmpty()
         state.snapshot?.projects.orEmpty()
-            .filter { it.disabled != true }
-            .filter { HomeThreadListPresentation.launchDefaults(it, currentItems) != null }
+            .filter { it.disabled != true && it.id !in excluded }
+            .filter { project ->
+                HomeThreadListPresentation.launchDefaults(project, currentItems) != null ||
+                    homeQuickComposeStatuses(project.location, state.hostReplay)
+                        .any { it.installed }
+            }
             .sortedBy { it.name.lowercase() }
     }
     val latestProjectId = currentItems.firstOrNull()?.project?.id
     var projectId by rememberSaveable {
         mutableStateOf(latestProjectId ?: projects.firstOrNull()?.id.orEmpty())
     }
+    val threadId = rememberSaveable { UUID.randomUUID().toString().lowercase() }
     var prompt by rememberSaveable { mutableStateOf("") }
-    var menuExpanded by remember { mutableStateOf(false) }
+    var selectedAgentKind by rememberSaveable { mutableStateOf("") }
+    var selectedPresentationWireValue by rememberSaveable {
+        mutableStateOf(ThreadPresentationMode.Gui.wireValue)
+    }
+    var selectedWorktreePath by rememberSaveable { mutableStateOf("") }
+    var configuration by remember { mutableStateOf(ThreadConfig()) }
+    var configurationSelectionKey by remember { mutableStateOf<String?>(null) }
+    var selectedSkill by remember { mutableStateOf<RichPromptSegment.Skill?>(null) }
+    var queuedMentionSegments by rememberSaveable(stateSaver = promptSegmentsSaver) {
+        mutableStateOf(emptyList<RichPromptSegment>())
+    }
+    var showingControls by remember { mutableStateOf(false) }
+    var showingWorktrees by remember { mutableStateOf(false) }
+    var showingCommands by remember { mutableStateOf(false) }
+    var createdWorktree by remember { mutableStateOf<HomeQuickComposeWorktree?>(null) }
     var failed by rememberSaveable { mutableStateOf(false) }
+    var attachments by rememberSaveable(stateSaver = attachmentSaver) {
+        mutableStateOf(emptyList<UploadedAttachment>())
+    }
+    var uploading by rememberSaveable { mutableStateOf(false) }
+    var attachmentError by rememberSaveable { mutableStateOf<AttachmentUiError?>(null) }
     val controllerState by runtime.controller.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val context = LocalContext.current
+    val attachmentLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
+        it?.let { uri ->
+            uploadAttachmentForThread(
+                uri = uri,
+                context = context,
+                runtime = richChat,
+                threadId = threadId,
+                scope = scope,
+                onStart = { uploading = true; attachmentError = null },
+                onFinish = { uploading = false },
+                onFailure = { attachmentError = it },
+                onSuccess = { attachment -> attachments += attachment },
+            )
+        }
+    }
+    val captureFromCamera = rememberCameraCapture(
+        onCaptured = { uri ->
+            uploadAttachmentForThread(
+                uri = uri,
+                context = context,
+                runtime = richChat,
+                threadId = threadId,
+                scope = scope,
+                onStart = { uploading = true; attachmentError = null },
+                onFinish = { uploading = false },
+                onFailure = { attachmentError = it },
+                onSuccess = { attachment -> attachments += attachment },
+            )
+        },
+        onUnavailable = { attachmentError = AttachmentUiError.CameraUnavailable },
+    )
     val project = projects.firstOrNull { it.id == projectId } ?: projects.firstOrNull()
     val defaults = project?.let { HomeThreadListPresentation.launchDefaults(it, currentItems) }
+    val availableModes = project?.let {
+        homeQuickComposePresentationModes(it.location, state.hostReplay)
+    }.orEmpty()
+    val selectedMode = selectedPresentationWireValue.toPresentationMode()
+    val normalizedMode = selectedMode.takeIf { it in availableModes }
+        ?: availableModes.firstOrNull()
+        ?: selectedMode
+    val agents = project?.let {
+        homeQuickComposeAgents(it.location, state.hostReplay, normalizedMode)
+    }.orEmpty()
+    val selectedAgent = agents.firstOrNull { it.kind == selectedAgentKind }
+        ?: agents.firstOrNull { it.kind == defaults?.agentKind }
+        ?: agents.firstOrNull()
+    val selectedCatalog = selectedAgent?.let { status ->
+        remember(status.identityKey, normalizedMode, configuration.model) {
+            HomeQuickComposeCatalog(status, normalizedMode, configuration)
+        }
+    }
+    val worktrees = project?.let { homeQuickComposeWorktrees(it.id, currentItems) }.orEmpty()
+    val selectedWorktree = worktrees.firstOrNull { it.path == selectedWorktreePath }
+        ?: createdWorktree?.takeIf { it.path == selectedWorktreePath }
+    val currentBranch = currentItems
+        .asSequence()
+        .filter { it.project.id == project?.id }
+        .maxByOrNull { it.thread.updatedAt }
+        ?.thread
+        ?.worktreeBranch
+    val slashCommands = selectedCatalog?.slashCommands.orEmpty()
     val busy = controllerState.active != null
+    val hasLaunchTarget = project != null && (defaults != null || selectedAgent != null)
+    val mentionThreadsForSuggestions = remember(currentItems) { currentItems.map { it.thread } }
+    val mentionSuggestions = rememberHomeQuickComposeMentionSuggestions(
+        prompt = prompt,
+        projectRuntime = projectRuntime,
+        connectionId = connectionId,
+        project = project,
+        mentionThreads = mentionThreadsForSuggestions,
+    )
 
+    LaunchedEffect(project?.id, availableModes) {
+        if (availableModes.isNotEmpty() && selectedPresentationWireValue !in availableModes.map {
+                it.wireValue
+            }) {
+            selectedPresentationWireValue = availableModes.first().wireValue
+        }
+    }
+    LaunchedEffect(project?.id) {
+        selectedAgentKind = defaults?.agentKind.orEmpty()
+        selectedWorktreePath = ""
+        createdWorktree = null
+        selectedSkill = null
+    }
+    LaunchedEffect(project?.id, selectedAgent?.kind, normalizedMode) {
+        val key = listOf(project?.id, selectedAgent?.kind ?: defaults?.agentKind, normalizedMode)
+            .joinToString("|")
+        if (configurationSelectionKey == key) return@LaunchedEffect
+        val modelSeed = configuration.model
+        val base = if (selectedAgent?.kind == defaults?.agentKind && defaults != null) {
+            defaults.config
+        } else {
+            ThreadConfig(
+                model = selectedCatalog?.models
+                    ?.firstOrNull { it.id != modelSeed }
+                    ?.id
+                    ?: modelSeed.ifBlank { "default" },
+            )
+        }
+        configuration = selectedAgent?.let {
+            HomeQuickComposeCatalog(it, normalizedMode, base).normalize(base)
+        } ?: base
+        configurationSelectionKey = key
+    }
     LaunchedEffect(project?.id) {
         if (project != null) {
             focusRequester.requestFocus()
@@ -113,7 +245,7 @@ internal fun HomeQuickComposeOverlay(
                     onClick = onDismiss,
                 ),
         )
-        Surface(
+        androidx.compose.material3.Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .imePadding()
@@ -121,80 +253,58 @@ internal fun HomeQuickComposeOverlay(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 12.dp),
             shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = 3.dp,
-            shadowElevation = 8.dp,
+            border = BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+            ),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            tonalElevation = 6.dp,
+            shadowElevation = 18.dp,
         ) {
-            if (project != null && defaults != null) {
+            if (hasLaunchTarget) {
+                val project = checkNotNull(project)
                 Column(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ExposedDropdownMenuBox(
-                            expanded = menuExpanded,
-                            onExpandedChange = { menuExpanded = it },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .menuAnchor()
-                                    .fillMaxWidth()
-                                    .clickable { menuExpanded = true }
-                                    .padding(horizontal = 4.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(7.dp),
-                            ) {
-                                Icon(
-                                    Icons.Outlined.FolderOpen,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                                Text(
-                                    project.name,
-                                    modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Icon(
-                                    Icons.Outlined.ExpandMore,
-                                    contentDescription = stringResource(R.string.home_project),
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                            ExposedDropdownMenu(
-                                expanded = menuExpanded,
-                                onDismissRequest = { menuExpanded = false },
-                            ) {
-                                projects.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = { Text(option.name) },
-                                        onClick = {
-                                            projectId = option.id
-                                            menuExpanded = false
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                Icons.Outlined.Close,
-                                contentDescription = stringResource(R.string.cancel_pair_button),
-                            )
-                        }
-                    }
+                    HomeQuickComposeHeader(onDismiss)
+                    HomeQuickComposeTargetSelectors(
+                        project = project,
+                        projects = projects,
+                        agents = agents,
+                        selectedAgent = selectedAgent,
+                        defaultAgentKind = defaults?.agentKind.orEmpty(),
+                        availableModes = availableModes,
+                        selectedMode = normalizedMode,
+                        onProjectSelected = {
+                            projectId = it
+                            selectedAgentKind = ""
+                            configurationSelectionKey = null
+                            failed = false
+                        },
+                        onAgentSelected = {
+                            selectedAgentKind = it
+                            configurationSelectionKey = null
+                            selectedSkill = null
+                        },
+                        onModeSelected = {
+                            selectedPresentationWireValue = it
+                            configurationSelectionKey = null
+                            selectedSkill = null
+                        },
+                    )
 
                     OutlinedTextField(
                         value = prompt,
-                        onValueChange = { prompt = it; failed = false },
+                        onValueChange = {
+                            prompt = it
+                            failed = false
+                            selectedSkill = selectedSkill?.takeIf { skill ->
+                                it.contains(skill.invocation)
+                            }
+                        },
                         placeholder = { Text(stringResource(R.string.home_quick_compose_prompt)) },
-                        minLines = 4,
+                        minLines = 3,
                         maxLines = 7,
                         shape = MaterialTheme.shapes.large,
                         modifier = Modifier
@@ -203,106 +313,135 @@ internal fun HomeQuickComposeOverlay(
                             .testTag("home_new_thread_prompt"),
                     )
 
-                    if (failed) {
-                        Text(
-                            stringResource(R.string.home_new_thread_failed),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
+                    if (mentionSuggestions.isNotEmpty()) {
+                        RichChatSuggestionList(
+                            options = mentionSuggestions,
+                            onSelect = { option ->
+                                option.mcpConfigKey?.let {
+                                    configuration = RichChatMentionCatalog.enableMcp(it, configuration)
+                                }
+                                if (queuedMentionSegments.none { it == option.segment }) {
+                                    queuedMentionSegments = queuedMentionSegments + option.segment
+                                }
+                                prompt = RichChatMentionCatalog.consumeTrailingMention(prompt)
+                            },
                         )
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(7.dp),
-                    ) {
-                        Text(
-                            stringResource(R.string.home_agent_value, defaults.agentKind),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                        )
-                        Text(
-                            "·",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.outline,
-                        )
-                        Text(
-                            stringResource(R.string.home_model_value, defaults.config.model),
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        val canStart = prompt.isNotBlank() && !busy && state.canSessionOperate
-                        FilledIconButton(
-                            enabled = canStart,
-                            modifier = Modifier.testTag("home_new_thread_start"),
-                            onClick = {
-                                val selectedProject = project
-                                val selectedDefaults = defaults
-                                val text = prompt.trim()
-                                if (text.isEmpty()) return@FilledIconButton
-                                val threadId = UUID.randomUUID().toString().lowercase()
-                                scope.launch {
-                                    val result = runtime.controller.execute(
-                                        ThreadLifecycleCommand.Start(
-                                            threadId = threadId,
-                                            projectId = selectedProject.id,
-                                            agentKind = selectedDefaults.agentKind,
-                                            agentInstanceId = selectedDefaults.agentInstanceId,
-                                            config = selectedDefaults.config,
-                                            prompt = text,
-                                            commandId = ThreadCommandId(UUID.randomUUID().toString()),
-                                            presentationMode = ThreadPresentationMode.Gui,
-                                            focus = true,
-                                        ),
-                                    )
-                                    when (result) {
-                                        is ThreadOperationResult.Success -> {
-                                            onDismiss()
-                                            onStarted(threadId)
-                                        }
-                                        else -> failed = true
-                                    }
-                                }
-                            },
-                        ) {
-                            if (busy) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Outlined.ArrowUpward,
-                                    contentDescription = stringResource(R.string.home_start),
-                                )
-                            }
+                    if (queuedMentionSegments.isNotEmpty()) {
+                        HomeQuickComposeMentionChips(queuedMentionSegments) {
+                            queuedMentionSegments = queuedMentionSegments - it
                         }
                     }
-                }
-            } else {
-                Row(
-                    modifier = Modifier.padding(18.dp),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Text(
-                        stringResource(R.string.home_quick_compose_unavailable),
-                        modifier = Modifier.weight(1f),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+                    if (attachments.isNotEmpty()) {
+                        HomeQuickComposeAttachmentChips(attachments) { attachments -= it }
+                    }
+
+                    HomeQuickComposeContextChips(
+                        worktreeBranch = selectedWorktree?.branch,
+                        showControls = selectedCatalog != null,
+                        showCommands = slashCommands.isNotEmpty(),
+                        onPickWorktree = { showingWorktrees = true },
+                        onOpenControls = { showingControls = true },
+                        onOpenCommands = { showingCommands = true },
                     )
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            Icons.Outlined.Close,
-                            contentDescription = stringResource(R.string.cancel_pair_button),
+
+                    selectedSkill?.let { skill ->
+                        Text(
+                            skill.invocation,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
+                    HomeQuickComposeErrors(failed, attachmentError)
+
+                    HomeQuickComposeLaunchBar(
+                        agent = selectedAgent,
+                        defaultAgentKind = defaults?.agentKind.orEmpty(),
+                        model = configuration.model,
+                        canOperate = state.canSessionOperate,
+                        busy = busy,
+                        uploading = uploading,
+                        canStart = prompt.isNotBlank() && !busy && !uploading &&
+                            state.canSessionOperate,
+                        onCaptureFromCamera = captureFromCamera,
+                        onPickAttachment = { attachmentLauncher.launch(arrayOf("*/*")) },
+                        onStart = {
+                            launchHomeQuickCompose(
+                                scope = scope,
+                                runtime = runtime,
+                                project = project,
+                                threadId = threadId,
+                                defaults = defaults,
+                                selectedAgent = selectedAgent,
+                                catalog = selectedCatalog,
+                                configuration = configuration,
+                                prompt = prompt,
+                                presentationMode = normalizedMode,
+                                worktree = selectedWorktree,
+                                skill = selectedSkill,
+                                mentionSegments = queuedMentionSegments,
+                                attachments = attachments,
+                                onFailure = { failed = true },
+                                onStarted = {
+                                    onDismiss()
+                                    onStarted(it)
+                                },
+                            )
+                        },
+                    )
                 }
+            } else {
+                Box(Modifier.padding(18.dp)) { HomeQuickComposeUnavailable(onDismiss) }
             }
         }
     }
+
+    HomeQuickComposeSheetHost(
+        showControls = showingControls,
+        showWorktrees = showingWorktrees,
+        showCommands = showingCommands,
+        catalog = selectedCatalog,
+        configuration = configuration,
+        worktrees = (worktrees + listOfNotNull(createdWorktree)).distinctBy { it.path },
+        currentBranch = currentBranch,
+        selectedWorktree = selectedWorktree,
+        project = project,
+        connectionId = connectionId,
+        projectRuntime = projectRuntime,
+        slashCommands = slashCommands,
+        enabled = state.canSessionOperate && !busy,
+        onDismissControls = { showingControls = false },
+        onDismissWorktrees = { showingWorktrees = false },
+        onDismissCommands = { showingCommands = false },
+        onSaveConfiguration = {
+            configuration = it
+            showingControls = false
+        },
+        onSelectWorktree = {
+            selectedWorktreePath = it.path.orEmpty()
+            showingWorktrees = false
+        },
+        onWorktreeFailure = { failed = true },
+        onWorktreeCreated = {
+            createdWorktree = it
+            selectedWorktreePath = it.path.orEmpty()
+        },
+        onCommandSelected = { command ->
+            prompt = if (prompt.isBlank()) {
+                "${command.invocation} "
+            } else {
+                "${prompt.trimEnd()} ${command.invocation} "
+            }
+            selectedSkill = command.skill
+            showingCommands = false
+            failed = false
+        },
+    )
+}
+
+private fun String.toPresentationMode(): ThreadPresentationMode = when (this) {
+    ThreadPresentationMode.Terminal.wireValue -> ThreadPresentationMode.Terminal
+    else -> ThreadPresentationMode.Gui
 }

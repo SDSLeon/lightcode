@@ -37,7 +37,7 @@ describe("read_thread", () => {
           id: "assistant-1",
           type: "assistant_message",
           state: "completed",
-          streams: { text: "x".repeat(2_001) },
+          streams: { assistant_text: "x".repeat(2_001) },
         },
       ],
     });
@@ -77,7 +77,7 @@ describe("read_thread", () => {
           id: "assistant-1",
           type: "assistant_message",
           state: "completed",
-          streams: { text: "x".repeat(3_000) },
+          streams: { assistant_text: "x".repeat(3_000) },
         },
       ],
     });
@@ -95,5 +95,92 @@ describe("read_thread", () => {
       state: "completed",
       text: "x".repeat(3_000),
     });
+  });
+
+  it("returns display text, not streamed text a display hook replaced or suppressed", () => {
+    getConversationPage.mockReturnValue({
+      nextCursor: null,
+      items: [
+        {
+          id: "rewritten",
+          type: "assistant_message",
+          state: "completed",
+          payload: {
+            content: [{ kind: "text", text: "Rewritten for display" }],
+            displayAuthoritative: true,
+          },
+          streams: { assistant_text: "Original streamed text" },
+        },
+        {
+          id: "suppressed",
+          type: "assistant_message",
+          state: "completed",
+          payload: { content: [{ kind: "text", text: "" }], displayAuthoritative: true },
+          streams: { assistant_text: "Suppressed secret" },
+        },
+      ],
+    });
+    const ctx = {
+      getThread: () => ({ id: "source" }) as Thread,
+    } as unknown as AppControlsToolContext;
+
+    const result = threadTools.handlers.read_thread!({ threadId: "source" }, ctx) as {
+      items: Array<{ text?: string }>;
+    };
+    expect(result.items[0]!.text).toBe("Rewritten for display");
+    expect(result.items[1]!.text).toBeUndefined();
+  });
+
+  it("keeps assistant image markers when display text is rewritten or suppressed", () => {
+    getConversationPage.mockReturnValue({
+      nextCursor: null,
+      items: [
+        {
+          id: "rewritten",
+          type: "assistant_message",
+          state: "completed",
+          payload: {
+            content: [
+              { kind: "text", text: "Rewritten" },
+              {
+                kind: "image",
+                mimeType: "image/png",
+                dataUrl: "data:image/png;base64,eA==",
+                name: "result.png",
+              },
+            ],
+            displayAuthoritative: true,
+          },
+          streams: { assistant_text: "Original" },
+        },
+        {
+          id: "suppressed",
+          type: "assistant_message",
+          state: "completed",
+          payload: {
+            content: [
+              { kind: "text", text: "" },
+              {
+                kind: "image",
+                mimeType: "image/png",
+                dataUrl: "data:image/png;base64,eA==",
+                name: "kept.png",
+              },
+            ],
+            displayAuthoritative: true,
+          },
+          streams: { assistant_text: "Suppressed secret" },
+        },
+      ],
+    });
+    const ctx = {
+      getThread: () => ({ id: "source" }) as Thread,
+    } as unknown as AppControlsToolContext;
+
+    const result = threadTools.handlers.read_thread!({ threadId: "source" }, ctx) as {
+      items: Array<{ text?: string }>;
+    };
+    expect(result.items[0]!.text).toBe("Rewritten\n[image: result.png]");
+    expect(result.items[1]!.text).toBe("[image: kept.png]");
   });
 });

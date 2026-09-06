@@ -3,6 +3,8 @@ package com.poracode.app.ui.projects
 import com.poracode.app.model.McpServer
 import com.poracode.app.model.ProjectIdentity
 import com.poracode.app.model.RemoteProject
+import com.poracode.app.model.HOME_PROJECT_ID
+import com.poracode.app.session.projects.CatalogProject
 import com.poracode.app.session.projects.HostProjectCatalog
 import com.poracode.app.session.projects.ProjectCapability
 import com.poracode.app.session.projects.ProjectCatalogState
@@ -41,6 +43,16 @@ fun ProjectCatalogState.currentCatalog(lease: ProjectHostLease?): HostProjectCat
     if (lease == null) return null
     return catalogs[lease.connectionId]?.takeIf { it.session == lease.key }
 }
+
+/** Exact live catalog, or the last host catalog only while that host is unavailable. */
+fun ProjectCatalogState.displayCatalog(lease: ProjectHostLease?): HostProjectCatalog? {
+    val current = currentCatalog(lease)
+    if (current != null || lease == null || (lease.online && lease.ready)) return current
+    return catalogs[lease.connectionId]
+}
+
+fun List<CatalogProject>.manageableProjects(): List<CatalogProject> =
+    filterNot { it.identity.projectId == HOME_PROJECT_ID }
 
 fun HostProjectCatalog?.project(projectId: String?): RemoteProject? {
     if (projectId == null) return null

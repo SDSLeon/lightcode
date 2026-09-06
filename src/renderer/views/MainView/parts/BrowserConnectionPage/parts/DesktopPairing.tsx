@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Trans } from "@lingui/react/macro";
 import { BrandWordmark } from "@/renderer/components/common/BrandWordmark";
 import { WelcomeAppIcon } from "@/renderer/components/common/WelcomeAppIcon";
@@ -27,9 +27,10 @@ export function DesktopPairing({ pairing }: { readonly pairing: Pairing }) {
   // re-renders — typing in the URL field — can't truncate the intro mid-flight.
   const [intro, setIntro] = useState(true);
 
-  useEffect(() => {
-    if (pairing.busy) setIntro(false);
-  }, [pairing.busy]);
+  // Latch during render: once a handshake takes over the icon slot the intro
+  // is spent, so returning to the form after a failed attempt shows the icon
+  // already landed instead of replaying the reveal.
+  if (pairing.busy && intro) setIntro(false);
 
   return (
     <WelcomeBackdrop className="min-h-full">

@@ -1,4 +1,4 @@
-import type { CanonicalItemType } from "@/shared/contracts";
+import type { CanonicalItemType, ProjectLocation } from "@/shared/contracts";
 
 /**
  * Live progress state we track for an OpenCode subagent (child session). The
@@ -23,6 +23,12 @@ export interface OpenCodeSubAgentSessionState {
 
 export interface OpenCodeMapperState {
   threadId: string;
+  /**
+   * Project location for translating agent-reported paths (FilePart URLs).
+   * Set once by the session; absent until then, in which case file refs
+   * resolve without WSL translation.
+   */
+  location?: ProjectLocation;
   /** Map AssistantMessage.id → canonical assistant item id. */
   assistantItems: Map<string, string>;
   /** Map UserMessage.id → canonical user item id. */
@@ -35,6 +41,8 @@ export interface OpenCodeMapperState {
   reasoningItems: Map<string, { itemId: string; messageID: string }>;
   /** Map tool Part.id → { itemId, itemType }. */
   toolItems: Map<string, { itemId: string; itemType: CanonicalItemType }>;
+  /** Map file Part.id → { itemId, itemType, parent messageID }. */
+  fileItems: Map<string, { itemId: string; itemType: CanonicalItemType; messageID: string }>;
   /**
    * Map Part.id → its type, set by `message.part.updated`. Used to route
    * incoming `message.part.delta` events: OpenCode emits `field: "text"` for
@@ -94,6 +102,18 @@ export interface OpenCodeMapperState {
   usageSampledScopes: Set<string>;
   /** Assistant message ids that already emitted `usage.spent` (exact-once). */
   usageSpentMessages: Set<string>;
+  /** Assistant message ids whose `info.error` was already surfaced (exact-once). */
+  errorEmittedMessages: Set<string>;
+  /**
+   * Retry status key (`${attempt}:${message}`) last emitted as an error row.
+   * Cleared when the session transitions back to busy or idle.
+   */
+  lastEmittedRetryKey: string | undefined;
+  /**
+   * Canonical item id for the session-level native todo list (`todo.updated`
+   * events). One row per session: started on first sight, updated after.
+   */
+  nativeTodoItemId: string | undefined;
 }
 
 export function createOpenCodeMapperState(threadId: string): OpenCodeMapperState {
@@ -105,6 +125,7 @@ export function createOpenCodeMapperState(threadId: string): OpenCodeMapperState
     userMessageTextParts: new Map(),
     reasoningItems: new Map(),
     toolItems: new Map(),
+    fileItems: new Map(),
     partTypes: new Map(),
     emittedText: new Map(),
     messageRoles: new Map(),
@@ -119,6 +140,9 @@ export function createOpenCodeMapperState(threadId: string): OpenCodeMapperState
     usageScopeFresh: false,
     usageSampledScopes: new Set(),
     usageSpentMessages: new Set(),
+    errorEmittedMessages: new Set(),
+    lastEmittedRetryKey: undefined,
+    nativeTodoItemId: undefined,
   };
 }
 
@@ -140,7 +164,21 @@ export function setOpenCodeMainSessionId(
     if (state.usageScopeId !== null) state.usageEpoch += 1;
     state.usageScopeId = sessionId;
     state.usageScopeFresh = options?.fresh === true;
+    // A new provider session is a new incident scope — an identical retry
+    // message must not be suppressed by the previous session's dedup key.
+    state.lastEmittedRetryKey = undefined;
   }
+}
+
+/**
+ * Record the project location for path translation (FilePart URLs, WSL UNC).
+ * Safe to call repeatedly — last write wins, values are equivalent.
+ */
+export function setOpenCodeMapperLocation(
+  state: OpenCodeMapperState,
+  location: ProjectLocation,
+): void {
+  state.location = location;
 }
 
 /**

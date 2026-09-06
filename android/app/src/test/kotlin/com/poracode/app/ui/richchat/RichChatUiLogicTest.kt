@@ -1,6 +1,9 @@
 package com.poracode.app.ui.richchat
 
 import com.poracode.app.chat.RichItemState
+import com.poracode.app.chat.RichOpenRequest
+import com.poracode.app.chat.RichRequestPayload
+import com.poracode.app.chat.RichRequestType
 import com.poracode.app.chat.RichRuntimeItem
 import com.poracode.app.chat.RichWireRequestId
 import com.poracode.app.model.PosixProjectLocation
@@ -101,6 +104,30 @@ class RichChatUiLogicTest {
         assertEquals(1, images.size)
         assertTrue(images.single() is RichImageSource.Runtime)
         assertNotNull((images.single() as RichImageSource.Runtime).ref)
+    }
+
+    @Test
+    fun composerDenyResolutionDeclinesApprovalBeforeFollowUp() {
+        val request = RichOpenRequest(
+            id = RichWireRequestId.Text("request-a"),
+            threadKey = com.poracode.app.chat.RichThreadKey(
+                com.poracode.app.model.ClientConnectionId("30000000-0000-4000-8000-000000000003"),
+                "thread-a",
+            ),
+            type = RichRequestType.TOOL_CALL_APPROVAL,
+            payload = RichRequestPayload(
+                summary = "Run command?",
+                options = listOf(
+                    com.poracode.app.chat.RichRequestOption("allow", "Allow"),
+                    com.poracode.app.chat.RichRequestOption("reject", "Reject"),
+                ),
+            ),
+            receivedAtEpochMs = 0L,
+        )
+
+        val resolution = RichChatUiLogic.composerDenyResolution(request)!!
+        assertEquals("reject", (resolution.response as JsonObject)["optionId"]?.let(::text))
+        assertEquals("follow up", RichChatUiLogic.composerPrompt(" follow up ", emptyList()))
     }
 
     private fun goal(objective: String, status: String, actions: List<String>) = RichRuntimeItem(

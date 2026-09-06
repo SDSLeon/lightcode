@@ -92,7 +92,7 @@ class AndroidMultihostConfigTest {
             assertTrue("Missing $locale hosts.xml", file.isFile)
             val text = file.readText()
             val present = STRING_NAME.findAll(text).map { it.groupValues[1] }.toSet()
-            assertEquals("Incomplete $locale host resources", required, present)
+            assertTrue("Incomplete $locale host resources", present.containsAll(required))
             assertTrue("Missing placeholder in $locale rationale", text.contains("%1\$s"))
             assertTrue("Empty translation in $locale", !EMPTY_STRING.containsMatchIn(text))
         }

@@ -116,6 +116,28 @@ function annotatePortableTransforms(
   }
 }
 
+/**
+ * Zod 4.5 spells a bare union as `type: [...]`; the v3 canonical form keeps
+ * the historical `anyOf` branches instead. Native emitters only build precise
+ * union codecs from `oneOf`/`anyOf` (a `type` array degrades to a generic
+ * JSON fallback), so normalize the spelling here to keep codegen stable
+ * across Zod upgrades. Sibling keys (descriptions, defaults, annotations)
+ * stay alongside the branches, matching the historical emission.
+ */
+function normalizeUnionSpelling(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(normalizeUnionSpelling);
+  if (!value || typeof value !== "object") return value;
+  const next: Record<string, unknown> = {};
+  for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+    if (key === "type" && Array.isArray(nested) && nested.length > 1) {
+      next["anyOf"] = nested.map((type) => ({ type }));
+    } else {
+      next[key] = normalizeUnionSpelling(nested);
+    }
+  }
+  return next;
+}
+
 export function zodToJsonSchema(schema: z.ZodType, io: "input" | "output"): unknown {
   if (schema === omittedResultSchema) {
     return { ...OMITTED_RESULT_JSON_SCHEMA };
@@ -141,7 +163,7 @@ export function zodToJsonSchema(schema: z.ZodType, io: "input" | "output"): unkn
       if (transforms.length > 0) json["x-poracode-transforms"] = transforms;
     },
   });
-  const processed = raw as Record<string, unknown>;
+  const processed = normalizeUnionSpelling(raw) as Record<string, unknown>;
   annotatePortableTransforms(schema, processed, processed);
   processed.$schema = REMOTE_JSON_SCHEMA_DIALECT;
   return sortRecord(processed);

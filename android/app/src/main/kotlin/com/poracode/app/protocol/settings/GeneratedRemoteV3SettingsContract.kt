@@ -6,6 +6,11 @@ import com.poracode.remote.v3.generated.RemoteContractMetadata
 import com.poracode.remote.v3.generated.RemoteRootCodec
 import com.poracode.remote.v3.generated.RemoteRootCodecs
 import com.poracode.remote.v3.generated.routeU2EAgentU2DStatusesU2EResponse
+import com.poracode.remote.v3.generated.routeU2EMcpU2DSettingsU2DCommandU2ERequest
+import com.poracode.remote.v3.generated.routeU2EMcpU2DSettingsU2DCommandU2EResponse
+import com.poracode.remote.v3.generated.routeU2EMcpU2DSettingsU2DOperationU2ERequest
+import com.poracode.remote.v3.generated.routeU2EMcpU2DSettingsU2DOperationU2EResponse
+import com.poracode.remote.v3.generated.routeU2EMcpU2DSettingsU2DReadU2EResponse
 import com.poracode.remote.v3.generated.routeU2EProfileU2DCoreU2DStatsU2ERequest
 import com.poracode.remote.v3.generated.routeU2EProfileU2DCoreU2DStatsU2EResponse
 import com.poracode.remote.v3.generated.routeU2EProfileU2DDevicesU2EResponse
@@ -29,6 +34,9 @@ enum class SettingsRouteId(val wireId: String) {
     ProfileIdentity("profile-identity"),
     SettingsRead("settings-read"),
     SettingsWrite("settings-write"),
+    McpSettingsRead("mcp-settings-read"),
+    McpSettingsCommand("mcp-settings-command"),
+    McpSettingsOperation("mcp-settings-operation"),
 }
 
 data class SettingsRoute(
@@ -113,6 +121,31 @@ object GeneratedRemoteV3SettingsContract {
 
     fun settingsWriteResponse(raw: String): JsonObject = canonicalObject(
         RemoteRootCodecs.routeU2ESettingsU2DWriteU2EResponse,
+        raw,
+    )
+
+    fun mcpSettingsReadResponse(raw: String): JsonObject = canonicalObject(
+        RemoteRootCodecs.routeU2EMcpU2DSettingsU2DReadU2EResponse,
+        raw,
+    )
+
+    fun mcpSettingsCommandRequest(raw: String): String = canonical(
+        RemoteRootCodecs.routeU2EMcpU2DSettingsU2DCommandU2ERequest,
+        raw,
+    )
+
+    fun mcpSettingsCommandResponse(raw: String): JsonObject = canonicalObject(
+        RemoteRootCodecs.routeU2EMcpU2DSettingsU2DCommandU2EResponse,
+        raw,
+    )
+
+    fun mcpSettingsOperationRequest(raw: String): String = canonical(
+        RemoteRootCodecs.routeU2EMcpU2DSettingsU2DOperationU2ERequest,
+        raw,
+    )
+
+    fun mcpSettingsOperationResponse(raw: String): JsonObject = canonicalObject(
+        RemoteRootCodecs.routeU2EMcpU2DSettingsU2DOperationU2EResponse,
         raw,
     )
 

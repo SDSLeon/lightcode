@@ -51,6 +51,14 @@ rl.on("line", (line) => {
       send({ type: "extension_ui_request", id: "dlg-1", method: "select", title: "Pick one", options: ["alpha", "beta"] });
       return;
     }
+    if (text.includes("ECHO")) {
+      send({ type: "agent_start" });
+      send({ type: "message_start" });
+      send({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "SAW:" + text } });
+      send({ type: "message_end" });
+      send({ type: "agent_settled" });
+      return;
+    }
     if (text.includes("FAIL")) {
       send({ type: "agent_start" });
       send({ type: "message_update", assistantMessageEvent: { type: "error", error: { errorMessage: "MOCK_PROVIDER_ERROR" } } });
@@ -87,6 +95,10 @@ rl.on("line", (line) => {
     return;
   }
   if (type === "abort" || type === "set_model" || type === "set_thinking_level" || type === "steer") {
+    if (type === "steer" && req.message === "REJECT_STEER") {
+      send({ type: "response", id, command: type, success: false, error: "MOCK_STEER_REJECTED" });
+      return;
+    }
     send({ type: "response", id, command: type, success: true });
     return;
   }
@@ -204,6 +216,25 @@ describe("PiRpcSession (mock pi --mode rpc)", () => {
     await disposeSettledSession(session, events, updates);
   });
 
+  it("rejects steering when the provider refuses the correction", async () => {
+    const { session, events, updates } = await createSession();
+    const config = { model: "mock/model", effort: "off" };
+    const turn = session.startTurn("DIALOG", config);
+    const request = (await waitFor(events, (event) => event.type === "request.opened")) as Extract<
+      RuntimeEvent,
+      { type: "request.opened" }
+    >;
+    try {
+      await expect(session.steerTurn("REJECT_STEER", config)).rejects.toThrow(
+        "MOCK_STEER_REJECTED",
+      );
+    } finally {
+      await session.resolveServerRequest(request.requestId, { optionId: "alpha" });
+      await turn;
+      await disposeSettledSession(session, events, updates);
+    }
+  });
+
   it("publishes cumulative usage.spent from get_session_stats tokens.total", async () => {
     const { session, events, updates } = await createSession();
     await session.startTurn?.("hello", { model: "mock/model", effort: "off" });
@@ -224,6 +255,30 @@ describe("PiRpcSession (mock pi --mode rpc)", () => {
         model: "mock/model",
       },
     });
+    await disposeSettledSession(session, events, updates);
+  });
+
+  it("sends inline instructions to pi without painting them into the user's message", async () => {
+    const { session, events, updates } = await createSession();
+    await session.startTurn?.("ECHO please", { model: "mock/model", effort: "off" }, undefined, {
+      userMessageItemId: "user-1",
+      inlineInstructions: "[provider handoff] read_thread first",
+    });
+
+    const seen = events
+      .filter(
+        (e): e is Extract<RuntimeEvent, { type: "content.delta" }> =>
+          e.type === "content.delta" && e.stream === "assistant_text",
+      )
+      .map((e) => e.delta)
+      .join("");
+    expect(seen).toBe("SAW:ECHO please\n\n[provider handoff] read_thread first");
+    // The painted user_message stays the user's own text.
+    const userMessage = events.find(
+      (event) => event.type === "item.started" && event.itemType === "user_message",
+    );
+    expect(JSON.stringify(userMessage)).toContain("ECHO please");
+    expect(JSON.stringify(userMessage)).not.toContain("provider handoff");
     await disposeSettledSession(session, events, updates);
   });
 

@@ -167,6 +167,69 @@ native apps parse verified links and the `poracode://pair` development fallback,
 validate the endpoint before replacing an existing host, and show a sanitized
 host during confirmation.
 
+- **Clone RCE (high, security).** `applyRemoteProjectCommand` now validates a
+  clone `url` against an allowlist of safe transports (https/http/ssh/git/ftp(s)
+  - scp-style `user@host:path`) and rejects git remote-helper transports
+    (`ext::` runs an arbitrary shell command), `file:`, and leading-`-` argument
+    injection — closing an RCE reachable with only the `projects:manage` scope.
+- **Relay serverId hijack (high, security).** The relay now keeps a durable
+  `serverId → secret` binding independent of the live control socket (TTL-based
+  reclamation), so an attacker who knows a public serverId can no longer claim
+  it — and intercept forwarded bearer tokens — during a host's brief
+  disconnect.
+- **Absolute-file read scope (high, security).** `readAbsoluteFile` moved from
+  `session:read` to `projects:manage` (matching `browseHostDirectory`), so a
+  minimal read token can no longer read `~/.ssh/id_rsa` etc. off the host.
+- **Rate-limit key behind relay (medium, security).** The pairing rate limiter
+  keyed on `remoteAddress`, which is always loopback behind the relay; the relay
+  host adapter now forwards a per-visitor `x-forwarded-for` and the server keys
+  the bucket on it for loopback hops, restoring per-client throttling.
+- **Headless data-dir lock + host binding (high, stability/bug).** The headless
+  CLI takes an exclusive `server.lock` (stale-pid reclaim) so it can't co-open
+  the desktop's live data dir with a mismatched secret key; the relay adapter's
+  local proxy base is derived from the actual bind host (only `127.0.0.1` for
+  wildcard binds), fixing ECONNREFUSED when bound to a Tailscale/VPN IP. SQLite
+  uses its package-bundled N-API binary, independent of the launch directory.
+- **Desktop-as-client event scoping (high, bug).** The open-remote-thread socket
+  now filters events before dispatch: desktop-global events (agent statuses, git
+  summaries) are dropped and runtime batches are scoped to the open thread, so a
+  remote server can no longer clobber the local desktop's detected-agent list or
+  accumulate unrelated threads' runtime items. Store refreshes are per-desktop
+  debounced + ordered (stale snapshots ignored, `snapshotSeq` clamped with
+  `Math.max`), `pairServer` starts its event stream directly, `sendRemotePrompt`
+  uses the latest thread config, and the sidebar/overlay remote actions catch
+  their own rejections (a routine offline server no longer triggers the global
+  crash screen).
+- **PWA state-layer correctness (high→low).** A late `refresh()` from a
+  previously-active desktop can no longer clobber a just-switched session; a
+  failed pair no longer sticks connection in `pairing`; `openThread` no longer
+  destructively restarts a live run from a stale cached status; forgetting a
+  non-active desktop no longer wipes the active session; a client-side WS
+  health-ping detects half-open sockets; event-driven refreshes no longer
+  re-download the whole selected-thread history (or agent-statuses/settings) on
+  every unrelated thread's event; the snapshot guard accepts a legitimately
+  shrunk server transcript; queued runtime deltas flush before a snapshot
+  replace (no duplicated text); and orphaned Dexie thread-snapshot rows are
+  pruned.
+- **PWA view fixes.** One-tap "Remove project" now confirms before cascade-
+  deleting threads; per-thread "Delete Worktree" includes sibling threads that
+  share the worktree; `TerminalView` remounts on target change (no stale
+  PTY/cwd); a stale `/thread/:id` deep link no longer shows an unrelated thread's
+  header/actions; the always-empty "Archived Threads" section states honestly
+  that archived threads are managed on the desktop.
+- **Protocol/client robustness.** Server-advertised scopes parse leniently
+  (a newer server's unknown scope no longer throws and burns the one-time
+  pairing credential); protocol-version mismatch and response-schema failures
+  surface as typed, readable `RemoteClientError`s instead of raw ZodError JSON;
+  long-running git ops (clone/push/PR) get a 5-minute deadline instead of the
+  flat 60s; `lastSeenSeq=0` is sent (replay-from-start) instead of omitted; a
+  restarted server whose `seq` regressed below a reconnecting client's cursor
+  now sends `resync-required`; only remotely-consumed supervisor event types are
+  buffered/broadcast (chatty `lsp-message`/`git-changed`/`project-tree-changed`
+  are dropped); the `startMirrorSession` CDP listener leak on a failed
+  screencast start is cleaned up; and desktop-as-client sessions register with a
+  `desktop` device type.
+
 Production app/universal links require matching association documents at
 `https://poracode.com/.well-known/`. Declarations in the native manifests and
 generated JSON files are necessary but are not proof that the production origin
@@ -179,6 +242,16 @@ The hosted React client remains a supported, separate surface.
 worker make it installable. Hashed assets are cache-first, navigations are
 network-first with a cached shell fallback, and cross-origin remote-host HTTP
 and WebSocket traffic is not intercepted.
+
+- **Connectivity (now):** direct connection remains the default (LAN / VPN /
+  Tailscale), and the self-hostable relay transport is available for
+  cross-network deployments. The managed cloud subscription layer is outside
+  this repo and can sit on top of the relay protocol.
+- **Headless runtime:** plain-Node CLI. The composition root is runtime-agnostic;
+  packaging the N-API prebuilds of `better-sqlite3` / `node-pty` lets Node and
+  Electron use the same native packages.
+- **Source of truth (headless):** the SQLite DB. No renderer, so
+  `dispatchThreadCommand` is absent and the DB-path handlers apply.
 
 `app.poracode.com/` is the stable PWA origin and
 `app-nightly.poracode.com/` is the nightly origin. Legacy `/app`, `/desktop`,
@@ -241,3 +314,19 @@ cleanup; reconnect/replay/resync; minimum/current OS lifecycle and accessibility
 a real PTY; and a real structured-provider/ACP turn. Static, unit, schema, mock,
 and host-wire tests establish important contracts but do not replace those
 client proofs.
+
+- **Native SQLite binding:** better-sqlite3 13 bundles N-API prebuilds shared
+  by Node and Electron. Both desktop and headless startup use the package's
+  platform/architecture selection. Old `dist/server-native` binaries are ignored
+  automatically so an upgrade cannot load a previous-generation SQLite addon.
+  - `pnpm run prepare:server-native` copies the current N-API prebuild into
+    `dist/server-native/better_sqlite3.node` for callers that need a standalone file.
+  - Operators can explicitly select a compatible SQLite 13 binary with
+    `PORACODE_BETTER_SQLITE3_NATIVE_BINDING`.
+
+- **HTTP-server boot is independent of native modules.** `RemoteAccessServer`
+  binds and serves even if the supervisor (which needs `node-pty`) is degraded;
+  `createHeadlessRemoteHost.test.ts` proves a real ephemeral-port bind with the
+  DB stubbed.
+- `wsl-helpers` resolution mirrors `main.ts` (packaged vs. dev). On non-Windows
+  servers WSL is irrelevant; the path is still passed for parity.

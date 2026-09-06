@@ -25,6 +25,7 @@ data class SettingsIntegrationsCallbacks(
     val onMarketplaceSearch: (MarketplaceRequest) -> Unit,
     val onInstallSkill: (MarketplaceInstallRequest) -> Unit,
     val onDiscoverMcp: (McpDiscoveryRequest) -> Unit,
+    val onImportMcp: (SkillOwner, McpServer) -> Unit,
     val onProbeMcp: (SkillOwner, McpServer) -> Unit,
     val onBeginOauth: (SkillOwner, McpServer) -> Unit,
     val onLaunchOauth: (SkillOwner) -> String?,

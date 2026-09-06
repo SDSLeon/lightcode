@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">Dừng phản chiếu</string>
     <string name="browser_mirror_empty">Không có thẻ trình duyệt nào đang mở.</string>
     <string name="browser_mirror_stopped">Phản chiếu trình duyệt đã dừng.</string>
+    <string name="browser_mirror_move_left">Di chuyển sang trái</string>
+    <string name="browser_mirror_move_right">Di chuyển sang phải</string>
+    <string name="browser_mirror_privacy_notice">Các trang được phản chiếu có thể hiển thị nội dung cá nhân. Hình ảnh chỉ lưu trên thiết bị này và sẽ bị xóa khi bạn rời khỏi màn hình này.</string>
 </resources>

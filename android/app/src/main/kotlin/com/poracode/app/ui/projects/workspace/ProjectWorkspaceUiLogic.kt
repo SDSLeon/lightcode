@@ -51,8 +51,9 @@ fun projectWorkspaceActions(
 ): ProjectWorkspaceActions = ProjectWorkspaceActions(
     canBrowse = access.canRead && !entry.loadingTree,
     canSearch = access.canRead && !entry.searching,
-    canOpenFile = access.canRead && !entry.loadingFile && !entry.savingFile,
+    canOpenFile = access.canRead && !entry.loadingFile && !entry.savingFile && !entry.mutatingEntry,
     canSaveFile = access.canWrite && dirty && !entry.loadingFile && !entry.savingFile &&
+        !entry.mutatingEntry && !entry.mutationUncertain &&
         entry.openFile?.status == ProjectFileReadStatus.Ready,
     canRefreshGit = access.canRead && !entry.loadingGit,
     canLoadDiff = access.canRead && !entry.loadingGit && !diffLoading,
@@ -125,3 +126,12 @@ fun ProjectOperationFailure?.isAmbiguousSaveFailure(): Boolean =
     (this as? ProjectOperationFailure.Remote)?.requestMayHaveCommitted == true
 
 const val MAX_RENDERED_DIFF_LINES = 10_000
+
+private val MARKDOWN_EXTENSIONS = setOf("md", "mdx", "markdown", "mdown")
+
+/** Matches iOS/PWA: only these extensions get the Markdown preview toggle in the file editor. */
+fun isMarkdownPath(path: String): Boolean {
+    val dot = path.lastIndexOf('.')
+    if (dot < 0 || dot == path.length - 1) return false
+    return path.substring(dot + 1).lowercase() in MARKDOWN_EXTENSIONS
+}

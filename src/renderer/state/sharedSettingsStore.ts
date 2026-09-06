@@ -4,8 +4,11 @@ import {
   defaultSharedSettings,
   normalizeSidebarShortcutOrder,
   normalizeSharedSettings,
+  normalizeThreadDocksOrder,
   WINDOWS_SHELL_ARGUMENTS_MAX,
   type CliPickerTarget,
+  type ThreadDocksPlacement,
+  type ThreadDockKind,
   type PreventSleep,
   type ProviderModelPreference,
   type SidebarShortcutId,
@@ -106,6 +109,8 @@ interface SharedSettingsState extends SharedSettings {
   ) => void;
   setCollapseTerminalComposer: (value: boolean) => void;
   setCliPickerTarget: (value: CliPickerTarget) => void;
+  setThreadDocksPlacement: (value: ThreadDocksPlacement) => void;
+  setThreadDocksOrder: (order: ThreadDockKind[]) => void;
   setStaleThreadUnloadMinutes: (value: number) => void;
   setAutoArchiveDoneAfterDays: (value: number) => void;
   setScrollSpeed: (value: number) => void;
@@ -150,8 +155,8 @@ interface SharedSettingsState extends SharedSettings {
   installPlugin: (plugin: LoadedPlugin) => void;
   uninstallPlugin: (plugin: LoadedPlugin) => void;
   setPluginEnabled: (plugin: LoadedPlugin, enabled: boolean) => void;
-  setPluginSkillEnabled: (pluginName: string, folder: string, enabled: boolean) => void;
-  setPluginMcpServerEnabled: (pluginName: string, serverName: string, enabled: boolean) => void;
+  setPluginSkillEnabled: (plugin: LoadedPlugin, folder: string, enabled: boolean) => void;
+  setPluginMcpServerEnabled: (plugin: LoadedPlugin, serverName: string, enabled: boolean) => void;
   setBrowserSetting: <K extends keyof SharedSettings["browser"]>(
     key: K,
     value: SharedSettings["browser"][K],
@@ -551,6 +556,18 @@ export const useSharedSettings = create<SharedSettingsState>()((set, get) => ({
     set({ cliPickerTarget });
     persistSettings(selectSharedSettings(get()));
   },
+  setThreadDocksPlacement: (threadDocksPlacement) => {
+    set({ threadDocksPlacement });
+    persistSettings(selectSharedSettings(get()));
+  },
+  setThreadDocksOrder: (order) => {
+    const next = normalizeThreadDocksOrder(order);
+    const current = get().threadDocksOrder;
+    if (current.length === next.length && current.every((kind, index) => kind === next[index]))
+      return;
+    set({ threadDocksOrder: next });
+    persistSettings(selectSharedSettings(get()));
+  },
   setStaleThreadUnloadMinutes: (staleThreadUnloadMinutes) => {
     set({ staleThreadUnloadMinutes });
     persistSettings(selectSharedSettings(get()));
@@ -747,19 +764,15 @@ export const useSharedSettings = create<SharedSettingsState>()((set, get) => ({
     persistSettings(selectSharedSettings(get()));
   },
   setPluginEnabled: (plugin, enabled) => {
-    const installedPlugins = updateInstalledPluginEnabled(
-      get().installedPlugins,
-      plugin.name,
-      enabled,
-    );
+    const installedPlugins = updateInstalledPluginEnabled(get().installedPlugins, plugin, enabled);
     if (installedPlugins === get().installedPlugins) return;
     set({ installedPlugins });
     persistSettings(selectSharedSettings(get()));
   },
-  setPluginSkillEnabled: (pluginName, folder, enabled) => {
+  setPluginSkillEnabled: (plugin, folder, enabled) => {
     const installedPlugins = updatePluginSkillEnabled(
       get().installedPlugins,
-      pluginName,
+      plugin,
       folder,
       enabled,
     );
@@ -767,10 +780,10 @@ export const useSharedSettings = create<SharedSettingsState>()((set, get) => ({
     set({ installedPlugins });
     persistSettings(selectSharedSettings(get()));
   },
-  setPluginMcpServerEnabled: (pluginName, serverName, enabled) => {
+  setPluginMcpServerEnabled: (plugin, serverName, enabled) => {
     const installedPlugins = updatePluginMcpServerEnabled(
       get().installedPlugins,
-      pluginName,
+      plugin,
       serverName,
       enabled,
     );
@@ -1087,6 +1100,8 @@ function selectSharedSettings(state: SharedSettingsState): SharedSettingsInput {
     agentInstances: state.agentInstances,
     collapseTerminalComposer: state.collapseTerminalComposer,
     cliPickerTarget: state.cliPickerTarget,
+    threadDocksPlacement: state.threadDocksPlacement,
+    threadDocksOrder: state.threadDocksOrder,
     staleThreadUnloadMinutes: state.staleThreadUnloadMinutes,
     autoArchiveDoneAfterDays: state.autoArchiveDoneAfterDays,
     scrollSpeed: state.scrollSpeed,

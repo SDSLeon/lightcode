@@ -10,6 +10,8 @@ import com.poracode.app.model.remoteintegrations.PrWatchKey
 import com.poracode.app.model.remoteintegrations.ScheduleDraft
 import com.poracode.app.model.remoteintegrations.ScheduleRecurrence
 import com.poracode.app.model.remoteintegrations.ScheduleRunStatus
+import com.poracode.app.model.remoteintegrations.ScheduleHistoryStatus
+import com.poracode.app.model.remoteintegrations.ScheduleRun
 import com.poracode.app.model.remoteintegrations.ScheduledTask
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -27,6 +29,27 @@ internal object RemoteIntegrationAdapters {
 
     fun schedules(value: JsonObject): List<ScheduledTask> = protect {
         value.requiredArray("schedules").map { schedule(it as JsonObject) }
+    }
+
+    fun scheduleRuns(value: JsonObject): List<ScheduleRun> = protect {
+        value.requiredArray("runs").map { run ->
+            val item = run as JsonObject
+            ScheduleRun(
+                id = item.requiredString("id"),
+                scheduleId = item.requiredString("scheduleId"),
+                threadId = item.requiredString("threadId"),
+                startedAt = item.requiredString("startedAt"),
+                completedAt = item.optionalString("completedAt"),
+                status = when (item.requiredString("status")) {
+                    "running" -> ScheduleHistoryStatus.Running
+                    "succeeded" -> ScheduleHistoryStatus.Succeeded
+                    "failed" -> ScheduleHistoryStatus.Failed
+                    "interrupted" -> ScheduleHistoryStatus.Interrupted
+                    else -> invalid()
+                },
+                hasError = item.optionalString("error") != null,
+            )
+        }
     }
 
     fun prWatch(value: JsonObject): PrWatch? = protect {

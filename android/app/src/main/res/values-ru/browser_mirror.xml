@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">Остановить зеркалирование</string>
     <string name="browser_mirror_empty">Открытых вкладок браузера нет.</string>
     <string name="browser_mirror_stopped">Зеркалирование браузера остановлено.</string>
+    <string name="browser_mirror_move_left">Переместить влево</string>
+    <string name="browser_mirror_move_right">Переместить вправо</string>
+    <string name="browser_mirror_privacy_notice">На зеркалируемых страницах может отображаться личная информация. Изображения остаются на этом устройстве и удаляются при выходе с этого экрана.</string>
 </resources>

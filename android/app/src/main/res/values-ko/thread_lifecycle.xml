@@ -21,4 +21,7 @@
     <string name="thread_lifecycle_close">닫기</string>
     <string name="thread_lifecycle_failure_ambiguous">결과가 확실하지 않습니다. 스레드 목록을 새로 고치는 중입니다.</string>
     <string name="thread_lifecycle_failure_generic">스레드 작업을 완료할 수 없습니다. 목록을 새로 고친 후 다시 시도하세요.</string>
+    <string name="archived_threads_title">보관된 스레드</string>
+    <string name="archived_threads_description">보관한 스레드를 복원하거나 영구 삭제합니다.</string>
+    <string name="archived_threads_empty">보관된 스레드가 없습니다</string>
 </resources>

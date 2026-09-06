@@ -178,6 +178,32 @@ class ProjectWorkspaceRemoteApiClientTest {
         }
     }
 
+    @Test
+    fun projectEntryMutationUsesGeneratedAdvancedOperationEnvelope() = runBlocking {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setBody("{}"))
+        server.start()
+        try {
+            client(server).createProjectEntry(
+                location = com.poracode.app.model.PosixProjectLocation("/repo"),
+                path = "docs/new.md",
+                type = "file",
+            )
+
+            val request = server.takeRequest()
+            assertEquals("/base/api/git/call", request.requestUrl!!.encodedPath)
+            assertEquals("Bearer access-secret", request.getHeader("Authorization"))
+            val body = RemoteJson.parseToJsonElement(request.body.readUtf8()).jsonObject
+            assertEquals("createProjectEntry", body.string("procedure"))
+            val payload = body.getValue("payload").jsonObject
+            assertEquals("docs/new.md", payload.string("path"))
+            assertEquals("file", payload.string("type"))
+            assertEquals("posix", payload.getValue("projectLocation").jsonObject.string("kind"))
+        } finally {
+            server.shutdown()
+        }
+    }
+
     private fun client(server: MockWebServer): ProjectWorkspaceRemoteApiClient =
         ProjectWorkspaceRemoteApiClient(
             endpoint = server.url("/base").toString(),

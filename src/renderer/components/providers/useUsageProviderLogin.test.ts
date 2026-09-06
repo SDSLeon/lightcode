@@ -128,6 +128,17 @@ describe("useUsageProviderLogin", () => {
     expect(result.current.canApiKeySignIn).toBe(true);
   });
 
+  it("never offers the agent CLI login from a usage box", () => {
+    useProviderUsageStore.getState().mergeSnapshot(authMissingSnapshot("muse"));
+
+    const { result } = renderHook(() => useUsageProviderLogin("muse"));
+
+    expect(result.current).not.toHaveProperty("canCliSignIn");
+    expect(result.current.canBrowserSignIn).toBe(false);
+    expect(result.current.canApiKeySignIn).toBe(false);
+    expect(result.current.canSignIn).toBe(false);
+  });
+
   it("hides usage login and sign-out controls in remote sessions", () => {
     bridgeMock.isRemoteSession.mockReturnValue(true);
     useProviderUsageStore.getState().mergeSnapshot(authMissingSnapshot("grok"));

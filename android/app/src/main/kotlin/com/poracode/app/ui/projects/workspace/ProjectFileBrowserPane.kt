@@ -28,6 +28,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
@@ -43,20 +44,29 @@ import com.poracode.app.R
 import com.poracode.app.model.ProjectFileEntry
 import com.poracode.app.model.ProjectFileEntryType
 import com.poracode.app.session.projects.ProjectWorkspaceEntry
+import com.poracode.app.session.projects.ProjectEntryMutation
+import kotlinx.coroutines.delay
+
+/** Debounce delay before a typed query auto-searches, matching the PWA/iOS live-search feel. */
+private const val SEARCH_DEBOUNCE_MS = 250L
 
 @Composable
 internal fun ProjectFileBrowserPane(
     entry: ProjectWorkspaceEntry,
+    rootPath: String,
     searchText: String,
     showingSearch: Boolean,
     canBrowse: Boolean,
     canSearch: Boolean,
     canOpenFile: Boolean,
+    canMutate: Boolean,
+    mutating: Boolean,
     onSearchTextChange: (String) -> Unit,
     onSearch: () -> Unit,
     onClearSearch: () -> Unit,
     onOpenDirectory: (String) -> Unit,
     onOpenFile: (String) -> Unit,
+    onMutation: (ProjectEntryMutation) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
@@ -64,6 +74,17 @@ internal fun ProjectFileBrowserPane(
     val submitSearch = {
         focusManager.clearFocus()
         onSearch()
+    }
+    // Live search: debounce so every keystroke doesn't trigger a request, but never require an
+    // explicit submit. Keyed on searchText, so Compose cancels the pending delay on the next
+    // keystroke and on leaving this pane (tab switch/back) unmounts it entirely.
+    LaunchedEffect(searchText) {
+        if (searchText.isBlank()) {
+            if (showingSearch) onClearSearch()
+        } else if (canSearch) {
+            delay(SEARCH_DEBOUNCE_MS)
+            onSearch()
+        }
     }
     Column(modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -105,6 +126,13 @@ internal fun ProjectFileBrowserPane(
                 entry.tree?.directoryPath.orEmpty(),
                 enabled = canBrowse,
                 onUp = onOpenDirectory,
+                actions = {
+                    ProjectDirectoryActions(
+                        entry.tree?.directoryPath.orEmpty(),
+                        canMutate && !mutating,
+                        onMutation,
+                    )
+                },
             )
         } else {
             val result = entry.searchResult
@@ -144,7 +172,10 @@ internal fun ProjectFileBrowserPane(
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
                 items(entries.orEmpty(), key = { "${it.type}:${it.path}" }) { file ->
-                    ProjectFileRow(file, canBrowse, canOpenFile, onOpenDirectory, onOpenFile)
+                    ProjectFileRow(
+                        file, rootPath, canBrowse, canOpenFile, canMutate && !mutating,
+                        onOpenDirectory, onOpenFile, onMutation,
+                    )
                     HorizontalDivider(Modifier.padding(start = 52.dp))
                 }
             }
@@ -157,6 +188,7 @@ private fun DirectoryBreadcrumb(
     path: String,
     enabled: Boolean,
     onUp: (String) -> Unit,
+    actions: @Composable () -> Unit,
 ) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 8.dp),
@@ -175,16 +207,20 @@ private fun DirectoryBreadcrumb(
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.labelLarge,
         )
+        actions()
     }
 }
 
 @Composable
 private fun ProjectFileRow(
     file: ProjectFileEntry,
+    rootPath: String,
     canBrowse: Boolean,
     canOpenFile: Boolean,
+    canMutate: Boolean,
     onOpenDirectory: (String) -> Unit,
     onOpenFile: (String) -> Unit,
+    onMutation: (ProjectEntryMutation) -> Unit,
 ) {
     val directory = file.type == ProjectFileEntryType.Directory
     val enabled = if (directory) canBrowse else canOpenFile
@@ -219,6 +255,7 @@ private fun ProjectFileRow(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             WorkspaceMetadata(file.name, file.path, Modifier.weight(1f))
+            ProjectFileRowActions(file, rootPath, canMutate, onMutation)
             Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null)
         }
     }

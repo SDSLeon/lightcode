@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="terminal_title">Terminal</string>
     <string name="terminal_output_description">Saída do terminal</string>
     <string name="terminal_input_label">Entrada do terminal</string>
     <string name="terminal_input_placeholder">Digite um comando</string>
@@ -7,6 +8,17 @@
     <string name="terminal_control_c">Ctrl+C</string>
     <string name="terminal_tab">Tab</string>
     <string name="terminal_close">Fechar terminal</string>
+    <string name="terminal_close_confirm_title">Fechar este terminal?</string>
+    <string name="terminal_close_confirm_message">O processo em execução será interrompido. Ele pode ser iniciado novamente mais tarde.</string>
+    <string name="terminal_cancel">Cancelar</string>
+    <string name="terminal_control_modifier">Ctrl</string>
+    <string name="terminal_key_escape">Esc</string>
+    <string name="terminal_key_enter">Enter</string>
+    <string name="terminal_key_backspace">⌫</string>
+    <string name="terminal_key_arrow_left">Seta para a esquerda</string>
+    <string name="terminal_key_arrow_up">Seta para cima</string>
+    <string name="terminal_key_arrow_down">Seta para baixo</string>
+    <string name="terminal_key_arrow_right">Seta para a direita</string>
     <string name="terminal_reconnect">Reconectar</string>
     <string name="terminal_start">Iniciar terminal</string>
     <string name="terminal_start_description">Iniciar um terminal de desenvolvimento para este projeto</string>

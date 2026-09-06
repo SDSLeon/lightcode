@@ -298,6 +298,12 @@ msgstr "{0} запит - {when}"
 msgid "{0} prompts - {when}"
 msgstr "{0} запитів - {when}"
 
+#. placeholder {0}: agent.label
+#. placeholder {1}: update.targetVersion
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "{0} queued for update to v{1}"
+msgstr "{0} у черзі на оновлення до v{1}"
+
 #. placeholder {0}: item.runCount.toLocaleString()
 #: src/renderer/views/ProfileOverlay/parts/PluginUsage.tsx
 msgid "{0} run"
@@ -316,7 +322,7 @@ msgstr "{0} запусків"
 #~ msgstr "{0} потоків"
 
 #. placeholder {0}: formatTokens(snapshot.tokens.total)
-#: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
+#: src/renderer/components/providers/UsageCostLine.tsx
 msgid "{0} tokens"
 msgstr "{0} токенів"
 
@@ -690,7 +696,7 @@ msgid "<0>{passed}</0> of {0} checks passed"
 msgstr "<0>{passed}</0> із {0} перевірок пройдено"
 
 #. placeholder {0}: snapshot.cost.period
-#: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
+#: src/renderer/components/providers/UsageCostLine.tsx
 msgid "~{money}{tokens} · {0} · est."
 msgstr "~{money}{tokens} · {0} · прибл."
 
@@ -772,6 +778,10 @@ msgstr "Перервати злиття"
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 msgid "About"
 msgstr "Про програму"
+
+#: src/renderer/views/SettingsOverlay/parts/settingsOptions.ts
+msgid "Above the composer"
+msgstr "Над полем введення"
 
 #: src/renderer/views/FileEditorOverlay/parts/FileEditorPane/parts/mergeConflict/codeLensProvider.ts
 msgid "Accept Both Changes"
@@ -1163,6 +1173,8 @@ msgstr "Агент: {description}"
 msgid "Agent: {subagent}"
 msgstr "Агент: {subagent}"
 
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/views/SettingsOverlay/parts/MobileSettingsIndex.tsx
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
@@ -1375,6 +1387,10 @@ msgstr "Інший чат використовує це саме дерево. �
 msgid "Another operation for this experiment is still running."
 msgstr "Інша операція для цього експерименту ще виконується."
 
+#: src/renderer/components/thread/ThreadRuntimeRequestPanel/ThreadRuntimeRequestPanel.tsx
+msgid "Answer every question to submit"
+msgstr "Дайте відповіді на всі запитання, щоб надіслати"
+
 #: src/renderer/components/providers/antigravity/manifest.ts
 msgid "Antigravity"
 msgstr "Antigravity"
@@ -1420,8 +1436,9 @@ msgid "App Browser"
 msgstr "Браузер у програмі"
 
 #: src/renderer/components/mcp/McpServersManager.tsx
-msgid "App Controls"
-msgstr "Керування застосунком"
+#: src/renderer/components/plugins/pluginCopy.ts
+#~ msgid "App Controls"
+#~ msgstr "Керування застосунком"
 
 #: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/MobileSettingsIndex.tsx
@@ -1569,16 +1586,16 @@ msgid "Attach"
 msgstr "Прикріпити"
 
 #: src/renderer/components/thread/ContinueInProviderDialog.tsx
-msgid "Attach files"
-msgstr "Прикріпити файли"
+#~ msgid "Attach files"
+#~ msgstr "Прикріпити файли"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserToolbar.tsx
 msgid "Attach to thread"
 msgstr "Прикріпити до треду"
 
 #: src/renderer/components/thread/ThreadTodoDock.tsx
-msgid "Attach todo dock to composer"
-msgstr "Прикріпити панель завдань до Composer"
+#~ msgid "Attach todo dock to composer"
+#~ msgstr "Прикріпити панель завдань до Composer"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Attached browser selection."
@@ -1769,6 +1786,7 @@ msgstr "Очікування перевірки"
 
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 #: src/renderer/components/layout/MobilePageHeader.tsx
 #: src/renderer/views/FileEditorOverlay/FileEditorOverlay.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsView.tsx
@@ -1811,9 +1829,16 @@ msgstr "Фоновий процес не запущено"
 msgid "Background process restarted"
 msgstr "Фоновий процес перезапущено"
 
-#: src/renderer/components/thread/ChatPane/parts/items/ActiveSubAgentTile.tsx
-#~ msgid "Background tasks"
-#~ msgstr "Фонові завдання"
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Background task"
+msgstr "Фонове завдання"
+
+#: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+msgid "Background tasks"
+msgstr "Фонові завдання"
 
 #: src/renderer/components/experiment/NewExperimentModal.tsx
 #~ msgid "Base branch"
@@ -1941,6 +1966,11 @@ msgstr "Гілки"
 msgid "Bring back to panel"
 msgstr "Повернути на панель"
 
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Bring every {0} runtime up to date"
+msgstr "Оновити всі середовища виконання {0}"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserDockSlot.tsx
 msgid "Bring it back into this panel, or jump to the window it’s running in."
 msgstr "Поверніть його на цю панель або перейдіть до вікна, де він запущений."
@@ -2028,8 +2058,8 @@ msgstr "Вхід через браузер"
 #~ msgstr "Вкладки браузера"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Browser Tools"
-msgstr "Інструменти браузера"
+#~ msgid "Browser Tools"
+#~ msgstr "Інструменти браузера"
 
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Budget limit reached"
@@ -2041,6 +2071,7 @@ msgid "Building diff…"
 msgstr "Побудова diff…"
 
 #: src/renderer/components/mcp/McpServersManager.tsx
+#: src/renderer/components/plugins/PluginDetail.tsx
 #: src/renderer/components/skills/SkillsManager.tsx
 msgid "Built-in"
 msgstr "Вбудований"
@@ -2209,6 +2240,7 @@ msgstr "Змінити папку проєкту"
 msgid "Change project icon"
 msgstr "Змінити іконку проєкту"
 
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 #: src/renderer/components/thread/ThreadDraftComposerArea.tsx
 msgid "Change servers in provider settings"
 msgstr "Змініть сервери в налаштуваннях постачальника"
@@ -2489,8 +2521,8 @@ msgid "Chrome MCP enabled for this thread"
 msgstr "Chrome MCP увімкнено для цього треду"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Chrome Tools"
-msgstr "Інструменти Chrome"
+#~ msgid "Chrome Tools"
+#~ msgstr "Інструменти Chrome"
 
 #: src/renderer/views/GitHubActionsView/GitHubActionsView.tsx
 msgid "CI Actions: Workflows"
@@ -2614,6 +2646,7 @@ msgstr "Клонування…"
 #: src/renderer/components/common/BottomSheet.tsx
 #: src/renderer/components/mcp/McpServersManager.tsx
 #: src/renderer/components/skills/SkillViewModal.tsx
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/views/ExperimentView/parts/ExperimentJudgeRunDialog.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserPanel.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/DevTerminalPanel/parts/MobileTerminalLayout.tsx
@@ -2632,6 +2665,10 @@ msgstr "Закрити термінал {purposeNoun}"
 #: src/mobile/views/ManageProjectsView.tsx
 #~ msgid "Close add project"
 #~ msgstr "Закрити додавання проєкту"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Close background tasks"
+msgstr "Закрити фонові завдання"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserPanel.tsx
 msgid "Close browser"
@@ -2829,7 +2866,9 @@ msgstr "Код скопійовано. "
 msgid "Codex"
 msgstr "Codex"
 
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/components/thread/ThreadErrorDock.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 msgid "Collapse"
 msgstr "Згорнути"
@@ -2849,6 +2888,10 @@ msgstr "Згорнути все"
 #: src/renderer/views/FileEditorOverlay/parts/ProjectTreeView/ProjectTreeView.tsx
 msgid "Collapse all folders"
 msgstr "Згорнути всі теки"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Collapse background tasks"
+msgstr "Згорнути фонові завдання"
 
 #: src/renderer/components/thread/ThreadComposerSection.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/MobileQuickCompose.tsx
@@ -2871,6 +2914,10 @@ msgstr "Згорнути нижню частину бічної панелі"
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserTabStrip.tsx
 msgid "Collapse group"
 msgstr "Згорнути групу"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Collapse images"
+msgstr "Згорнути зображення"
 
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/TerminalSettings.tsx
@@ -3057,6 +3104,7 @@ msgstr "Керування полем вводу"
 #: src/renderer/components/composer/ComposerAddMenu.tsx
 #: src/renderer/components/mcp/McpServersManager.tsx
 #: src/renderer/components/plugins/pluginCopy.ts
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 #: src/renderer/components/thread/ThreadComposerSection.tsx
 #: src/renderer/components/thread/ThreadDraftComposerArea.tsx
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
@@ -3072,12 +3120,28 @@ msgstr "Керування комп'ютером"
 #~ msgstr "Computer Use керує спареним робочим столом. Не користуйтеся тим комп'ютером, поки агент клікає або друкує."
 
 #: src/renderer/components/composer/AttachmentBar.tsx
-msgid "Computer Use enabled — controls the paired desktop; don't use that machine while the agent is controlling it"
-msgstr "Computer Use увімкнено — керує спареним робочим столом; не користуйтеся тим комп'ютером, поки агент ним керує"
+#~ msgid "Computer Use enabled — controls the paired desktop; don't use that machine while the agent is controlling it"
+#~ msgstr "Computer Use увімкнено — керує спареним робочим столом; не користуйтеся тим комп'ютером, поки агент ним керує"
 
 #: src/renderer/components/composer/AttachmentBar.tsx
-msgid "Computer Use enabled — interactive actions take over the desktop; don't use the machine while the agent is controlling it"
-msgstr "Computer Use увімкнено — інтерактивні дії захоплюють робочий стіл; не користуйтеся комп'ютером, поки агент ним керує"
+#~ msgid "Computer Use enabled — interactive actions take over the desktop; don't use the machine while the agent is controlling it"
+#~ msgstr "Computer Use увімкнено — інтерактивні дії захоплюють робочий стіл; не користуйтеся комп'ютером, поки агент ним керує"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+#~ msgid "Computer Use enabled — the agent drives apps on the paired desktop in the background; it only takes over that desktop's mouse and keyboard when a step explicitly needs the foreground"
+#~ msgstr "Computer Use увімкнено — агент керує програмами на спареному робочому столі у фоновому режимі й перехоплює мишу та клавіатуру цього робочого стола, лише коли крок явно потребує роботи на передньому плані"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+msgid "Computer Use enabled — the agent drives apps on the paired desktop in the background; it only takes over that desktop's mouse and keyboard when a step explicitly needs the foreground or when that desktop's system-approved portal requires it"
+msgstr "Керування комп’ютером увімкнено — агент керує програмами на спареному робочому столі у фоновому режимі; він перехоплює мишу й клавіатуру цього робочого стола, лише коли крок явно потребує переднього плану або цього вимагає схвалений системою портал робочого стола"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+#~ msgid "Computer Use enabled — the agent drives desktop apps in the background; it only takes over the mouse and keyboard when a step explicitly needs the foreground"
+#~ msgstr "Computer Use увімкнено — агент керує програмами робочого столу у фоновому режимі й перехоплює мишу та клавіатуру, лише коли крок явно потребує роботи на передньому плані"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+msgid "Computer Use enabled — the agent drives desktop apps in the background; it only takes over the mouse and keyboard when a step explicitly needs the foreground or when a system-approved desktop portal requires it"
+msgstr "Керування комп’ютером увімкнено — агент керує настільними програмами у фоновому режимі; він перехоплює мишу й клавіатуру, лише коли крок явно потребує переднього плану або цього вимагає схвалений системою портал робочого стола"
 
 #: src/renderer/components/composer/AttachmentBar.tsx
 #~ msgid "Computer Use enabled for this thread"
@@ -3304,8 +3368,12 @@ msgid "Control an external Chrome browser."
 msgstr "Керує зовнішнім браузером Chrome."
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Control desktop apps and complete visual workflows."
-msgstr "Керуйте настільними застосунками та виконуйте візуальні сценарії."
+#~ msgid "Control desktop apps and complete visual workflows."
+#~ msgstr "Керуйте настільними застосунками та виконуйте візуальні сценарії."
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Control desktop apps in the background and complete visual workflows."
+msgstr "Керуйте програмами робочого столу у фоновому режимі та виконуйте візуальні робочі процеси."
 
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
 msgid "Control the desktop."
@@ -3316,8 +3384,8 @@ msgid "Control which files appear in the @file mention search. Per-project overr
 msgstr "Керуйте тим, які файли з'являються у пошуку згадок @file. Перевизначення для окремих проєктів зберігаються в налаштуваннях кожного проєкту."
 
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Controls the paired desktop while the agent clicks or types"
-msgstr "Керує спареним робочим столом, поки агент клікає або друкує"
+#~ msgid "Controls the paired desktop while the agent clicks or types"
+#~ msgstr "Керує спареним робочим столом, поки агент клікає або друкує"
 
 #: src/renderer/views/PrReviewOverlay/parts/PrTabsPill.tsx
 #: src/renderer/views/PrReviewOverlay/PrReviewOverlay.tsx
@@ -4432,6 +4500,10 @@ msgstr "Закріпити ліворуч"
 msgid "Dock right"
 msgstr "Закріпити праворуч"
 
+#: src/renderer/components/layout/PanelDock/panelTabMeta.ts
+msgid "Docks"
+msgstr "Доки"
+
 #: src/renderer/views/SettingsOverlay/parts/AcpRegistrySettings.tsx
 msgid "Docs"
 msgstr "Документація"
@@ -4513,6 +4585,22 @@ msgstr "Перетягніть для зміни порядку; подвійн�
 #: src/renderer/views/SettingsOverlay/parts/RemoteHostFolderPicker.tsx
 msgid "Drives"
 msgstr "Диски"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Drives apps on the paired desktop in the background; takes over that desktop only when the agent asks for the foreground"
+#~ msgstr "Керує програмами на спареному робочому столі у фоновому режимі й перехоплює цей робочий стіл, лише коли агент запитує роботу на передньому плані"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "Drives apps on the paired desktop in the background; takes over that desktop only when the agent asks for the foreground or its system-approved portal requires it"
+msgstr "Керує програмами на спареному робочому столі у фоновому режимі; перехоплює керування цим робочим столом, лише коли агент запитує передній план або цього вимагає схвалений системою портал"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Drives desktop apps in the background; takes over the desktop only when the agent asks for the foreground"
+#~ msgstr "Керує програмами робочого столу у фоновому режимі й перехоплює робочий стіл, лише коли агент запитує роботу на передньому плані"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "Drives desktop apps in the background; takes over the desktop only when the agent asks for the foreground or a system-approved portal requires it"
+msgstr "Керує настільними програмами у фоновому режимі; перехоплює керування робочим столом, лише коли агент запитує передній план або цього вимагає схвалений системою портал"
 
 #: src/renderer/components/thread/ThreadComposer.tsx
 msgid "Drop here to attach"
@@ -4697,9 +4785,17 @@ msgstr "Увімкнено"
 msgid "Enabled agents, model visibility and order"
 msgstr "Увімкнені агенти, видимість і порядок моделей"
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Enabled MCP servers stay on for new threads"
+msgstr "Увімкнені сервери MCP залишаються активними для нових тредів"
+
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Enabled servers stay on for new threads"
-msgstr "Увімкнені сервери залишаються активними для нових тредів"
+msgid "Enabled plugins stay on for new threads"
+msgstr "Увімкнені плагіни залишаються активними для нових тредів"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Enabled servers stay on for new threads"
+#~ msgstr "Увімкнені сервери залишаються активними для нових тредів"
 
 #: src/renderer/views/SettingsOverlay/parts/BrowserSettings.tsx
 msgid "Enables <0>cookies</0> and <1>storage</1>. Cookies can contain session tokens and storage often holds auth state — only enable when you trust both the agent and the sites it visits."
@@ -4871,6 +4967,11 @@ msgstr "Виключити із синхронізації"
 msgid "Exclude patterns"
 msgstr "Шаблони виключення"
 
+#. placeholder {0}: parsed.exitCode
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
+msgid "Exit code {0}"
+msgstr "Код виходу {0}"
+
 #: src/renderer/components/thread/ChatPane/parts/items/toolDisplay.ts
 msgid "Exit plan mode"
 msgstr "Вийти з режиму плану"
@@ -4890,7 +4991,9 @@ msgstr "Вийти з режиму плану"
 msgid "Exited with code {0}. Close to retry."
 msgstr "Завершився з кодом {0}. Закрийте, щоб повторити."
 
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/components/thread/ThreadErrorDock.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 msgid "Expand"
 msgstr "Розгорнути"
@@ -4902,6 +5005,10 @@ msgstr "Розгорнути {label}"
 #: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsagePanelHeaderActions.tsx
 msgid "Expand all"
 msgstr "Розгорнути все"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Expand background tasks"
+msgstr "Розгорнути фонові завдання"
 
 #: src/renderer/components/thread/ThreadErrorDock.tsx
 msgid "Expand error"
@@ -4919,6 +5026,10 @@ msgstr "Розгорнути нижню частину бічної панелі
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserTabStrip.tsx
 msgid "Expand group"
 msgstr "Розгорнути групу"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Expand images"
+msgstr "Розгорнути зображення"
 
 #: src/renderer/views/SettingsOverlay/parts/RemoteAccessSettings.tsx
 msgid "Expand to review or revoke access."
@@ -5054,6 +5165,7 @@ msgstr "Factory Droid"
 msgid "failed"
 msgstr "не вдалося"
 
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/SubAgentOverlay.tsx
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 #: src/renderer/utils/prStatus.ts
@@ -5185,6 +5297,7 @@ msgstr "Файл занадто великий для відображення (
 msgid "File uses an unsupported encoding."
 msgstr "Файл використовує непідтримуване кодування."
 
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/layout/PanelDock/panelTabMeta.ts
 #: src/renderer/components/thread/ThreadToolRail.tsx
 #: src/renderer/views/MainView/parts/MobileWorkspacePage.tsx
@@ -5315,8 +5428,12 @@ msgid "First-class Kimi Code CLI integration using Poracode's native runtime."
 msgstr "Першокласна інтеграція Kimi Code CLI з використанням нативного середовища виконання Poracode."
 
 #: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
-msgid "First-class Muse Code CLI integration using Poracode's native terminal runtime."
-msgstr "Першокласна інтеграція Muse Code CLI з використанням нативного середовища виконання термінала Poracode."
+#~ msgid "First-class Muse Code CLI integration using Poracode's native terminal runtime."
+#~ msgstr "Першокласна інтеграція Muse Code CLI з використанням нативного середовища виконання термінала Poracode."
+
+#: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
+msgid "First-class Muse Code integration using Poracode's native terminal and GUI runtimes."
+msgstr "Першокласна інтеграція Muse Code з нативними середовищами термінала та графічного інтерфейсу Poracode."
 
 #: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
 msgid "First-class OpenCode integration using Poracode's native SDK runtime."
@@ -5723,6 +5840,8 @@ msgid "Go forward in navigation history"
 msgstr "Вперед в історії навігації"
 
 #: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Goal"
 msgstr "Мета"
@@ -5730,6 +5849,10 @@ msgstr "Мета"
 #: src/renderer/components/thread/ThreadGoalControls.tsx
 msgid "Goal objective"
 msgstr "Опис мети"
+
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#~ msgid "Goal, plan, agents, and background tasks for this thread."
+#~ msgstr "Ціль, план, агенти та фонові завдання цього треду."
 
 #: src/mobile/views/DesktopWorkspacePanel.tsx
 #: src/renderer/components/layout/UnifiedRightPanel.tsx
@@ -5823,6 +5946,11 @@ msgstr "Приховані відновлювані треди перевіря�
 #: src/renderer/views/MainView/parts/Sidebar/parts/WhatsNewButton.tsx
 msgid "Hide"
 msgstr "Сховати"
+
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+msgid "Hide {label}"
+msgstr "Сховати {label}"
 
 #: src/renderer/views/SettingsOverlay/parts/UsageProviderRow.tsx
 msgid "Hide {label} circle in sidebar"
@@ -5991,6 +6119,9 @@ msgstr "Зображення"
 msgid "Image preview"
 msgstr "Попередній перегляд зображення"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/ProjectIconPicker.tsx
 msgid "Images"
 msgstr "Зображення"
@@ -6151,6 +6282,10 @@ msgstr "Усередині цього проєкту"
 msgid "Inspect canonical runtime items"
 msgstr "Перевірити канонічні елементи середовища виконання"
 
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Inspect threads and terminal panes, and drive git, pull requests, and schedules."
+msgstr "Перегляд тредів і панелей термінала, керування git, пул-реквестами й розкладами."
+
 #: src/renderer/views/LoginTerminalOverlay/LoginTerminalOverlay.tsx
 msgid "install"
 msgstr "встановлення"
@@ -6181,6 +6316,10 @@ msgstr "Встановити {0}, щоб створити тред."
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 msgid "Install {0}."
 msgstr "Встановити {0}."
+
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
+msgid "Install {badge}"
+msgstr "Встановити {badge}"
 
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 #~ msgid "Install {env}"
@@ -6383,7 +6522,7 @@ msgstr "Внутрішні команди й агенти"
 msgid "Interrupted"
 msgstr "Перервано"
 
-#: src/renderer/state/slices/runtimeEventSlice.ts
+#: src/renderer/state/slices/staleSubAgents.ts
 msgid "Interrupted: agent session ended before completion."
 msgstr "Перервано: сесія агента завершилася до завершення."
 
@@ -6827,6 +6966,10 @@ msgstr "Керувати"
 #~ msgid "Manage global and project agent skills, including skills imported from other providers."
 #~ msgstr "Керуйте глобальними навичками агентів і навичками проєкту, зокрема імпортованими від інших провайдерів."
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Manage MCP servers"
+msgstr "Керування серверами MCP"
+
 #: src/renderer/views/MainView/parts/Sidebar/parts/SidebarRemoteServers.tsx
 #~ msgid "Manage remote environments"
 #~ msgstr "Керування віддаленими середовищами"
@@ -6990,10 +7133,13 @@ msgstr "MCP"
 #~ msgid "MCP Market"
 #~ msgstr "MCP Market"
 
-#: src/renderer/components/thread/ThreadComposerSection.tsx
-#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 msgid "MCP server"
 msgstr "Сервер MCP"
+
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "MCP server actions"
+msgstr "Дії з серверами MCP"
 
 #: src/renderer/components/mcp/McpServerEditor.tsx
 msgid "MCP server arguments"
@@ -7043,13 +7189,15 @@ msgstr "Тайм-аут сервера MCP у мілісекундах"
 msgid "MCP server URL"
 msgstr "URL сервера MCP"
 
-#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/plugins/PluginDetail.tsx
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/ProfileSettings.tsx
 msgid "MCP servers"
 msgstr "Сервери MCP"
 
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/McpSection.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/MobileProjectSettingsIndex.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/SettingsSidebar.tsx
@@ -7312,6 +7460,7 @@ msgstr "Моделі"
 msgid "Modes"
 msgstr "Режими"
 
+#: src/renderer/components/layout/UnifiedRightPanel.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/MobileHomeActions.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/SidebarFooterNav.tsx
 #: src/renderer/views/ProfileOverlay/parts/ActivityHeatmap.tsx
@@ -7425,8 +7574,8 @@ msgstr "Перемістити в worktree зі змінами"
 #~ msgstr "Перемістити в worktree…"
 
 #: src/renderer/components/thread/ThreadTodoDock.tsx
-msgid "Move todo dock to right panel"
-msgstr "Перемістити панель завдань у праву панель"
+#~ msgid "Move todo dock to right panel"
+#~ msgstr "Перемістити панель завдань у праву панель"
 
 #. placeholder {0}: fallback.name
 #: src/renderer/actions/workspaceActions.ts
@@ -7980,9 +8129,13 @@ msgstr "Відповідних розкладів немає."
 msgid "No matching threads"
 msgstr "Відповідних тредів немає"
 
-#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 msgid "No MCP servers are enabled for this run"
 msgstr "Для цього запуску не ввімкнено жодного MCP-сервера"
+
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "No MCP servers configured"
+msgstr "Сервери MCP не налаштовано"
 
 #: src/renderer/components/mcp/McpExternalImportModal.tsx
 msgid "No MCP servers found in this scope."
@@ -8025,6 +8178,10 @@ msgstr "Немає шаблонів."
 #: src/renderer/components/thread/ChatPane/parts/items/WorkflowOverlayBody.tsx
 msgid "No phases yet."
 msgstr "Фаз поки немає."
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "No plugins are enabled for this run"
+msgstr "Для цього запуску не ввімкнено жодного плагіна"
 
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 msgid "No plugins match your search."
@@ -8172,6 +8329,10 @@ msgstr "Немає тредів"
 msgid "No threads yet."
 msgstr "Гілок ще немає."
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "no verdict arrived — the CLI may have blocked /goal (workspace trust or hooks settings) or the evaluator could not run"
+msgstr "вердикт не надійшов — CLI міг заблокувати /goal (довіра до робочого простору або налаштування хуків), або оцінювач не зміг запуститися"
+
 #: src/renderer/components/providers/usageFormat.ts
 msgid "No windows reported"
 msgstr "Вікна не повідомлені"
@@ -8221,6 +8382,10 @@ msgstr "На цьому комп’ютері ще не виявлено."
 #: src/renderer/components/thread/AgentDiscoveryScreen.tsx
 msgid "Not found"
 msgstr "Не знайдено"
+
+#: src/renderer/views/SettingsOverlay/parts/nativeAgentRuntimes.ts
+msgid "not installed"
+msgstr "не встановлено"
 
 #: src/renderer/components/providers/CombinedRuntimeVersionList.tsx
 #: src/renderer/views/SettingsOverlay/parts/antigravityRuntimeInstall.ts
@@ -8303,7 +8468,6 @@ msgid "Official sources only"
 msgstr "Лише офіційні джерела"
 
 #: src/renderer/components/common/RemoteServerStatusDot.tsx
-#: src/renderer/views/SettingsOverlay/parts/machineScope/MachineSelect.tsx
 msgid "Offline"
 msgstr "Офлайн"
 
@@ -8498,7 +8662,14 @@ msgstr "Відкрити перегляд Git"
 msgid "Open git review as a right-side panel or a full page."
 msgstr "Відкривати перегляд Git як праву панель або повну сторінку."
 
+#. placeholder {0}: index + 1
+#. placeholder {1}: gallery.length
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Open image {0} of {1}"
+msgstr "Відкрити зображення {0} з {1}"
+
 #: src/renderer/components/thread/ChatPane/parts/items/ImageCard.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 msgid "Open image preview"
 msgstr "Відкрити перегляд зображення"
 
@@ -8659,6 +8830,10 @@ msgstr "Відкрити вибір моделі"
 msgid "OpenCode"
 msgstr "OpenCode"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "OpenCode request failed, retrying..."
+msgstr "Запит OpenCode не виконано, повторна спроба..."
+
 #. placeholder {0}: request.receivedAt
 #. placeholder {1}: index + 1
 #: src/renderer/components/thread/ChatPane/ChatRuntimeDebugPanel.tsx
@@ -8795,8 +8970,8 @@ msgid "Pair a phone, tablet, or browser with this desktop."
 msgstr "Спаруйте телефон, планшет або браузер із цим робочим столом."
 
 #: src/renderer/views/SettingsOverlay/parts/machineScope/MachineSelect.tsx
-msgid "Pair a remote machine…"
-msgstr "Під’єднати віддалений комп’ютер…"
+#~ msgid "Pair a remote machine…"
+#~ msgstr "Під’єднати віддалений комп’ютер…"
 
 #: src/mobile/components.tsx src/mobile/remoteConnectionState.ts
 #~ msgid "Pair again"
@@ -9082,9 +9257,10 @@ msgstr "Закріплено"
 msgid "Pinned task routes"
 msgstr "Закріплені маршрути завдань"
 
-#: src/renderer/components/layout/PanelDock/panelTabMeta.ts
 #: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
 #: src/renderer/components/providers/composerControlBuilders.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 #: src/renderer/views/SettingsOverlay/parts/CursorProviderSettings.tsx
 msgid "Plan"
@@ -9106,13 +9282,16 @@ msgid "Play notification sound"
 msgstr "Відтворювати звук сповіщення"
 
 #: src/renderer/components/skills/SkillsManager.tsx
-#: src/renderer/components/skills/useSkills.ts
 msgid "Plugin"
 msgstr "Плагін"
 
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 msgid "Plugin folder"
 msgstr "Тека плагінів"
+
+#: src/renderer/components/mcp/McpServersManager.tsx
+msgid "Plugin servers"
+msgstr "Сервери плагінів"
 
 #: src/renderer/components/plugins/pluginCopy.ts
 msgid "plugin.json could not be read as JSON."
@@ -9130,6 +9309,8 @@ msgstr "plugin.json не відповідає специфікації Agent Plu
 msgid "plugin.json targets an Agent Plugins version this build does not support."
 msgstr "plugin.json вказує версію Agent Plugins, яку ця збірка не підтримує."
 
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
@@ -9152,6 +9333,14 @@ msgstr "Спрямуйте цей профіль на провайдера, ві
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Popular editor themes adapted to Poracode. Each follows the light or dark mode above."
 msgstr "Популярні теми редакторів, адаптовані для Poracode. Кожна слідує за світлим чи темним режимом вище."
+
+#: src/renderer/components/mcp/McpServersManager.tsx
+#: src/renderer/components/plugins/pluginCopy.ts
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
+#: src/renderer/components/thread/ThreadComposerSection.tsx
+#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+msgid "Poracode"
+msgstr "Poracode"
 
 #: src/renderer/views/SettingsOverlay/parts/SshConnectionForm.tsx
 msgid "Poracode and your agents run on the remote machine. SSH is used only to start the remote environment and secure its local tunnel."
@@ -9377,10 +9566,15 @@ msgstr "Політика конфіденційності"
 #~ msgid "Private key"
 #~ msgstr "Закритий ключ"
 
-#. placeholder {0}: agent.label
 #. placeholder {0}: updateAllProgress.agentLabel
+#. placeholder {1}: updateAllProgress.current
+#. placeholder {2}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Probing {0} ({1} of {2})"
+msgstr "Перевірка {0} ({1} з {2})"
+
+#. placeholder {0}: agent.label
 #. placeholder {1}: update.targetVersion
-#. placeholder {1}: updateAllProgress.targetVersion
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
 msgid "Probing {0} v{1}"
 msgstr "Перевірка {0} v{1}"
@@ -9431,6 +9625,8 @@ msgstr "Профілі"
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/common/MobileProjectPicker.tsx
 #: src/renderer/components/mcp/McpExternalImportModal.tsx
+#: src/renderer/components/plugins/PluginDetail.tsx
+#: src/renderer/components/plugins/PluginMarketplace.tsx
 #: src/renderer/components/thread/ThreadCommandPanel.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsMobileWorkflowList.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsSidebar.tsx
@@ -9806,6 +10002,18 @@ msgstr "Перезапустити всі завдання"
 #: src/renderer/views/GitHubActionsView/GitHubActionsRunList.tsx
 msgid "Re-run failed jobs"
 msgstr "Перезапустити невдалі завдання"
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read and drive Poracode itself: threads, terminal panes, git, pull requests, and schedules."
+msgstr "Читання та керування самим Poracode: треди, панелі термінала, git, пул-реквести й розклади."
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read the Terminal panel attached to this worktree and report the evidence."
+msgstr "Прочитайте панель Terminal цього worktree і повідомте докази."
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read the Terminal panel attached to this worktree and report what it is printing."
+msgstr "Прочитайте панель Terminal цього worktree і повідомте, що вона виводить."
 
 #: src/renderer/views/ExperimentView/parts/ExperimentJudgeRunDialog.tsx
 msgid "Reading each candidate's changes…"
@@ -10270,6 +10478,7 @@ msgstr "Рендерер зіткнувся з необробленим відх
 msgid "Reorder {0}"
 msgstr "Змінити порядок {0}"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
 msgid "Reorder {label}"
 msgstr "Змінити порядок {label}"
@@ -10587,6 +10796,7 @@ msgid "Right"
 msgstr "Праворуч"
 
 #: src/renderer/views/SettingsOverlay/parts/BrowserSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsOptions.ts
 msgid "Right panel"
 msgstr "Права панель"
 
@@ -10612,12 +10822,20 @@ msgstr "Запустити {0}"
 
 #. placeholder {0}: agentStatus.loginCommand
 #: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
-msgid "Run {0} before this thread can run."
-msgstr "Запустіть {0}, перш ніж цей тред зможе виконатися."
+#~ msgid "Run {0} before this thread can run."
+#~ msgstr "Запустіть {0}, перш ніж цей тред зможе виконатися."
 
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
-msgid "Run {loginCommand} to sign in."
-msgstr "Запустіть {loginCommand}, щоб увійти."
+#~ msgid "Run {loginCommand} to sign in."
+#~ msgstr "Запустіть {loginCommand}, щоб увійти."
+
+#: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
+msgid "Run {loginCommandDisplay} before this thread can run."
+msgstr "Запустіть {loginCommandDisplay}, перш ніж цей тред зможе виконатися."
+
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
+msgid "Run {loginCommandDisplay} to sign in."
+msgstr "Запустіть {loginCommandDisplay}, щоб увійти."
 
 #. placeholder {0}: server.label
 #: src/renderer/views/RemoteProjectModal/RemoteProjectModal.tsx
@@ -10730,7 +10948,6 @@ msgstr "Закінчиться через {runOut}"
 #: src/renderer/components/providers/CombinedRuntimeVersionList.tsx
 #: src/renderer/views/MainView/parts/CreateProject/CloneProjectModal.tsx
 #: src/renderer/views/MainView/parts/CreateProject/CreateProjectModal.tsx
-#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Runtime"
 msgstr "Середовище виконання"
 
@@ -11220,6 +11437,10 @@ msgstr "Надсилати загальний текст замість назв
 msgid "Send message"
 msgstr "Надіслати повідомлення"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "Надіслати ввід у термінал"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "Вибір надіслано в термінал."
@@ -11270,9 +11491,17 @@ msgstr "Задати або переглянути експерименталь�
 msgid "Set shortcut"
 msgstr "Призначити комбінацію клавіш"
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Set when this session started — start a new thread to change MCP servers"
+msgstr "Зафіксовано під час запуску цієї сесії — щоб змінити сервери MCP, почніть новий тред"
+
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Set when this session started — start a new thread to change servers"
-msgstr "Зафіксовано під час запуску цієї сесії — щоб змінити сервери, почніть новий тред"
+msgid "Set when this session started — start a new thread to change plugins"
+msgstr "Зафіксовано під час запуску цієї сесії — щоб змінити плагіни, почніть новий тред"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Set when this session started — start a new thread to change servers"
+#~ msgstr "Зафіксовано під час запуску цієї сесії — щоб змінити сервери, почніть новий тред"
 
 #: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
 #: src/renderer/views/MainView/parts/MainPageLayout.tsx
@@ -11318,6 +11547,10 @@ msgstr "Комбінації клавіш"
 #: src/renderer/components/providers/ProviderUsageRail.tsx
 msgid "Show {0}"
 msgstr "Показати {0}"
+
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+msgid "Show {label}"
+msgstr "Показати {label}"
 
 #: src/renderer/views/SettingsOverlay/parts/UsageProviderRow.tsx
 msgid "Show {label} circle in sidebar"
@@ -11373,6 +11606,14 @@ msgstr "Показати Composer"
 msgid "Show context usage details"
 msgstr "Показати деталі використання контексту"
 
+#: src/renderer/components/thread/ThreadDocksPlacementToggle.tsx
+msgid "Show docks above the composer"
+msgstr "Показувати доки над полем введення"
+
+#: src/renderer/components/thread/ThreadDocksPlacementToggle.tsx
+msgid "Show docks in the right panel"
+msgstr "Показувати доки на правій панелі"
+
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/UsageSettings.tsx
 msgid "Show estimated cost"
@@ -11382,6 +11623,10 @@ msgstr "Показувати орієнтовну вартість"
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #~ msgid "Show GitHub Actions in the sidebar footer."
 #~ msgstr "Показувати GitHub Actions унизу бічної панелі."
+
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+msgid "Show images"
+msgstr "Показати зображення"
 
 #: src/renderer/components/thread/ChatPane/parts/items/InlineFolderPathChip.tsx
 msgid "Show in file explorer"
@@ -12070,8 +12315,8 @@ msgid "Subagent"
 msgstr "Субагент"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Subagent Delegation"
-msgstr "Делегування субагентам"
+#~ msgid "Subagent Delegation"
+#~ msgstr "Делегування субагентам"
 
 #: src/renderer/components/thread/ChatPane/parts/items/SubAgentOverlay.tsx
 msgid "Subagent not found."
@@ -12313,8 +12558,8 @@ msgid "Take Screenshot"
 msgstr "Зробити знімок екрана"
 
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Takes over the desktop while the agent clicks or types"
-msgstr "Захоплює робочий стіл, поки агент клікає або друкує"
+#~ msgid "Takes over the desktop while the agent clicks or types"
+#~ msgstr "Захоплює робочий стіл, поки агент клікає або друкує"
 
 #: src/renderer/views/SettingsOverlay/parts/MobileRemoteProjectsSheet.tsx
 msgid "Tap + to add a folder or clone a repository on your desktop."
@@ -12341,9 +12586,17 @@ msgstr "Цільова гілка"
 msgid "Task"
 msgstr "Завдання"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Task {id}"
+msgstr "Завдання {id}"
+
 #: src/renderer/views/SettingsOverlay/parts/crossagent/CrossagentRankedRow.tsx
 msgid "Task match"
 msgstr "Відповідність завданню"
+
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
+msgid "Task Notification"
+msgstr "Повідомлення про завдання"
 
 #: src/renderer/components/thread/ChatPane/parts/items/toolDisplay.ts
 msgid "Task output"
@@ -12369,8 +12622,7 @@ msgstr "Укажіть цільовому провайдеру, що робит�
 #: src/renderer/commands/registry.ts
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/layout/PanelDock/panelTabMeta.ts
-#: src/renderer/components/thread/ThreadComposerSection.tsx
-#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+#: src/renderer/components/plugins/pluginCopy.ts
 #: src/renderer/components/thread/ThreadToolRail.tsx
 #: src/renderer/views/MainView/parts/MainPageLayout.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserToolbar.tsx
@@ -12671,6 +12923,10 @@ msgstr "Тема и размер шрифта чата"
 msgid "These built-in MCP servers are shared by OpenCode threads. Saving updates running GUI projects; removing a server can interrupt an active turn. Terminal threads pick up changes on their next launch."
 msgstr "Ці вбудовані сервери MCP спільно використовуються потоками OpenCode. Збереження оновлює запущені GUI-проєкти; видалення сервера може перервати активний хід. Потоки термінала отримають зміни під час наступного запуску."
 
+#: src/renderer/components/mcp/McpServersManager.tsx
+msgid "These servers come from plugins. Enable or disable them from Plugins; they cannot be edited here."
+msgstr "Ці сервери надходять із плагінів. Увімкніть або вимкніть їх у розділі «Плагіни»; тут їх не можна редагувати."
+
 #: src/renderer/components/common/EffortContextMenu/EffortContextMenu.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/Reasoning.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/ReasoningInline.tsx
@@ -12852,10 +13108,18 @@ msgstr "Цей сервер працює на цьому комп'ютері й 
 msgid "This system-wide shortcut is unavailable. Choose another key combination."
 msgstr "Це загальносистемне сполучення клавіш недоступне. Виберіть інше сполучення."
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "This thread switched provider without transferring context: {agent} started without Poracode's read_thread tool, so it cannot read the earlier conversation. Re-enable the app-controls MCP tool, or summarize what it needs."
+msgstr "Цей тред змінив провайдера без передавання контексту: {agent} запущено без інструмента read_thread із Poracode, тому він не може прочитати попередню розмову. Знову увімкніть інструмент MCP app-controls або стисло опишіть потрібний контекст."
+
 #. placeholder {0}: props.worktreeBranch
 #: src/renderer/views/MainView/parts/Sidebar/parts/DeleteWorktreePopover.tsx
 #~ msgid "This thread uses worktree <0>{0}</0>. Also remove the worktree directory?"
 #~ msgstr "Цей тред використовує робоче дерево <0>{0}</0>. Також видалити каталог робочого дерева?"
+
+#: src/renderer/i18n/sharedMessages.ts
+msgid "This thread was forked without transferring context: {agent} started without Poracode's read_thread tool, so it cannot read the original conversation. Re-enable the app-controls MCP tool, or summarize what it needs."
+msgstr "Цей тред було створено як розгалуження без передавання контексту: {agent} запущено без інструмента read_thread із Poracode, тому він не може прочитати початкову розмову. Знову увімкніть інструмент MCP app-controls або стисло опишіть потрібний контекст."
 
 #: src/renderer/views/MainView/parts/Sidebar/parts/DeleteWorktreePopover.tsx
 #~ msgid "This will permanently delete the thread and its worktree."
@@ -12911,6 +13175,16 @@ msgstr "Настройки потоков по умолчанию и облас�
 msgid "Thread dock"
 msgstr "Панель треда"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Thread docks"
+msgstr "Доки треду"
+
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+msgid "Thread docks placement"
+msgstr "Розташування доків треду"
+
 #: src/renderer/components/thread/ThreadView.tsx
 msgid "Thread failed to start."
 msgstr "Не вдалося запустити тред."
@@ -12923,6 +13197,14 @@ msgstr "Тред завершено або він очікує на ваш вв�
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Thread goal dock"
 msgstr "Панель мети треда"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Thread images"
+msgstr "Зображення потоку"
+
+#: src/renderer/views/MainView/parts/ProjectAuxiliaryPanel.tsx
+msgid "Thread info"
+msgstr "Інформація про потік"
 
 #: src/renderer/views/MainView/parts/Sidebar/parts/ThreadContextMenu.tsx
 msgid "Thread is already unloaded."
@@ -12953,6 +13235,7 @@ msgstr "Тред не знайдено"
 msgid "Thread todo dock"
 msgstr "Панель завдань треда"
 
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 #: src/renderer/views/SettingsOverlay/parts/ThreadSettings.tsx
 #: src/renderer/views/ThreadSearchOverlay/ThreadSearchOverlay.tsx
@@ -13233,8 +13516,10 @@ msgstr "Не вдалося визначити вихідну гілку екс�
 msgid "Unable to install {0} hooks."
 msgstr "Не вдалося встановити хуки {0}."
 
+#. placeholder {0}: agent.label
 #. placeholder {0}: input.label
 #: src/renderer/actions/agentLoginActions.ts
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Unable to install {0}."
 msgstr "Не вдалося встановити {0}."
 
@@ -13617,10 +13902,20 @@ msgstr "оновлення"
 #: src/renderer/components/thread/ThreadAgentUpdateDock.tsx
 #: src/renderer/views/SettingsOverlay/parts/AcpRegistrySettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/CursorSdkRuntimeSetup.tsx
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/HookPluginSettings.tsx
-#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Update"
 msgstr "Оновити"
+
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Update {0}"
+msgstr "Оновити {0}"
+
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Update {0} ({env})"
+msgstr "Оновити {0} ({env})"
 
 #. placeholder {0}: agent.label
 #. placeholder {0}: props.agentLabel
@@ -13630,8 +13925,12 @@ msgid "Update {0} to {updateLabel}"
 msgstr "Оновити {0} до {updateLabel}"
 
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
-msgid "Update all"
-msgstr "Оновити все"
+#~ msgid "Update all"
+#~ msgstr "Оновити все"
+
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Update all ({outdatedCount})"
+msgstr "Оновити все ({outdatedCount})"
 
 #: src/renderer/views/SettingsOverlay/parts/antigravityRuntimeInstall.ts
 #~ msgid "Update Antigravity"
@@ -13738,10 +14037,23 @@ msgstr "Оновлено {0}"
 msgid "Updating"
 msgstr "Оновлення"
 
+#. placeholder {0}: updateAllProgress.current
+#. placeholder {1}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Updating ({0}/{1})"
+msgstr "Оновлення ({0}/{1})"
+
 #. placeholder {0}: props.agentLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 msgid "Updating {0}"
 msgstr "Оновлення {0}"
+
+#. placeholder {0}: updateAllProgress.agentLabel
+#. placeholder {1}: updateAllProgress.current
+#. placeholder {2}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Updating {0} ({1} of {2})"
+msgstr "Оновлення {0} ({1} з {2})"
 
 #. placeholder {0}: props.agentLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
@@ -13749,9 +14061,7 @@ msgid "Updating {0} ({env})"
 msgstr "Оновлення {0} ({env})"
 
 #. placeholder {0}: agent.label
-#. placeholder {0}: updateAllProgress.agentLabel
 #. placeholder {1}: update.targetVersion
-#. placeholder {1}: updateAllProgress.targetVersion
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
 msgid "Updating {0} to v{1}"
 msgstr "Оновлення {0} до v{1}"
@@ -14208,6 +14518,11 @@ msgstr "Коли ви закриваєте вікно, залишати Poracode
 #: src/renderer/views/SettingsOverlay/parts/TerminalSettings.tsx
 msgid "Where a browser element-picker selection goes in terminal-native threads. A collapsed composer always routes to the terminal."
 msgstr "Куди потрапляє вибір засобу вибору елементів браузера в нативних термінальних тредах. Згорнуте поле вводу завжди спрямовує в термінал."
+
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Where a thread's goal, plan, agents, and background tasks appear. In the right panel, compact bubbles above the composer open them."
+msgstr "Де відображаються ціль, план, агенти та фонові завдання треду. На правій панелі їх відкривають компактні бульбашки над полем введення."
 
 #: src/renderer/views/WelcomeOverlay.tsx
 msgid "Where do you want to begin?"

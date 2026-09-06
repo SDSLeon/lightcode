@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "contract": "poracode.remote",
-  "protocolVersion": 8,
+  "protocolVersion": 9,
   "wireFormat": {
     "http": "application/json",
     "webSocket": "json-text-frames",
@@ -11,8 +11,8 @@
   },
   "compatibility": {
     "versionPolicy": "exact",
-    "minimumAcceptedProtocolVersion": 8,
-    "maximumAcceptedProtocolVersion": 8,
+    "minimumAcceptedProtocolVersion": 9,
+    "maximumAcceptedProtocolVersion": 9,
     "unknownObjectFields": "ignore",
     "unknownAdvertisedScopes": "filter",
     "unknownClientRequestedScopes": "reject",
@@ -753,6 +753,7 @@
       "content.delta",
       "context.updated",
       "usage.spent",
+      "background_tasks.changed",
       "request.opened",
       "request.resolved",
       "warning",

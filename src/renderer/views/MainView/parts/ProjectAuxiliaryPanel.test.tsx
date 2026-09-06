@@ -1,4 +1,5 @@
-import { act, render, waitFor } from "@testing-library/react";
+import { act, render, renderHook, waitFor } from "@testing-library/react";
+import type { ReactElement, ReactNode } from "react";
 import { I18nProvider } from "@lingui/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Thread } from "@/shared/contracts";
@@ -6,9 +7,13 @@ import type { PoracodeBridge } from "@/shared/ipc";
 import { i18n } from "@/renderer/i18n/i18n";
 import { installBrowserClientRuntime, resetClientRuntimeForTest } from "@/renderer/clientRuntime";
 import { useAppStore } from "@/renderer/state/appStore";
+import { useDevTerminalStore } from "@/renderer/state/devTerminalStore";
 import { usePanelStore } from "@/renderer/state/panelStore";
 import { useRemoteServersStore } from "@/renderer/state/remoteServersStore";
+import { useSharedSettings } from "@/renderer/state/sharedSettingsStore";
+import { ThreadDocksPlacementToggle } from "@/renderer/components/thread/ThreadDocksPlacementToggle";
 import { ProjectAuxiliaryPanel } from "./ProjectAuxiliaryPanel";
+import { usePanelVisibility } from "./AppShell/parts/usePanelVisibility";
 
 vi.mock("@/renderer/analytics/useProductViewTracking", () => ({
   productSurfaceView: vi.fn<(tab: string, mode: string) => string>(() => "git"),
@@ -22,11 +27,19 @@ vi.mock("@/renderer/state/gitRefresh", () => ({
 }));
 
 const unifiedRightPanelProps = vi.hoisted(() => ({
-  current: null as { activeTab: string } | null,
+  current: null as {
+    activeTab: string;
+    docksContent?: ReactElement;
+    docksHeaderActions?: ReactElement;
+  } | null,
 }));
 
 vi.mock("@/renderer/components/layout/UnifiedRightPanel", () => ({
-  UnifiedRightPanel: (props: { activeTab: string }) => {
+  UnifiedRightPanel: (props: {
+    activeTab: string;
+    docksContent?: ReactElement;
+    docksHeaderActions?: ReactElement;
+  }) => {
     unifiedRightPanelProps.current = props;
     return null;
   },
@@ -64,11 +77,47 @@ function focusThread(threadId: string): void {
   });
 }
 
+function seedImageOnlyThread(): void {
+  useAppStore.setState({
+    runtimeItemIdsByThread: { [threadA.id]: ["user-image"] },
+    runtimeItemsByIdByThread: {
+      [threadA.id]: {
+        "user-image": {
+          id: "user-image",
+          type: "user_message",
+          state: "completed",
+          payload: {
+            content: [
+              {
+                kind: "image",
+                source: "attachment",
+                path: "/tmp/a.png",
+                name: "a.png",
+              },
+            ],
+          },
+          streams: {},
+        },
+      },
+    },
+    runtimeStructuralVersionByThread: { [threadA.id]: 1 },
+  });
+}
+
 describe("ProjectAuxiliaryPanel", () => {
   beforeEach(() => {
     localStorage.clear();
     unifiedRightPanelProps.current = null;
     focusThread(threadA.id);
+    useAppStore.setState({
+      projects: [],
+      runtimeBackgroundTasksByThread: {},
+      runtimeItemIdsByThread: {},
+      runtimeItemsByIdByThread: {},
+      runtimeStructuralVersionByThread: {},
+    });
+    useDevTerminalStore.setState({ isOpen: false, tabs: [] });
+    useSharedSettings.setState({ threadDocksPlacement: "composer", terminalPosition: "right" });
     usePanelStore.setState({
       gitReviewContext: {
         projectId: threadB.projectId,
@@ -82,6 +131,10 @@ describe("ProjectAuxiliaryPanel", () => {
       browserPanelOpen: false,
       usagePanelOpen: false,
       notesPanelOpen: false,
+      threadDocksPanelOpen: false,
+      subAgentPanelOpen: false,
+      subAgentPanelContext: null,
+      bottomPanelDocks: { left: null, right: null },
     });
   });
 
@@ -112,6 +165,91 @@ describe("ProjectAuxiliaryPanel", () => {
         projectId: threadC.projectId,
         worktreePath: threadC.worktreePath!,
       });
+    });
+  });
+
+  it("passes the focused worktree location to right-panel docks", async () => {
+    useAppStore.setState({
+      projects: [
+        {
+          id: threadA.projectId,
+          name: "Project A",
+          location: { kind: "posix", path: "/repo-a" },
+          createdAt: "2026-08-03T00:00:00.000Z",
+        },
+      ],
+      runtimeBackgroundTasksByThread: {
+        [threadA.id]: [{ taskId: "task-1", kind: "other", description: "Watch" }],
+      },
+    });
+    useSharedSettings.setState({ threadDocksPlacement: "right" });
+    usePanelStore.setState({ threadDocksPanelOpen: true, rightPanelTab: "docks" });
+
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProjectAuxiliaryPanel includeTerminal visible />
+      </I18nProvider>,
+    );
+
+    await waitFor(() => expect(unifiedRightPanelProps.current?.docksContent).toBeDefined());
+    expect(unifiedRightPanelProps.current?.docksHeaderActions).toMatchObject({
+      type: ThreadDocksPlacementToggle,
+      props: { placement: "right" },
+    });
+    expect(
+      unifiedRightPanelProps.current?.docksContent?.props as {
+        projectLocation?: { kind: string; path: string };
+      },
+    ).toMatchObject({ projectLocation: { kind: "posix", path: "/worktree-a" } });
+  });
+
+  it("keeps an explicitly opened image-only Thread info panel visible", () => {
+    seedImageOnlyThread();
+    useSharedSettings.setState({ threadDocksPlacement: "right" });
+    usePanelStore.setState({
+      gitReviewContext: null,
+      gitReviewAsPanel: false,
+      threadDocksPanelOpen: true,
+      rightPanelTab: "docks",
+    });
+
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <I18nProvider i18n={i18n}>{children}</I18nProvider>
+    );
+    const { result } = renderHook(() => usePanelVisibility(), { wrapper });
+    expect(result.current.rightPanelOpen).toBe(true);
+
+    act(() => usePanelStore.getState().setThreadDocksPanelOpen(false));
+    expect(result.current.rightPanelOpen).toBe(false);
+  });
+
+  it("opens image-focused Thread info while informational docks stay above the composer", async () => {
+    seedImageOnlyThread();
+    usePanelStore.setState({
+      threadDocksPanelOpen: true,
+      threadDocksFocus: "images",
+      rightPanelTab: "docks",
+    });
+
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <I18nProvider i18n={i18n}>{children}</I18nProvider>
+    );
+    const { result } = renderHook(() => usePanelVisibility(), { wrapper });
+    expect(result.current.rightPanelOpen).toBe(true);
+
+    render(
+      <I18nProvider i18n={i18n}>
+        <ProjectAuxiliaryPanel includeTerminal visible />
+      </I18nProvider>,
+    );
+
+    await waitFor(() => {
+      expect(unifiedRightPanelProps.current?.activeTab).toBe("docks");
+    });
+    expect(unifiedRightPanelProps.current?.docksContent).toBeDefined();
+    expect(unifiedRightPanelProps.current?.docksHeaderActions).toMatchObject({
+      type: ThreadDocksPlacementToggle,
+      props: { placement: "composer" },
     });
   });
 

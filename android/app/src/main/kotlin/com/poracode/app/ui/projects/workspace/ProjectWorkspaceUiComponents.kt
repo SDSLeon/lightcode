@@ -60,6 +60,7 @@ internal fun ProjectWorkspaceAccessBanner(
 internal fun ProjectWorkspaceFailureCard(
     failure: ProjectOperationFailure?,
     saving: Boolean = false,
+    mutationUncertain: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     if (failure == null) return
@@ -69,6 +70,8 @@ internal fun ProjectWorkspaceFailureCard(
         } else {
             stringResource(R.string.workspace_save_failed)
         }
+    } else if (mutationUncertain) {
+        stringResource(R.string.workspace_mutation_uncertain)
     } else {
         workspaceFailureText(failure)
     }

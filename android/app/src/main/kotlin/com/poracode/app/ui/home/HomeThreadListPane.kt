@@ -1,16 +1,15 @@
 package com.poracode.app.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,17 +17,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.Lan
 import androidx.compose.material.icons.outlined.MoreHoriz
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -36,14 +29,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,25 +45,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.poracode.app.R
+import com.poracode.app.model.ClientConnectionId
 import com.poracode.app.model.RemoteGitSummary
-import com.poracode.app.push.PushAvailability
-import com.poracode.app.push.PushPermissionCard
 import com.poracode.app.push.PushUiState
 import com.poracode.app.session.AppSession
 import com.poracode.app.session.HostPresentation
+import com.poracode.app.session.projects.ProjectSessionRuntime
+import com.poracode.app.session.richchat.RichChatSessionRuntime
+import com.poracode.app.session.threads.ThreadLifecycleController
 import com.poracode.app.session.threads.ThreadSessionRuntime
+import com.poracode.app.storage.HomeShortcut
 import com.poracode.app.transport.RemoteWebSocketClient
 import com.poracode.app.ui.components.BrandWordmark
 import com.poracode.app.ui.components.EmptyStateView
 import com.poracode.app.ui.components.ErrorStateView
 import com.poracode.app.ui.components.LoadingStateView
-import com.poracode.app.ui.components.OfflineBanner
-
-private data class HomeProjectFilterOption(val id: String, val name: String, val host: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,10 +78,19 @@ internal fun ThreadListPane(
     onManageHosts: () -> Unit,
     onManageProjects: () -> Unit,
     onManagePorts: () -> Unit,
+    onOpenBrowserMirror: () -> Unit,
+    onOpenSchedules: () -> Unit,
+    onOpenProfile: () -> Unit,
+    onOpenUsage: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenProjectUtility: (ClientConnectionId, String, HomeProjectUtility) -> Unit,
+    excludedProjectIds: Map<String, Set<String>>,
     threadRuntime: ThreadSessionRuntime,
+    richChatRuntime: RichChatSessionRuntime,
+    projectRuntime: ProjectSessionRuntime,
     pushState: PushUiState,
     onPushAction: () -> Unit,
+    visibleShortcuts: List<HomeShortcut>,
     modifier: Modifier = Modifier,
 ) {
     var searchVisible by rememberSaveable { mutableStateOf(false) }
@@ -98,18 +100,31 @@ internal fun ThreadListPane(
     var expandedWorktrees by remember { mutableStateOf(emptySet<String>()) }
     var showMore by rememberSaveable { mutableStateOf(false) }
     var showQuickCompose by rememberSaveable { mutableStateOf(false) }
+    var projectUtilityName by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val projectOptions = remember(threads) {
-        threads.groupBy(HomeThreadListPresentation::projectIdentity)
-            .mapNotNull { (id, values) ->
-                values.firstOrNull()?.let { HomeProjectFilterOption(id, it.project.name, it.hostName) }
-            }
-            .sortedBy { it.name.lowercase() }
+    val projectOptions = remember(
+        state.hostCatalog.hosts,
+        state.hostCatalog.selectedConnectionId,
+        state.snapshot,
+        state.hostSnapshots,
+        excludedProjectIds,
+    ) {
+        HomeProjectFilterPresentation.options(
+            hosts = state.hostCatalog.hosts,
+            selectedConnectionId = state.hostCatalog.selectedConnectionId,
+            selectedSnapshot = state.snapshot,
+            hostSnapshots = state.hostSnapshots,
+            excludedProjectIds = excludedProjectIds,
+        )
+    }
+    LaunchedEffect(projectOptions.map(HomeProjectFilterOption::id)) {
+        selectedProjects = selectedProjects.intersect(projectOptions.mapTo(mutableSetOf()) { it.id })
     }
     val visibleItems = remember(threads, searchText, selectedProjects) {
         HomeThreadListPresentation.filter(threads, searchText, selectedProjects)
     }
     val entries = remember(visibleItems) { HomeThreadListPresentation.entries(visibleItems) }
+    val canOperateThreads = state.canSessionOperate
 
     Box(modifier = modifier) {
         Scaffold(
@@ -150,6 +165,9 @@ internal fun ThreadListPane(
                         ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.home_all_projects)) },
+                                modifier = Modifier.semantics {
+                                    selected = selectedProjects.isEmpty()
+                                },
                                 leadingIcon = if (selectedProjects.isEmpty()) {
                                     { Icon(Icons.Outlined.Check, contentDescription = null) }
                                 } else {
@@ -166,7 +184,11 @@ internal fun ThreadListPane(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            "${option.name} — ${option.host}",
+                                            stringResource(
+                                                R.string.home_project_host,
+                                                option.project.name,
+                                                option.hostName,
+                                            ),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                         )
@@ -176,6 +198,7 @@ internal fun ThreadListPane(
                                     } else {
                                         null
                                     },
+                                    modifier = Modifier.semantics { this.selected = selected },
                                     onClick = {
                                         selectedProjects = if (selected) {
                                             selectedProjects - option.id
@@ -192,7 +215,9 @@ internal fun ThreadListPane(
             },
             bottomBar = {
             HomeActionDock(
-                newThreadEnabled = state.canSessionOperate && state.snapshot?.projects?.isNotEmpty() == true,
+                newThreadEnabled = state.canSessionOperate && projectOptions.any {
+                    it.connectionId == state.hostCatalog.selectedConnectionId
+                },
                 onSearch = { searchVisible = !searchVisible },
                 onNewThread = { showQuickCompose = true },
                 onMore = { showMore = true },
@@ -216,13 +241,10 @@ internal fun ThreadListPane(
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 )
             }
-            if (state.socketState == RemoteWebSocketClient.ConnectionState.Reconnecting ||
-                state.socketState == RemoteWebSocketClient.ConnectionState.Failed ||
-                state.socketState == RemoteWebSocketClient.ConnectionState.Suspended ||
-                state.socketState == RemoteWebSocketClient.ConnectionState.SessionExpired
-            ) {
-                OfflineBanner(message = socketLabel(state.socketState))
-            }
+            HomeSocketBanner(
+                loadState = state.projectsLoadState,
+                socketState = state.socketState,
+            )
             state.globalError?.let { error ->
                 val errorDescription = stringResource(R.string.error_prefix, error)
                 Text(
@@ -249,6 +271,8 @@ internal fun ThreadListPane(
                         }
                     },
                     onOpenThread = onOpenThread,
+                    lifecycleController = threadRuntime.controller,
+                    canOperateThreads = canOperateThreads,
                     modifier = Modifier.weight(1f),
                 )
                 visibleItems.isEmpty() && (searchText.isNotBlank() || selectedProjects.isNotEmpty()) -> {
@@ -285,16 +309,46 @@ internal fun ThreadListPane(
         }
 
         if (showMore) {
+            val selectedProjectOptions = projectOptions.filter {
+                it.connectionId == state.hostCatalog.selectedConnectionId
+            }
             HomeMoreSheet(
                 pushState = pushState,
                 onPushAction = onPushAction,
                 onDismiss = { showMore = false },
                 onManageHosts = { showMore = false; onManageHosts() },
                 onManageProjects = { showMore = false; onManageProjects() },
+                onOpenBrowserMirror = { showMore = false; onOpenBrowserMirror() },
+                onOpenSchedules = { showMore = false; onOpenSchedules() },
+                onOpenProfile = { showMore = false; onOpenProfile() },
+                onOpenUsage = { showMore = false; onOpenUsage() },
+                onOpenTerminal = {
+                    showMore = false
+                    projectUtilityName = HomeProjectUtility.Terminal.name
+                },
+                onOpenNotes = {
+                    showMore = false
+                    projectUtilityName = HomeProjectUtility.Notes.name
+                },
+                onOpenPullRequests = {
+                    showMore = false
+                    projectUtilityName = HomeProjectUtility.PullRequests.name
+                },
+                onOpenGithubActions = {
+                    showMore = false
+                    projectUtilityName = HomeProjectUtility.GithubActions.name
+                },
                 onManagePorts = { showMore = false; onManagePorts() },
                 onOpenSettings = { showMore = false; onOpenSettings() },
+                visibleShortcuts = visibleShortcuts,
+                remoteAvailable = state.canSessionRead &&
+                    state.phase == AppSession.Phase.Ready &&
+                    !state.sessionExpired &&
+                    state.socketState == RemoteWebSocketClient.ConnectionState.Online,
+                availableUtilities = HomeProjectUtility.entries.filterTo(mutableSetOf()) { utility ->
+                    selectedProjectOptions.any { utility.supports(it.project) }
+                },
                 onRefresh = { showMore = false; onRefresh() },
-                onUnpair = { showMore = false; onUnpair() },
             )
         }
         if (showQuickCompose) {
@@ -302,8 +356,26 @@ internal fun ThreadListPane(
                 state = state,
                 threads = threads,
                 runtime = threadRuntime,
+                richChat = richChatRuntime,
+                projectRuntime = projectRuntime,
+                excludedProjectIds = excludedProjectIds,
                 onDismiss = { showQuickCompose = false },
                 onStarted = onOpenThread,
+            )
+        }
+        val utility = HomeProjectUtility.entries.firstOrNull { it.name == projectUtilityName }
+        if (utility != null) {
+            HomeProjectUtilityPicker(
+                utility = utility,
+                projects = projectOptions.filter {
+                    it.connectionId == state.hostCatalog.selectedConnectionId &&
+                        utility.supports(it.project)
+                },
+                onDismiss = { projectUtilityName = null },
+                onSelect = { option ->
+                    projectUtilityName = null
+                    onOpenProjectUtility(option.connectionId, option.project.id, utility)
+                },
             )
         }
     }
@@ -318,6 +390,8 @@ private fun HomeThreadEntryList(
     expandedWorktrees: Set<String>,
     onToggleWorktree: (String) -> Unit,
     onOpenThread: (String) -> Unit,
+    lifecycleController: ThreadLifecycleController,
+    canOperateThreads: Boolean,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -327,7 +401,7 @@ private fun HomeThreadEntryList(
     ) {
         items(entries, key = { it.id }) { entry ->
             when (entry) {
-                is HomeThreadListEntry.Thread -> HomeThreadRow(
+                is HomeThreadListEntry.Thread -> HomeThreadRowWithActions(
                     item = entry.item,
                     grouped = false,
                     selected = entry.item.id == selectedThreadId,
@@ -336,6 +410,8 @@ private fun HomeThreadEntryList(
                     } else {
                         null
                     },
+                    lifecycleController = lifecycleController,
+                    canOperateThreads = canOperateThreads,
                     onClick = { onOpenThread(entry.item.id) },
                 )
                 is HomeThreadListEntry.Worktree -> HomeWorktreeGroup(
@@ -343,6 +419,8 @@ private fun HomeThreadEntryList(
                     collapsed = entry.id !in expandedWorktrees,
                     onToggle = { onToggleWorktree(entry.id) },
                     onOpenThread = onOpenThread,
+                    lifecycleController = lifecycleController,
+                    canOperateThreads = canOperateThreads,
                 )
             }
         }
@@ -356,52 +434,45 @@ private fun HomeActionDock(
     onNewThread: () -> Unit,
     onMore: () -> Unit,
 ) {
-    Surface(tonalElevation = 2.dp, shadowElevation = 8.dp) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 9.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HomeDockButton(
+            icon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+            label = stringResource(R.string.home_search_threads),
+            onClick = onSearch,
+        )
+        Surface(
+            onClick = onNewThread,
+            enabled = newThreadEnabled,
+            modifier = Modifier.weight(1f).height(48.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 2.dp,
+            shadowElevation = 4.dp,
         ) {
-            HomeDockButton(
-                icon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                label = stringResource(R.string.home_search_threads),
-                onClick = onSearch,
-            )
-            Surface(
-                onClick = onNewThread,
-                enabled = newThreadEnabled,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 2.dp,
+            Box(
+                Modifier.padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterStart,
             ) {
-                Row(
-                    Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        stringResource(R.string.home_quick_compose_prompt),
-                        modifier = Modifier.weight(1f),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Icon(
-                        Icons.Outlined.AddCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
+                Text(
+                    stringResource(R.string.home_quick_compose_prompt),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-            HomeDockButton(
-                icon = { Icon(Icons.Outlined.MoreHoriz, contentDescription = null) },
-                label = stringResource(R.string.home_more),
-                onClick = onMore,
-            )
         }
+        HomeDockButton(
+            icon = { Icon(Icons.Outlined.MoreHoriz, contentDescription = null) },
+            label = stringResource(R.string.home_more),
+            onClick = onMore,
+        )
     }
 }
 
@@ -416,63 +487,9 @@ private fun HomeDockButton(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 2.dp,
+        shadowElevation = 4.dp,
         modifier = Modifier.semantics { contentDescription = label },
     ) {
         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { icon() }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeMoreSheet(
-    pushState: PushUiState,
-    onPushAction: () -> Unit,
-    onDismiss: () -> Unit,
-    onManageHosts: () -> Unit,
-    onManageProjects: () -> Unit,
-    onManagePorts: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onRefresh: () -> Unit,
-    onUnpair: () -> Unit,
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text(
-            stringResource(R.string.home_more),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-        )
-        if (pushState.availability == PushAvailability.PermissionRequired ||
-            pushState.availability == PushAvailability.PermissionDenied
-        ) {
-            PushPermissionCard(pushState, onPushAction)
-        }
-        HomeMoreRow(R.string.hosts_manage, Icons.Outlined.Computer, onManageHosts)
-        HomeMoreRow(R.string.projects_manage_title, Icons.Outlined.FolderOpen, onManageProjects)
-        HomeMoreRow(R.string.ports_title, Icons.Outlined.Lan, onManagePorts)
-        HomeMoreRow(R.string.settings_title, Icons.Outlined.Settings, onOpenSettings)
-        HomeMoreRow(R.string.refresh_projects, Icons.Outlined.Refresh, onRefresh)
-        HorizontalDivider(Modifier.padding(vertical = 4.dp))
-        HomeMoreRow(
-            R.string.disconnect,
-            Icons.AutoMirrored.Outlined.Logout,
-            onUnpair,
-            destructive = true,
-        )
-        Spacer(Modifier.height(12.dp))
-    }
-}
-
-@Composable
-private fun HomeMoreRow(
-    labelRes: Int,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit,
-    destructive: Boolean = false,
-) {
-    val color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-    ListItem(
-        headlineContent = { Text(stringResource(labelRes), color = color) },
-        leadingContent = { Icon(icon, contentDescription = null, tint = color) },
-        modifier = Modifier.clickable(onClick = onClick),
-    )
 }

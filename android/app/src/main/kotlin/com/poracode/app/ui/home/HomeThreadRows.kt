@@ -44,6 +44,7 @@ import com.poracode.app.R
 import com.poracode.app.model.RemoteGitSummary
 import com.poracode.app.model.RemoteThread
 import com.poracode.app.session.HostPresentation
+import com.poracode.app.session.threads.ThreadLifecycleController
 import com.poracode.app.ui.GitSummaryText
 import java.time.Instant
 
@@ -53,6 +54,8 @@ internal fun HomeWorktreeGroup(
     collapsed: Boolean,
     onToggle: () -> Unit,
     onOpenThread: (String) -> Unit,
+    lifecycleController: ThreadLifecycleController,
+    canOperateThreads: Boolean,
 ) {
     val rotation by animateFloatAsState(if (collapsed) -90f else 0f, label = "worktree-chevron")
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -112,11 +115,13 @@ internal fun HomeWorktreeGroup(
                                 .fillMaxHeight()
                                 .background(MaterialTheme.colorScheme.outlineVariant),
                         )
-                        HomeThreadRow(
+                        HomeThreadRowWithActions(
                             item = item,
                             grouped = true,
                             gitSummary = null,
                             selected = false,
+                            lifecycleController = lifecycleController,
+                            canOperateThreads = canOperateThreads,
                             onClick = { onOpenThread(item.id) },
                             modifier = Modifier.weight(1f),
                         )
@@ -135,6 +140,7 @@ internal fun HomeThreadRow(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val thread = item.thread
     val title = thread.title.ifBlank { stringResource(R.string.untitled_thread) }
@@ -188,7 +194,7 @@ internal fun HomeThreadRow(
                         Icon(
                             Icons.Outlined.Star,
                             contentDescription = stringResource(R.string.starred),
-                            tint = Color(0xFFE5A800),
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .padding(horizontal = 4.dp)
                                 .size(14.dp),
@@ -215,6 +221,9 @@ internal fun HomeThreadRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+            }
+            if (trailing != null) {
+                Box(Modifier.align(Alignment.CenterVertically)) { trailing() }
             }
         }
     }
@@ -248,7 +257,7 @@ private fun HomeStatusGlyph(thread: RemoteThread) {
 private fun homeStatusColor(status: String): Color = when (status) {
     "needs_approval", "needs_reply" -> MaterialTheme.colorScheme.tertiary
     "error" -> MaterialTheme.colorScheme.error
-    "finished" -> Color(0xFF2E8B57)
+    "finished" -> MaterialTheme.colorScheme.primary
     else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
 }
 

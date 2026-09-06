@@ -14,8 +14,11 @@ if (firebaseConfigured) {
     apply(plugin = "com.google.gms.google-services")
 }
 
+val rootPackageMetadata = JsonSlurper().parse(rootProject.file("../package.json")) as Map<*, *>
+val rootPackageVersion = rootPackageMetadata["version"] as? String
+    ?: error("Root package.json is missing a version")
 val mobileBuildNumber = (System.getenv("PORACODE_MOBILE_BUILD_NUMBER") ?: "1").toInt()
-val mobileVersionName = System.getenv("PORACODE_MOBILE_VERSION_NAME") ?: "1.5.0"
+val mobileVersionName = System.getenv("PORACODE_MOBILE_VERSION_NAME") ?: rootPackageVersion
 val remoteV3NativeDirectory =
     rootProject.layout.projectDirectory.dir("../protocol/remote/v3/generated/native")
 val remoteV3KotlinDirectory = remoteV3NativeDirectory.dir("kotlin")

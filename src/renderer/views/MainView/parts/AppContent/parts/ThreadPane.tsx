@@ -1,7 +1,6 @@
 import { startTransition, useRef } from "react";
 import { Trans } from "@lingui/react/macro";
 import type {
-  ExtractContextResult,
   PromptSegment,
   Thread,
   ThreadConfig,
@@ -10,6 +9,7 @@ import type {
 import { resolveProjectLocation } from "@/shared/worktree";
 import { readBridge } from "@/renderer/bridge";
 import { toggleMarkThreadDone } from "@/renderer/actions/threadActions";
+import type { ProviderHandoffContext } from "@/renderer/actions/providerHandoff";
 import { useAppStore } from "@/renderer/state/appStore";
 import { useExperimentStore } from "@/renderer/state/experimentStore";
 import { remoteOwner } from "@/renderer/state/remoteProjection";
@@ -28,6 +28,11 @@ import {
 import { useRemoteServersStore } from "@/renderer/state/remoteServersStore";
 import { watchRoutedTerminal } from "@/renderer/state/remoteTerminalFeed";
 
+// Non-subscribing action read: these stable store actions don't need a
+// subscription, and aliasing keeps the render path from referencing the hook
+// as a value.
+const getAppState = useAppStore.getState;
+
 export function ThreadPane(props: {
   threadId: string;
   paneCount: number;
@@ -44,7 +49,7 @@ export function ThreadPane(props: {
     prompt: string,
     segments: PromptSegment[] | undefined,
     intent: ContinueIntent,
-    extractedContext: ExtractContextResult | null,
+    handoffContext: ProviderHandoffContext,
   ) => void;
 }) {
   const thread = useThread(props.threadId);
@@ -74,8 +79,9 @@ export function ThreadPane(props: {
     segments: pendingLaunchSegments,
     userMessageItemId: pendingLaunchUserMessageItemId,
     providerSwitch: pendingLaunchProviderSwitch,
+    mentionHandoff: pendingLaunchMentionHandoff,
   } = useThreadPendingLaunch(props.threadId);
-  const { applyRuntimeEvent, updateThreadRuntime, consumeThreadLaunch } = useAppStore.getState();
+  const { applyRuntimeEvent, updateThreadRuntime, consumeThreadLaunch } = getAppState();
 
   const paneElementRef = useRef<HTMLDivElement>(null);
   const { handleRef } = useDraggable({
@@ -183,6 +189,7 @@ export function ThreadPane(props: {
       {...(pendingLaunchSegments ? { pendingLaunchSegments } : {})}
       {...(pendingLaunchUserMessageItemId ? { pendingLaunchUserMessageItemId } : {})}
       {...(pendingLaunchProviderSwitch ? { pendingLaunchProviderSwitch } : {})}
+      {...(pendingLaunchMentionHandoff ? { pendingLaunchMentionHandoff: true } : {})}
       installedAgents={installedAgents}
       {...(thread.remoteServerId
         ? {

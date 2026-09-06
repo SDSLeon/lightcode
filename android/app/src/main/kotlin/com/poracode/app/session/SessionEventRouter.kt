@@ -9,6 +9,8 @@ import com.poracode.app.model.string
 import com.poracode.app.protocol.RuntimeEventReducer
 import com.poracode.app.protocol.ThreadHydrationCoordinator
 import com.poracode.app.protocol.ThreadRuntimeDomainState
+import com.poracode.app.push.RemoteUserNotificationEvent
+import com.poracode.app.push.RemoteNotificationReplayGate
 import com.poracode.app.session.replay.HostReplayCacheUi
 import com.poracode.app.session.replay.ReplayOutcome
 import com.poracode.app.session.replay.SequencedEventApplier
@@ -49,8 +51,13 @@ class SessionEventRouter(
     private val onReplaySideEffects: (ReplayOutcome) -> Unit = {},
     private val applyGitInterests: (List<com.poracode.app.protocol.git.GitInterest>) -> Unit = {},
     private val heavyReviewTarget: () -> HeavyReviewTarget? = { null },
+    private val presentRemoteNotification: (
+        RemoteUserNotificationEvent,
+        Boolean,
+    ) -> Unit = { _, _ -> },
 ) {
     private var lastSeededSnapshotSeq: Int? = null
+    private val notificationReplay = RemoteNotificationReplayGate()
     fun handleServerMessage(message: RemoteWebSocketServerMessage) {
         seedFromLatestSnapshotIfNeeded()
         if (!allowsLiveEvents()) {
@@ -60,8 +67,19 @@ class SessionEventRouter(
             return
         }
         when (message) {
-            is RemoteWebSocketServerMessage.Ready -> Unit
+            is RemoteWebSocketServerMessage.Ready -> notificationReplay.noteReady(message.seq)
             is RemoteWebSocketServerMessage.Event -> {
+                val notification = try {
+                    RemoteUserNotificationEvent.decodeIfPresent(message.event)
+                } catch (_: Exception) {
+                    return
+                }
+                if (notification != null) {
+                    richChatEventSink(message.seq, message.event)
+                    presentRemoteNotification(notification, notificationReplay.isReplay(message.seq))
+                    setLastSeenSeq(message.seq)
+                    return
+                }
                 // The seven sequenced replay transitions own strict
                 // apply-before-cursor semantics: apply transactionally first,
                 // and only advance the cursor after a successful apply. A stale

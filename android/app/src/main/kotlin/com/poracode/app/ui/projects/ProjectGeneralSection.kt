@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import com.poracode.app.R
 import com.poracode.app.model.PatchValue
 import com.poracode.app.model.ProjectIdentity
@@ -48,12 +49,17 @@ internal fun ProjectGeneralSection(
     identity: ProjectIdentity,
     access: ProjectUiAccess,
     commandBusy: Boolean,
+    synced: Boolean,
+    onSetSynced: (Boolean) -> Unit,
     onRemoved: () -> Unit,
 ) {
     var name by remember(identity, project.name) { mutableStateOf(project.name) }
     var localBusy by remember(identity) { mutableStateOf(false) }
     var failure by remember(identity) { mutableStateOf<ProjectOperationFailure?>(null) }
     var showFolders by remember(identity) { mutableStateOf(false) }
+    var relocatePath by remember(identity, project.location) {
+        mutableStateOf(project.location.hostPath())
+    }
     var pendingRelocation by remember(identity) { mutableStateOf<String?>(null) }
     var pendingDisable by remember(identity) { mutableStateOf(false) }
     var confirmRemove by remember(identity) { mutableStateOf(false) }
@@ -65,7 +71,7 @@ internal fun ProjectGeneralSection(
         localBusy = true
         failure = null
         scope.launch {
-            when (val outcome = runtime.catalog.execute(command)) {
+            when (val outcome = runtime.catalog.execute(identity, command)) {
                 is ProjectCommandOutcome.Applied -> applied()
                 is ProjectCommandOutcome.Rejected -> failure = outcome.failure
                 ProjectCommandOutcome.Stale -> Unit
@@ -95,14 +101,29 @@ internal fun ProjectGeneralSection(
             },
             enabled = enabled && name != project.name && projectNameProblem(name) == null,
         ) { Text(stringResource(R.string.projects_save_name)) }
-        Text(stringResource(R.string.projects_location), style = MaterialTheme.typography.labelLarge)
-        Text(
-            project.location.hostPath(),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        OutlinedTextField(
+            value = relocatePath,
+            onValueChange = { relocatePath = it },
+            label = { Text(stringResource(R.string.projects_location)) },
+            singleLine = true,
+            enabled = enabled,
+            modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedButton(onClick = { showFolders = true }, enabled = enabled) {
-            Text(stringResource(R.string.projects_relocate))
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(onClick = { showFolders = true }, enabled = enabled) {
+                Text(stringResource(R.string.projects_browse))
+            }
+            Button(
+                onClick = { pendingRelocation = relocatePath.trim() },
+                enabled = enabled &&
+                    relocatePath.trim().isNotEmpty() &&
+                    relocatePath.trim() != project.location.hostPath(),
+            ) {
+                Text(stringResource(R.string.projects_relocate))
+            }
         }
         Row(
             Modifier.fillMaxWidth(),
@@ -137,6 +158,27 @@ internal fun ProjectGeneralSection(
                 },
             )
         }
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.projects_sync_on_device),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    stringResource(R.string.projects_sync_on_device_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = synced,
+                onCheckedChange = onSetSynced,
+            )
+        }
         ProjectFailureText(failure)
         OutlinedButton(
             onClick = { confirmRemove = true },
@@ -154,6 +196,7 @@ internal fun ProjectGeneralSection(
                 onDismiss = { showFolders = false },
                 onSelect = {
                     showFolders = false
+                    relocatePath = it
                     pendingRelocation = it
                 },
             )

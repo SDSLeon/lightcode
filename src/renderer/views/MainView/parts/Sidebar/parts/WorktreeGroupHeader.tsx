@@ -19,7 +19,10 @@ export function getWorktreeGroupStatusTone(
   return undefined;
 }
 
-export function WorktreeGroupHeader(props: {
+export function WorktreeGroupHeader({
+  ref = null,
+  ...props
+}: {
   ref?: React.Ref<HTMLDivElement>;
   worktreePath: string;
   worktreeBranch: string;
@@ -159,7 +162,7 @@ export function WorktreeGroupHeader(props: {
 
   return (
     <SidebarButton
-      {...(props.ref != null ? { ref: props.ref } : {})}
+      ref={ref}
       onContextMenu={props.onContextMenu}
       icon={
         !props.isCollapsed ? (

@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">Arrêter la recopie</string>
     <string name="browser_mirror_empty">Aucun onglet du navigateur n’est ouvert.</string>
     <string name="browser_mirror_stopped">La recopie du navigateur est arrêtée.</string>
+    <string name="browser_mirror_move_left">Déplacer à gauche</string>
+    <string name="browser_mirror_move_right">Déplacer à droite</string>
+    <string name="browser_mirror_privacy_notice">Les pages recopiées peuvent afficher du contenu personnel. Les images restent sur cet appareil et sont effacées lorsque vous quittez cet écran.</string>
 </resources>

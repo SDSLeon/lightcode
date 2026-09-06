@@ -1,15 +1,11 @@
 import { existsSync } from "node:fs";
-import { join } from "node:path";
 import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import * as schema from "../db.schema";
 import {
   assertRequiredDatabaseSchema,
   repairSafeSchemaDrift,
   runDatabaseMigrations,
 } from "./migrations";
 
-let _db: ReturnType<typeof drizzle> | undefined;
 let _sqlite: InstanceType<typeof Database> | undefined;
 
 /**
@@ -30,59 +26,29 @@ export function bumpProfileDataGeneration(): void {
 const USAGE_EVENTS_RETENTION_DAYS = 730;
 const REMOTE_COMMAND_RECEIPTS_RETENTION_DAYS = 30;
 
-const HEADLESS_SERVER_ENV = "PORACODE_HEADLESS_SERVER";
 const BETTER_SQLITE_NATIVE_BINDING_ENV = "PORACODE_BETTER_SQLITE3_NATIVE_BINDING";
-const DEFAULT_SERVER_NATIVE_BINDING = join("dist", "server-native", "better_sqlite3.node");
 
 export function resolveBetterSqliteNativeBindingOptions(
   env: NodeJS.ProcessEnv = process.env,
-  cwd = process.cwd(),
   bindingExists: (path: string) => boolean = existsSync,
-  // db.ts is bundled to dist/main/*.cjs, so __dirname is the emitted dir.
-  moduleDir = __dirname,
 ): ConstructorParameters<typeof Database>[1] | undefined {
   const explicit = env[BETTER_SQLITE_NATIVE_BINDING_ENV]?.trim();
   if (explicit) {
     if (!bindingExists(explicit)) {
       throw new Error(
         `${BETTER_SQLITE_NATIVE_BINDING_ENV} points to a file that does not exist: ${explicit}. ` +
-          "Set it to a Node-ABI better_sqlite3.node built for this Node runtime, or unset it.",
+          "Set it to a compatible better-sqlite3 13 N-API binary, or unset it.",
       );
     }
     return { nativeBinding: explicit };
   }
-  if (env[HEADLESS_SERVER_ENV] !== "1") return undefined;
-  // The prepared Node-ABI binding may sit relative to the process CWD (repo
-  // root, dev) OR relative to the emitted server bundle (packaged: server.cjs
-  // in dist/main, so ../server-native/better_sqlite3.node). Launching the built
-  // CLI from any other dir (systemd/launchd/cron) misses the cwd-relative path,
-  // so probe both and prefer whichever exists.
-  const candidates = [
-    join(cwd, DEFAULT_SERVER_NATIVE_BINDING),
-    join(moduleDir, "..", "server-native", "better_sqlite3.node"),
-  ];
-  const found = candidates.find((candidate) => bindingExists(candidate));
-  return found ? { nativeBinding: found } : undefined;
+  // SQLite 13 bundles N-API binaries. Never load a stale pre-13 server-native artifact.
+  return undefined;
 }
 
 function openDatabase(dbPath: string): InstanceType<typeof Database> {
   const options = resolveBetterSqliteNativeBindingOptions();
-  try {
-    return new Database(dbPath, options);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (message.includes("NODE_MODULE_VERSION")) {
-      throw new Error(
-        [
-          "better-sqlite3 native binding is not compatible with this Node runtime.",
-          "For the headless server, run `pnpm run prepare:server-native` or set",
-          `${BETTER_SQLITE_NATIVE_BINDING_ENV} to a Node-ABI better_sqlite3.node file.`,
-        ].join(" "),
-        { cause: error },
-      );
-    }
-    throw error;
-  }
+  return new Database(dbPath, options);
 }
 
 export function initDatabase(
@@ -101,12 +67,11 @@ export function initDatabase(
   // BEGIN IMMEDIATE to reserve the single writer before taking a snapshot.
 
   _sqlite = sqlite;
-  _db = drizzle({ client: sqlite, schema });
 
   if (options.schemaMode === "validate") {
     assertRequiredDatabaseSchema(sqlite);
     console.log("[db] validated");
-    return _db;
+    return sqlite;
   }
 
   // Create tables if they don't exist.
@@ -327,18 +292,10 @@ export function initDatabase(
   sqlite.prepare("DELETE FROM remote_command_receipts WHERE updated_at < ?").run(receiptCutoff);
 
   console.log("[db] initialized");
-  return _db;
+  return sqlite;
 }
 
-export function getDb() {
-  if (!_db) throw new Error("Database not initialized");
-  return _db;
-}
-
-/**
- * Raw better-sqlite3 handle for modules that issue prepared statements directly.
- * Throws with the same message as {@link getDb} when the database is not open.
- */
+/** better-sqlite3 handle; every DB module issues prepared statements against it. */
 export function getSqlite(): InstanceType<typeof Database> {
   if (!_sqlite) throw new Error("Database not initialized");
   return _sqlite;
@@ -373,5 +330,4 @@ export function closeDatabase() {
     sqlite.close();
   }
   _sqlite = undefined;
-  _db = undefined;
 }

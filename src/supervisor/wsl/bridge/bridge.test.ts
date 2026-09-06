@@ -2,6 +2,7 @@ import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { createServer, type Server } from "node:http";
 import {
   chmodSync,
+  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -9,6 +10,7 @@ import {
   writeFileSync,
   rmSync,
   symlinkSync,
+  utimesSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -35,7 +37,7 @@ interface RunningBridge {
 async function startBridge(extraEnv: Record<string, string> = {}): Promise<RunningBridge> {
   const child = spawn(process.execPath, [BRIDGE_SCRIPT], {
     env: { ...process.env, PORACODE_HOOK_SECRET: SECRET, ...extraEnv },
-    stdio: ["ignore", "pipe", "ignore"],
+    stdio: [extraEnv.PORACODE_BRIDGE_PARENT_STDIN === "1" ? "pipe" : "ignore", "pipe", "ignore"],
   });
 
   const baseUrl = await new Promise<string>((resolveUrl, reject) => {
@@ -70,6 +72,17 @@ async function startBridge(extraEnv: Record<string, string> = {}): Promise<Runni
 function closeServer(server: Server): Promise<void> {
   return new Promise((resolve) => server.close(() => resolve()));
 }
+
+it("exits the helper when its supervisor closes the parent pipe", async () => {
+  const bridge = await startBridge({ PORACODE_BRIDGE_PARENT_STDIN: "1" });
+  try {
+    const exited = new Promise<number | null>((resolve) => bridge.child.once("exit", resolve));
+    bridge.child.stdin!.end();
+    expect(await exited).toBe(0);
+  } finally {
+    await bridge.dispose();
+  }
+});
 
 function isProcessRunning(pid: number): boolean {
   try {
@@ -310,6 +323,51 @@ describeOnPosix("bridge.mjs fs endpoints", () => {
     expect(envelope.data.stats[1]?.code).toBe("ENOENT");
   });
 
+  it("moves without replacing an existing destination", async () => {
+    const source = join(projectRoot, "source.txt");
+    const destination = join(projectRoot, "destination.txt");
+    writeFileSync(source, "source");
+    writeFileSync(destination, "destination");
+
+    const collision = await post(`${bridge.baseUrl}/v1/fs/move-no-replace`, {
+      projectRoot,
+      from: source,
+      to: destination,
+    });
+    expect(collision.status).toBe(409);
+    expect(readFileSync(source, "utf8")).toBe("source");
+    expect(readFileSync(destination, "utf8")).toBe("destination");
+
+    rmSync(destination);
+    const moved = await post(`${bridge.baseUrl}/v1/fs/move-no-replace`, {
+      projectRoot,
+      from: source,
+      to: destination,
+    });
+    expect(moved.status).toBe(200);
+    expect(existsSync(source)).toBe(false);
+    expect(readFileSync(destination, "utf8")).toBe("source");
+  });
+
+  it("rejects mutations through a symbolic-link ancestor", async () => {
+    const outside = mkdtempSync(join(tmpdir(), "poracode-bridge-outside-"));
+    try {
+      writeFileSync(join(outside, "keep.txt"), "keep");
+      symlinkSync(outside, join(projectRoot, "outside-link"));
+      const response = await post(`${bridge.baseUrl}/v1/fs/rm`, {
+        projectRoot,
+        path: join(projectRoot, "outside-link", "keep.txt"),
+        recursive: false,
+        force: false,
+      });
+
+      expect(response.status).toBe(400);
+      expect(readFileSync(join(outside, "keep.txt"), "utf8")).toBe("keep");
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
   it("find walks the tree, skips ignored dirs, and caps at maxEntries", async () => {
     mkdirSync(join(projectRoot, "node_modules"));
     writeFileSync(join(projectRoot, "node_modules", "a.js"), "");
@@ -327,6 +385,39 @@ describeOnPosix("bridge.mjs fs endpoints", () => {
     expect(paths).toContain("src/index.ts");
     expect(paths.some((p) => p.includes("node_modules"))).toBe(false);
     expect(envelope.data.truncated).toBe(false);
+  });
+
+  it("find retains newest matching files across the full tree, evicting the oldest", async () => {
+    mkdirSync(join(projectRoot, "old"));
+    mkdirSync(join(projectRoot, "mid"));
+    mkdirSync(join(projectRoot, "new"));
+    const oldPath = join(projectRoot, "old", "session.jsonl");
+    const midPath = join(projectRoot, "mid", "session.jsonl");
+    const newPath = join(projectRoot, "new", "session.jsonl");
+    writeFileSync(oldPath, "old");
+    writeFileSync(midPath, "mid");
+    writeFileSync(newPath, "new");
+    utimesSync(oldPath, new Date(1_000), new Date(1_000));
+    utimesSync(midPath, new Date(1_500), new Date(1_500));
+    utimesSync(newPath, new Date(2_000), new Date(2_000));
+
+    const { body } = await post(`${bridge.baseUrl}/v1/fs/find`, {
+      projectRoot,
+      maxEntries: 2,
+      fileName: "session.jsonl",
+      newestFirst: true,
+    });
+    const envelope = body as {
+      data: {
+        entries: { path: string; name: string; type: string; mtimeMs?: number }[];
+        truncated: boolean;
+      };
+    };
+    expect(envelope.data.entries).toEqual([
+      { path: "new/session.jsonl", name: "session.jsonl", type: "file", mtimeMs: 2_000 },
+      { path: "mid/session.jsonl", name: "session.jsonl", type: "file", mtimeMs: 1_500 },
+    ]);
+    expect(envelope.data.truncated).toBe(true);
   });
 
   it("classifies symlinks and their target kind", async () => {

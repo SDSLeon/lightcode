@@ -134,4 +134,44 @@ class RichTerminalControllerTest {
         assertEquals(TerminalConnectionFailure.Permission, controller.state.value.connection.failure)
         assertFalse("terminal-watch" in gateway.calls)
     }
+
+    @Test
+    fun staleDismissCannotUnwatchOrClearAReplacementTerminal() = runTest {
+        val session = MutableStateFlow<RichChatHostLease?>(richLease())
+        val gateway = FakeRichChatSessionGateway()
+        val controller = RichTerminalController(
+            session,
+            gateway,
+            ForegroundOperationRegistry(),
+        ) { "watch" }
+        val first = (controller.watch("terminal-first") as RichChatOperationResult.Success).value
+        val second = (controller.watch("terminal-second") as RichChatOperationResult.Success).value
+
+        assertTrue(controller.unwatch(first) is RichChatOperationResult.Stale)
+        assertFalse(controller.clearTerminalIfCurrent(first))
+        assertEquals(second, controller.state.value.lease)
+        assertFalse("terminal-unwatch" in gateway.calls)
+
+        assertTrue(controller.unwatch(second) is RichChatOperationResult.Success)
+        assertTrue(controller.clearTerminalIfCurrent(second))
+        assertEquals(null, controller.state.value.lease)
+    }
+
+    @Test
+    fun detachedTerminalCanBeUnwatchedAfterLocalOwnershipClears() = runTest {
+        val session = MutableStateFlow<RichChatHostLease?>(richLease())
+        val gateway = FakeRichChatSessionGateway()
+        val controller = RichTerminalController(
+            session,
+            gateway,
+            ForegroundOperationRegistry(),
+        ) { "watch" }
+        val lease = (controller.watch("terminal") as RichChatOperationResult.Success).value
+
+        assertTrue(controller.clearTerminalIfCurrent(lease))
+        assertTrue(controller.unwatchDetached(lease) is RichChatOperationResult.Success)
+
+        assertEquals(null, controller.state.value.lease)
+        assertTrue("terminal-unwatch" in gateway.calls)
+    }
 }

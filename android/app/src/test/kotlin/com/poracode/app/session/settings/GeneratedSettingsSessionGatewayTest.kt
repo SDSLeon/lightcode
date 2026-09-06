@@ -52,6 +52,26 @@ class GeneratedSettingsSessionGatewayTest {
     }
 
     @Test
+    fun globalMcpRequiresProjectsManageAndKeepsExactLease() = runTest {
+        val active = lease(generation = 7, scopes = setOf("projects:manage"))
+        val session = MutableStateFlow<SettingsHostLease?>(active)
+        val remote = FakeSettingsRemoteGateway()
+        val gateway = GeneratedSettingsSessionGateway(
+            session,
+            SettingsRemoteGatewayProvider { remote },
+        )
+
+        gateway.readGlobalMcpSettings(active)
+        assertEquals(1, remote.mcpReadCalls)
+        val stale = failure { gateway.readGlobalMcpSettings(active.copy(generation = 6)) }
+        assertEquals("stale_lease", stale.code)
+        session.value = active.copy(generation = 8, scopes = setOf("session:read"))
+        val denied = failure { gateway.readGlobalMcpSettings(session.value!!) }
+        assertEquals("missing_scope", denied.code)
+        assertEquals(1, remote.mcpReadCalls)
+    }
+
+    @Test
     fun staleHostAfterResponseNeverReturnsAValue() = runTest {
         val hostA = lease(connectionA, generation = 3)
         val hostB = lease(connectionB, generation = 9)

@@ -253,6 +253,11 @@ internal fun StateFlow<RichChatHostLease?>.isCurrent(lease: RichChatHostLease): 
     return current.key == lease.key && current.online && current.ready
 }
 
+internal fun RichChatHostLease?.canOperateTerminal(): Boolean =
+    this != null && online && ready &&
+        RichChatCapability.TerminalRead.scope in scopes &&
+        RichChatCapability.TerminalOperate.scope in scopes
+
 internal fun Throwable.asRichChatFailure(
     capability: RichChatCapability,
     defaultMayHaveCommitted: Boolean,

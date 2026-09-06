@@ -112,6 +112,7 @@ function statusesEqual(a: AgentStatus[], b: AgentStatus[]): boolean {
       x.acpSessionEstablished === b[i]!.acpSessionEstablished &&
       areAgentPresentationRuntimeFieldsEqual(x, b[i]!) &&
       x.loginCommand === b[i]!.loginCommand &&
+      x.loginCommandDisplay === b[i]!.loginCommandDisplay &&
       x.envKind === b[i]!.envKind &&
       x.envDistro === b[i]!.envDistro &&
       JSON.stringify(x.authMethods ?? []) === JSON.stringify(b[i]!.authMethods ?? []) &&
@@ -263,9 +264,9 @@ export const useAgentStatusesStore = create<AgentStatusesStore>()(
     }),
     {
       name: "poracode-agent-statuses-v1",
-      version: 18,
-      // v18 mirrors supervisor STATUS_CACHE_VERSION=21: Antigravity now reports
-      // terminal and ACP runtimes independently and ACP resume is probe-driven.
+      version: 22,
+      // v22 mirrors supervisor STATUS_CACHE_VERSION=25: discard terminal auth
+      // environments with obsolete updater-disable values.
       migrate: (persisted) => {
         const prev = (persisted ?? {}) as Partial<AgentStatusesStore>;
         return {
@@ -317,6 +318,7 @@ export function applyAgentStatusSupervisorEvent(
       store.mergeAgentStatus(event.status);
       break;
     case "windows-agent-statuses": {
+      if (import.meta.env.DEV) performance.mark("poracode:native providers discovered");
       console.log(`[renderer] event: windows-agent-statuses (${event.statuses.length} agents)`);
       if (
         options.deferFirstLaunchBulk &&

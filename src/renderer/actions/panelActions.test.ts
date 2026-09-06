@@ -7,6 +7,7 @@ import {
   openGitReview,
   openUsagePanel,
   showGitReviewPage,
+  toggleThreadDocksPanel,
   undockPanelTab,
 } from "./panelActions";
 
@@ -133,7 +134,7 @@ describe("dockPanelTab", () => {
   });
 
   it("ignores non-dockable tabs", () => {
-    dockPanelTab("plan", { zone: "right-panel", placement: "bottom" });
+    dockPanelTab("docks", { zone: "right-panel", placement: "bottom" });
 
     expect(usePanelStore.getState().rightPanelSplit).toBeNull();
   });
@@ -217,5 +218,43 @@ describe("showGitReviewPage", () => {
       gitReviewAsPanel: false,
       gitOverlayOpen: true,
     });
+  });
+});
+
+describe("toggleThreadDocksPanel", () => {
+  beforeEach(() => {
+    resetDockState();
+    usePanelStore.setState({ threadDocksPanelOpen: false, threadDocksFocus: null });
+  });
+  afterEach(resetDockState);
+
+  it("opens the Docks tab focused on the clicked dock", () => {
+    toggleThreadDocksPanel("agents");
+
+    const state = usePanelStore.getState();
+    expect(state.threadDocksPanelOpen).toBe(true);
+    expect(state.rightPanelTab).toBe("docks");
+    expect(state.threadDocksFocus).toBe("agents");
+  });
+
+  it("closes the panel from any dock bubble while the Docks tab is showing", () => {
+    toggleThreadDocksPanel("agents");
+
+    toggleThreadDocksPanel("plan");
+
+    expect(usePanelStore.getState().threadDocksPanelOpen).toBe(false);
+    expect(usePanelStore.getState().threadDocksFocus).toBeNull();
+  });
+
+  it("switches back to the Docks tab when another tab is in front", () => {
+    toggleThreadDocksPanel("agents");
+    usePanelStore.setState({ rightPanelTab: "git" });
+
+    toggleThreadDocksPanel("plan");
+
+    const state = usePanelStore.getState();
+    expect(state.threadDocksPanelOpen).toBe(true);
+    expect(state.rightPanelTab).toBe("docks");
+    expect(state.threadDocksFocus).toBe("plan");
   });
 });

@@ -1,6 +1,7 @@
 package com.poracode.app.session.settingsintegrations
 
 import com.poracode.app.model.ClientConnectionId
+import com.poracode.app.protocol.ProtocolConstants
 import com.poracode.app.protocol.settingsintegrations.SkillImportItem
 import com.poracode.app.protocol.settingsintegrations.SkillOwner
 import kotlinx.coroutines.flow.StateFlow
@@ -50,7 +51,9 @@ internal fun StateFlow<SettingsIntegrationsLease?>.requireLease(
     capability: SettingsIntegrationsCapability,
 ): Pair<SettingsIntegrationsLease?, SettingsIntegrationsFailure?> {
     val lease = value ?: return null to SettingsIntegrationsFailure.NoHost
-    if (lease.protocolVersion != 8) return lease to SettingsIntegrationsFailure.ProtocolMismatch
+    if (lease.protocolVersion != ProtocolConstants.REMOTE_PROTOCOL_VERSION) {
+        return lease to SettingsIntegrationsFailure.ProtocolMismatch
+    }
     if (!lease.ready) return lease to SettingsIntegrationsFailure.NotReady
     if (!lease.online) return lease to SettingsIntegrationsFailure.Offline
     if (capability.scope !in lease.scopes) {
@@ -62,7 +65,9 @@ internal fun StateFlow<SettingsIntegrationsLease?>.requireLease(
 internal fun StateFlow<SettingsIntegrationsLease?>.isCurrent(
     lease: SettingsIntegrationsLease,
 ): Boolean = value?.let {
-    it.key == lease.key && it.protocolVersion == 8 && it.online && it.ready
+    it.key == lease.key &&
+        it.protocolVersion == ProtocolConstants.REMOTE_PROTOCOL_VERSION &&
+        it.online && it.ready
 } == true
 
 internal fun SettingsIntegrationsLease.owns(owner: SkillOwner): Boolean =

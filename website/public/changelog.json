@@ -1,7 +1,226 @@
 {
   "releases": [
     {
+      "version": "1.7.1",
+      "tagline": "Your Flow",
+      "date": "2026-09-03",
+      "title": "Thread docks, Muse chat & richer OpenCode",
+      "summary": "Poracode 1.7.1 brings thread goals, plans, agents, and background tasks into a configurable dock system, adds a gallery for every image in a conversation, and substantially improves OpenCode structured chat. This release also makes MCP controls easier to reach, strengthens thread handoffs, brings Muse Spark 1.3 with live model discovery, structured Chat sessions, logout, and more reliable installs, improves Qoder usage reporting and PR Watch repairs, and fixes several provider and Windows reliability issues.",
+      "changes": [
+        {
+          "kind": "added",
+          "label": "Thread docks",
+          "text": "Goals, plans, subagents, and background tasks can now live above the composer or together in the right panel, with compact bubbles, drag-to-reorder, per-thread dismissal, and synchronized remote and mobile state. New threads default to the compact composer with docks in the right panel."
+        },
+        {
+          "kind": "added",
+          "label": "Muse",
+          "text": "You can now run Muse Code as structured Chat sessions backed by the Muse Session Protocol, with goal tracking, model and effort slash commands, and WSL project support alongside the terminal."
+        },
+        {
+          "kind": "added",
+          "label": "Images",
+          "text": "Each thread now has an image gallery dock and lightbox that collects generated images, attachments, and images embedded in assistant Markdown."
+        },
+        {
+          "kind": "added",
+          "label": "Composer",
+          "text": "The Add menu now includes an MCP Servers submenu for reviewing session bindings, toggling servers for new threads, and jumping directly to MCP settings."
+        },
+        {
+          "kind": "improved",
+          "label": "OpenCode",
+          "text": "Structured OpenCode threads now support current question and permission flows, native plans, subagent activity, produced images and files, audio and thread mentions, accurate usage, clearer tool states, visible retry and rate-limit fallback notices, and clean Stop, steer, model-switch, and resume behavior."
+        },
+        {
+          "kind": "improved",
+          "label": "Muse",
+          "text": "Muse now defaults to Muse Spark 1.3, discovers new models and reasoning levels from the installed CLI and live MSP catalog, shows Thinking and Double-checking terminal states, signs out from Settings, and installs reliably through WSL."
+        },
+        {
+          "kind": "improved",
+          "label": "Handoff",
+          "text": "Thread mentions can now transfer the real conversation transcript through read_thread when available, preserving the original request and newest useful activity within the context budget."
+        },
+        {
+          "kind": "improved",
+          "label": "Pull requests",
+          "text": "PR Watch tasks are now explicitly authorized to commit and push the non-force fixes a pull request needs, so watched PRs get repaired and pushed without extra confirmation prompts."
+        },
+        {
+          "kind": "improved",
+          "label": "Qoder",
+          "text": "Qoder usage now parses migrated quota-system payloads and both naming conventions, enriching missing plan details so credit windows show accurate percentages with used and limit counts."
+        },
+        {
+          "kind": "improved",
+          "label": "Settings",
+          "text": "Agent updates are easier to follow: the Update-all button shows the outdated count, each agent reports queued and per-agent progress, and multi-runtime update docks collapse to a single line."
+        },
+        {
+          "kind": "improved",
+          "label": "Right panel",
+          "text": "Panel header actions now move into an overflow menu when space is tight, while the close control and active dock controls remain easy to reach."
+        },
+        {
+          "kind": "improved",
+          "label": "Subagents",
+          "text": "Running subagents now show a live loader instead of a static icon, so active work is easy to spot in the transcript and docks panel."
+        },
+        {
+          "kind": "fixed",
+          "label": "ACP agents",
+          "text": "Antigravity file reads now complete reliably, and ACP agents installed in WSL automatically repair missing executable permissions from older install layouts."
+        },
+        {
+          "kind": "fixed",
+          "label": "Cursor",
+          "text": "Cross-agent tools no longer use schemas rejected by Cursor models, and globally installed Cursor SDK runtimes can be updated from Settings."
+        },
+        {
+          "kind": "fixed",
+          "label": "MCP",
+          "text": "Expired MCP OAuth tokens now correctly report as signed out, and failed ACP prompts hint at re-authenticating or starting a new thread on authorization errors."
+        },
+        {
+          "kind": "fixed",
+          "label": "Chat",
+          "text": "Empty shell pipelines and incomplete synthetic keyboard events no longer crash the renderer."
+        },
+        {
+          "kind": "fixed",
+          "label": "Handoff",
+          "text": "MCP servers configured in provider settings now correctly enable read_thread handoffs without falling back to a context file."
+        }
+      ]
+    },
+    {
+      "version": "1.7.0",
+      "tagline": "Super Fast",
+      "date": "2026-08-31",
+      "title": "Antigravity ACP, Handoff 2.0 & thread mentions",
+      "summary": "A big feature release: Poracode introduces first-class Antigravity ACP runtime support, Handoff 2.0 for continuing conversations in other providers without losing thread history, thread @-mentions in the composer, and project-scoped agent plugins. You can also manage GitHub Actions across multiple accounts, run Cursor SDK over WSL and remote hosts, customize project icons, and assign Home threads to workspaces.",
+      "changes": [
+        {
+          "kind": "added",
+          "label": "Claude",
+          "text": "You can now run Claude Fable 5.1 from the model picker."
+        },
+        {
+          "kind": "added",
+          "label": "Antigravity",
+          "text": "You can now run Google DeepMind's Antigravity agent via first-class ACP runtime support with live usage discovery and machine-scoped settings."
+        },
+        {
+          "kind": "added",
+          "label": "Composer",
+          "text": "You can now @-mention other threads and worktree chats directly in your prompt to pull their context and results into the conversation."
+        },
+        {
+          "kind": "added",
+          "label": "Plugins",
+          "text": "You can now install and configure project-scoped agent plugins in .poracode/plugins alongside bundled and user packages."
+        },
+        {
+          "kind": "added",
+          "label": "Cursor",
+          "text": "Cursor SDK chat is now supported across WSL and remote SSH machines, complete with multi-account usage profiles and plan allowance tracking."
+        },
+        {
+          "kind": "added",
+          "label": "Workspaces",
+          "text": "You can now assign Home threads and projects to specific workspaces to keep unrelated work organized."
+        },
+        {
+          "kind": "added",
+          "label": "Projects",
+          "text": "You can now customize project icons and colors with an icon picker modal or let Poracode automatically detect project icons."
+        },
+        {
+          "kind": "added",
+          "label": "Settings",
+          "text": "You can now check for provider updates and update all installed CLI agents sequentially with live progress indicators."
+        },
+        {
+          "kind": "improved",
+          "label": "Provider switch",
+          "text": "Switching providers or models now continues seamlessly inside the same thread while preserving your full conversation history and active MCP configuration (Handoff 2.0)."
+        },
+        {
+          "kind": "improved",
+          "label": "Plugins",
+          "text": "App controls, MCP servers, and the always-on Terminal are now consolidated under a unified plugin architecture with per-project scopes and mention aliases in the composer."
+        },
+        {
+          "kind": "improved",
+          "label": "GitHub",
+          "text": "GitHub Actions now supports multiple signed-in GitHub accounts, letting you switch accounts when browsing workflows, dispatching runs, or inspecting CI statuses."
+        },
+        {
+          "kind": "improved",
+          "label": "Archived threads",
+          "text": "The archived threads management view is redesigned for easier restoration, permanent deletion, and filtering across workspaces and remote connections."
+        },
+        {
+          "kind": "improved",
+          "label": "Updates",
+          "text": "The updater keeps checking for newer releases even while an update is staged, ensuring you always install the latest available version upon restart."
+        },
+        {
+          "kind": "improved",
+          "label": "Grok",
+          "text": "The default one-shot model now uses Grok 4.6 with automatic reasoning effort tier resolution."
+        },
+        {
+          "kind": "improved",
+          "label": "Claude",
+          "text": "Claude settings now support GLM 5.3 and DeepSeek Pro deepseek-v4-pro-0813 presets."
+        },
+        {
+          "kind": "improved",
+          "label": "Chat",
+          "text": "Streamed responses now adapt their reveal animation to chunk arrival speed for smoother reading, and tool-call row shifts animate smoothly."
+        },
+        {
+          "kind": "improved",
+          "label": "Windows",
+          "text": "The Windows system tray icon now automatically switches between light and dark glyphs to match your system theme."
+        },
+        {
+          "kind": "improved",
+          "label": "Terminal",
+          "text": "Terminal sessions now prewarm in the background so new tabs open instantly."
+        },
+        {
+          "kind": "improved",
+          "label": "Git Review",
+          "text": "The Git Review sidebar now provides a one-click Push & Create PR action when you have unpushed commits with no remaining unstaged changes."
+        },
+        {
+          "kind": "fixed",
+          "label": "ACP agents",
+          "text": "Background turns waiting on stderr no longer hold the UI, and stuck turns automatically complete while dropping leaked notification fragments."
+        },
+        {
+          "kind": "fixed",
+          "label": "Windows",
+          "text": "Poracode now resolves bare executable names and global pnpm agent shims reliably when launching CLI tools."
+        },
+        {
+          "kind": "fixed",
+          "label": "Pull requests",
+          "text": "PR status indicators now clearly separate in-progress checks from blocking review or merge requirements."
+        },
+        {
+          "kind": "fixed",
+          "label": "Remote",
+          "text": "Reconnecting to remote hosts after updates now tracks restart status smoothly without dropping draft state."
+        }
+      ]
+    },
+    {
       "version": "1.6.5",
+      "tagline": "Shell Choice",
       "date": "2026-08-18",
       "title": "Windows shell preferences, sturdier ACP agents & smarter PR targets",
       "summary": "You can now choose which Windows shell runs your terminals and which one Poracode uses behind the scenes. Removing an ACP agent, opening a pull request from a worktree, and closing the app all behave the way you expect.",
@@ -54,6 +273,7 @@
     },
     {
       "version": "1.6.4",
+      "tagline": "Context Control",
       "date": "2026-08-17",
       "title": "Codex context windows, Home permissions & project terminals",
       "summary": "Poracode adds configurable context windows and compaction thresholds for Codex, enables unrestricted agent sessions in your Home directory, and adds direct terminal access to project menus. Branch tracking in worktrees and ACP skill badges in the composer also get useful fixes.",
@@ -87,6 +307,7 @@
     },
     {
       "version": "1.6.3",
+      "tagline": "Muse Arrives",
       "date": "2026-08-16",
       "title": "Muse Code, Claude skills & sturdier sessions",
       "summary": "Poracode adds Muse Code as a first-class terminal agent, surfaces Claude's own skills in the composer, and keeps launches and follow-ups alive when you switch panes or a session disappears.",
@@ -123,6 +344,7 @@
     },
     {
       "version": "1.6.2",
+      "tagline": "Agent Plugins",
       "date": "2026-08-11",
       "title": "Agent Plugins, merged PR sync & stoppable actions",
       "summary": "A big feature release: Poracode adds a standards-based Agent Plugins marketplace, syncs merged pull request branches automatically, and lets you stop running project actions from context menus. Worktree launches, pane placement, subagent status, usage reporting, and provider reliability all get substantial polish.",
@@ -262,6 +484,7 @@
     },
     {
       "version": "1.6.1",
+      "tagline": "Workspace Flow",
       "date": "2026-08-07",
       "title": "Flat thread list, worktree moves & workspace switching",
       "summary": "The sidebar can now show every project's threads in one flat, filterable list, and you can move an existing thread into a worktree straight from its context menu. Remote-paired projects, Kimi Code sessions, Factory Droid subagents, and Windows agent launches are all more dependable.",
@@ -361,6 +584,7 @@
     },
     {
       "version": "1.6.0",
+      "tagline": "Remote Power",
       "date": "2026-08-03",
       "title": "Remote machines, GitHub Actions & PR automation",
       "summary": "Poracode now runs agents on remote machines over SSH, manages GitHub Actions, and automates pull request fixes and merges. This release also adds project workspaces, configurable Crossagents routing, structured Cursor SDK chat, goal controls for Codex and Grok, and performance and reliability improvements.",
@@ -489,6 +713,7 @@
     },
     {
       "version": "1.5.3",
+      "tagline": "Mobile Workspace",
       "date": "2026-07-24",
       "title": "Pi & Qoder agents, Opus 5, a mobile workspace & synced notes",
       "summary": "Poracode gains two new coding agents — Pi and Qoder — defaults new Claude threads to Opus 5, and turns the mobile web app into a real workspace with a dockable side panel and notes and to-dos that sync with your desktop. Subagents get their own views, provider token usage finally survives restarts, and a wide round of mobile and notification fixes completes the release.",
@@ -587,6 +812,7 @@
     },
     {
       "version": "1.5.2",
+      "tagline": "Stay Notified",
       "date": "2026-07-21",
       "title": "Web push, richer ACP agents & smoother chat",
       "summary": "Installed Poracode web apps can now notify you when remote agents need attention, Qwen exposes its live goals, and Kimi and Qwen show background subagent work as it happens. A broad set of provider, chat, mobile, and browser refinements makes everyday sessions more reliable.",
@@ -641,6 +867,7 @@
     },
     {
       "version": "1.5.1",
+      "tagline": "Smooth Upgrades",
       "date": "2026-07-19",
       "title": "Smoother macOS rebrand upgrades",
       "summary": "A focused hotfix makes the move from Lightcode to Poracode seamless on macOS, with reliable relaunching, correctly sized Dock artwork, and release notes highlighted in the sidebar after updating.",
@@ -664,6 +891,7 @@
     },
     {
       "version": "1.5.0",
+      "tagline": "Hello Poracode",
       "date": "2026-07-17",
       "title": "Poracode arrives with mobile access & cross-provider agents",
       "summary": "A big feature release, and the first under the Poracode name: Lightcode graduates into Poracode with a brand-new identity, your threads follow you to any phone or browser through the Poracode PWA, and your agents can now hand work to one another across providers. New agents, a full MCP toolkit, multi-agent worktree experiments, and a chat rebuilt for long, tool-heavy sessions round it out.",
@@ -763,6 +991,7 @@
     },
     {
       "version": "1.4.3",
+      "tagline": "Weekly Limits",
       "date": "2026-07-02",
       "title": "Fable 5 weekly usage tracking",
       "summary": "A focused patch for Claude usage tracking: the usage panel now shows your per-model weekly limits, including Claude Fable 5's, and Claude usage stays signed in and up to date.",
@@ -779,6 +1008,7 @@
     },
     {
       "version": "1.4.2",
+      "tagline": "Fable Returns",
       "date": "2026-07-01",
       "title": "Claude Fable 5 returns",
       "summary": "A focused patch that brings Claude Fable 5 back to the model picker, with its frontier reasoning effort levels and one-million-token context window.",
@@ -791,6 +1021,7 @@
     },
     {
       "version": "1.4.1",
+      "tagline": "Million Tokens",
       "date": "2026-06-30",
       "title": "Claude Sonnet 5 with a 1M-token context",
       "summary": "A focused update that brings Claude Sonnet 5 to the model picker, complete with its frontier reasoning effort levels and a one-million-token context window.",
@@ -803,6 +1034,7 @@
     },
     {
       "version": "1.4.0",
+      "tagline": "Global Reach",
       "date": "2026-06-28",
       "title": "Poracode in 13 languages, a dockable browser & custom shortcuts",
       "summary": "A big feature release: Poracode now speaks 13 languages, the built-in browser pops out into its own window with a real address bar and bookmarks, and you can rebind every keyboard shortcut. New usage providers, configurable worktree placement, and a built-in What's New round it out, alongside broad reliability fixes.",
@@ -875,6 +1107,7 @@
     },
     {
       "version": "1.3.1",
+      "tagline": "Instant Setups",
       "date": "2026-06-17",
       "title": "One-click setups for Z.ai, DeepSeek, and MiniMax",
       "summary": "Claude Code Profiles gain ready-made presets that let you set up Z.ai (GLM), DeepSeek, and MiniMax with a single click. This release also keeps provider-specific model IDs intact and tidies up agent status when you remove a profile.",
@@ -899,6 +1132,7 @@
     },
     {
       "version": "1.3.0",
+      "tagline": "Personal Profiles",
       "date": "2026-06-16",
       "title": "Multiple Claude profiles, a usage dashboard & glass sidebar",
       "summary": "This release lets you run multiple Claude profiles with their own logins, models, and environments, adds a usage dashboard with a year-long activity heatmap, and gives the sidebar a translucent glass look. It also brings GitHub repo cloning, inline agent images, and smarter commit and PR actions.",
@@ -943,6 +1177,7 @@
     },
     {
       "version": "1.2.1",
+      "tagline": "Project Notes",
       "date": "2026-06-09",
       "title": "Projects without git, notes panel, and Claude Fable 5",
       "summary": "This release lets you create and open projects even when there's no git repository yet, adds a per-project notes and to-do panel, and brings support for Claude Fable 5. It also sharpens reliability for Claude on Windows and Codex turn handling.",
@@ -979,6 +1214,7 @@
     },
     {
       "version": "1.2.0",
+      "tagline": "Usage Insights",
       "date": "2026-06-05",
       "title": "Provider usage tracking, Command Code, and rebuilt themes",
       "summary": "A big feature release: track your provider quotas and usage for Claude Code, Codex, and more in one place, run the new Command Code CLI entirely inside Poracode, and enjoy fully rebuilt light and dark themes. Git worktrees are faster with inline diffs and live status, and WSL and Windows support is stronger across the board.",
@@ -1031,6 +1267,7 @@
     },
     {
       "version": "1.1.1",
+      "tagline": "Wider Reach",
       "date": "2026-05-30",
       "title": "Smoother microphone access and wider file reach",
       "summary": "A focused patch that smooths out microphone permissions and lets Poracode open files beyond your active project, plus a fix for links to deeply nested paths.",
@@ -1051,6 +1288,7 @@
     },
     {
       "version": "1.1.0",
+      "tagline": "Voice Control",
       "date": "2026-05-29",
       "title": "Grok Build, Opus 4.8 workflows, voice input & thread rollback",
       "summary": "A big feature release: install and run Grok Build straight from the app, drive Claude Opus 4.8 with Ultracode effort and workflows, talk to your agents with local voice input, and undo an agent's work with thread rollback. Plus one-click agent installs, live GitHub PRs in-app, and more than 70 improvements and fixes.",
@@ -1115,6 +1353,7 @@
     },
     {
       "version": "1.0.0",
+      "tagline": "First Stable",
       "date": "2026-05-22",
       "title": "Poracode reaches its first stable release",
       "summary": "The first stable public release of Poracode, graduating from the 0.9.x betas into a polished build with refreshed chrome, smoother Browser MCP controls, and better multi-agent diff handling.",

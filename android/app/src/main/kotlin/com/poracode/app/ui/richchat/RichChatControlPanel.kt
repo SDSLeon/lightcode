@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import com.poracode.app.chat.RichOpenRequest
 import com.poracode.app.chat.RichPendingSteer
 import com.poracode.app.chat.RichRuntimeItem
+import com.poracode.app.model.AgentStatusEntry
 import com.poracode.app.model.ProjectLocation
 import com.poracode.app.model.ThreadConfig
 import com.poracode.app.session.richchat.RichChatSessionRuntime
@@ -26,6 +27,7 @@ import kotlinx.coroutines.launch
 internal fun RichChatControlPanel(
     runtime: RichChatSessionRuntime,
     items: List<RichRuntimeItem>,
+    agentStatus: AgentStatusEntry?,
     requests: List<RichOpenRequest>,
     pendingSteer: RichPendingSteer?,
     checkpointState: RichCheckpointState,
@@ -34,10 +36,20 @@ internal fun RichChatControlPanel(
     config: ThreadConfig?,
     canOperate: Boolean,
     busy: Boolean,
+    onOpenAgentSettings: () -> Unit,
     modifier: Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val delegatedAgents = RichChatRuntimeInfo.activeDelegatedAgents(items)
+    val recentErrors = RichChatRuntimeInfo.recentErrors(items)
+    val authenticationRequired = RichChatRuntimeInfo.authenticationRequired(agentStatus, recentErrors)
+    val visibleErrors = RichChatRuntimeInfo.visibleRecentErrors(recentErrors, agentStatus)
+    val plan = RichChatRuntimeInfo.latestActivePlan(items)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        RichDelegatedAgentsCard(delegatedAgents)
+        if (authenticationRequired && agentStatus != null) {
+            RichAuthenticationRequiredCard(agentStatus, onOpenAgentSettings)
+        }
         RichRequestCards(
             requests = requests,
             resolving = busy,
@@ -46,6 +58,8 @@ internal fun RichChatControlPanel(
                 scope.launch { runtime.chat.resolveRequest(resolution) }
             },
         )
+        if (plan != null) RichPlanCard(plan)
+        RichErrorsCard(visibleErrors)
         RichGoalCard(
             items = items,
             busy = busy || !canOperate,

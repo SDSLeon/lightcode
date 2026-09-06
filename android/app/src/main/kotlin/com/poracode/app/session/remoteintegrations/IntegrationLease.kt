@@ -1,6 +1,7 @@
 package com.poracode.app.session.remoteintegrations
 
 import com.poracode.app.model.ClientConnectionId
+import com.poracode.app.protocol.ProtocolConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -114,7 +115,9 @@ internal fun StateFlow<IntegrationHostLease?>.currentLease(
     capability: IntegrationCapability,
 ): Pair<IntegrationHostLease?, IntegrationFailure?> {
     val lease = value ?: return null to IntegrationFailure.NoHost
-    if (lease.protocolVersion != 8) return lease to IntegrationFailure.ProtocolMismatch
+    if (lease.protocolVersion != ProtocolConstants.REMOTE_PROTOCOL_VERSION) {
+        return lease to IntegrationFailure.ProtocolMismatch
+    }
     if (!lease.ready) return lease to IntegrationFailure.NotReady
     if (!lease.online) return lease to IntegrationFailure.Offline
     if (capability.scope !in lease.scopes) {
@@ -125,5 +128,7 @@ internal fun StateFlow<IntegrationHostLease?>.currentLease(
 
 internal fun StateFlow<IntegrationHostLease?>.isCurrent(lease: IntegrationHostLease): Boolean {
     val current = value ?: return false
-    return current.key == lease.key && current.protocolVersion == 8 && current.ready && current.online
+    return current.key == lease.key &&
+        current.protocolVersion == ProtocolConstants.REMOTE_PROTOCOL_VERSION &&
+        current.ready && current.online
 }

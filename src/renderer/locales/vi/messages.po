@@ -298,6 +298,12 @@ msgstr "{0} prompt - {when}"
 msgid "{0} prompts - {when}"
 msgstr "{0} prompt - {when}"
 
+#. placeholder {0}: agent.label
+#. placeholder {1}: update.targetVersion
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "{0} queued for update to v{1}"
+msgstr "{0} đang chờ cập nhật lên v{1}"
+
 #. placeholder {0}: item.runCount.toLocaleString()
 #: src/renderer/views/ProfileOverlay/parts/PluginUsage.tsx
 msgid "{0} run"
@@ -316,7 +322,7 @@ msgstr "{0} lần chạy"
 #~ msgstr "{0} luồng"
 
 #. placeholder {0}: formatTokens(snapshot.tokens.total)
-#: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
+#: src/renderer/components/providers/UsageCostLine.tsx
 msgid "{0} tokens"
 msgstr "{0} mã thông báo"
 
@@ -690,7 +696,7 @@ msgid "<0>{passed}</0> of {0} checks passed"
 msgstr "<0>{passed}</0> trong số {0} kiểm tra đã được thông qua"
 
 #. placeholder {0}: snapshot.cost.period
-#: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
+#: src/renderer/components/providers/UsageCostLine.tsx
 msgid "~{money}{tokens} · {0} · est."
 msgstr "~{money}{tokens} · {0} · ước tính."
 
@@ -772,6 +778,10 @@ msgstr "Hủy bỏ hợp nhất"
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 msgid "About"
 msgstr "Giới thiệu"
+
+#: src/renderer/views/SettingsOverlay/parts/settingsOptions.ts
+msgid "Above the composer"
+msgstr "Phía trên trình soạn"
 
 #: src/renderer/views/FileEditorOverlay/parts/FileEditorPane/parts/mergeConflict/codeLensProvider.ts
 msgid "Accept Both Changes"
@@ -1163,6 +1173,8 @@ msgstr "Tác nhân: {description}"
 msgid "Agent: {subagent}"
 msgstr "Tác nhân: {subagent}"
 
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/views/SettingsOverlay/parts/MobileSettingsIndex.tsx
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
@@ -1375,6 +1387,10 @@ msgstr "Một cuộc trò chuyện khác cũng sử dụng cây này. Khôi ph�
 msgid "Another operation for this experiment is still running."
 msgstr "Một thao tác khác của thử nghiệm này vẫn đang chạy."
 
+#: src/renderer/components/thread/ThreadRuntimeRequestPanel/ThreadRuntimeRequestPanel.tsx
+msgid "Answer every question to submit"
+msgstr "Trả lời tất cả câu hỏi để gửi"
+
 #: src/renderer/components/providers/antigravity/manifest.ts
 msgid "Antigravity"
 msgstr "Antigravity"
@@ -1420,8 +1436,9 @@ msgid "App Browser"
 msgstr "Trình duyệt ứng dụng"
 
 #: src/renderer/components/mcp/McpServersManager.tsx
-msgid "App Controls"
-msgstr "Điều khiển ứng dụng"
+#: src/renderer/components/plugins/pluginCopy.ts
+#~ msgid "App Controls"
+#~ msgstr "Điều khiển ứng dụng"
 
 #: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/MobileSettingsIndex.tsx
@@ -1569,16 +1586,16 @@ msgid "Attach"
 msgstr "Đính kèm"
 
 #: src/renderer/components/thread/ContinueInProviderDialog.tsx
-msgid "Attach files"
-msgstr "Đính kèm tập tin"
+#~ msgid "Attach files"
+#~ msgstr "Đính kèm tập tin"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserToolbar.tsx
 msgid "Attach to thread"
 msgstr "Gắn vào chủ đề"
 
 #: src/renderer/components/thread/ThreadTodoDock.tsx
-msgid "Attach todo dock to composer"
-msgstr "Gắn dock todo vào trình soạn thảo"
+#~ msgid "Attach todo dock to composer"
+#~ msgstr "Gắn dock todo vào trình soạn thảo"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Attached browser selection."
@@ -1769,6 +1786,7 @@ msgstr "Đang chờ xem xét"
 
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 #: src/renderer/components/layout/MobilePageHeader.tsx
 #: src/renderer/views/FileEditorOverlay/FileEditorOverlay.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsView.tsx
@@ -1811,9 +1829,16 @@ msgstr "Tiến trình nền không chạy"
 msgid "Background process restarted"
 msgstr "Tiến trình nền đã được khởi động lại"
 
-#: src/renderer/components/thread/ChatPane/parts/items/ActiveSubAgentTile.tsx
-#~ msgid "Background tasks"
-#~ msgstr "Tác vụ nền"
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Background task"
+msgstr "Tác vụ nền"
+
+#: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+msgid "Background tasks"
+msgstr "Tác vụ nền"
 
 #: src/renderer/components/experiment/NewExperimentModal.tsx
 #~ msgid "Base branch"
@@ -1941,6 +1966,11 @@ msgstr "Nhánh"
 msgid "Bring back to panel"
 msgstr "Đưa về bảng điều khiển"
 
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Bring every {0} runtime up to date"
+msgstr "Cập nhật mọi thời gian chạy của {0}"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserDockSlot.tsx
 msgid "Bring it back into this panel, or jump to the window it’s running in."
 msgstr "Đưa trở lại bảng điều khiển này, hoặc chuyển đến cửa sổ đang chạy."
@@ -2028,8 +2058,8 @@ msgstr "Đăng nhập bằng trình duyệt"
 #~ msgstr "Thẻ trình duyệt"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Browser Tools"
-msgstr "Công cụ trình duyệt"
+#~ msgid "Browser Tools"
+#~ msgstr "Công cụ trình duyệt"
 
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Budget limit reached"
@@ -2041,6 +2071,7 @@ msgid "Building diff…"
 msgstr "Đang dựng diff…"
 
 #: src/renderer/components/mcp/McpServersManager.tsx
+#: src/renderer/components/plugins/PluginDetail.tsx
 #: src/renderer/components/skills/SkillsManager.tsx
 msgid "Built-in"
 msgstr "Tích hợp sẵn"
@@ -2209,6 +2240,7 @@ msgstr "Thay đổi thư mục dự án"
 msgid "Change project icon"
 msgstr "Đổi biểu tượng dự án"
 
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 #: src/renderer/components/thread/ThreadDraftComposerArea.tsx
 msgid "Change servers in provider settings"
 msgstr "Thay đổi máy chủ trong phần cài đặt nhà cung cấp"
@@ -2489,8 +2521,8 @@ msgid "Chrome MCP enabled for this thread"
 msgstr "Đã bật Chrome MCP cho chủ đề này"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Chrome Tools"
-msgstr "Công cụ Chrome"
+#~ msgid "Chrome Tools"
+#~ msgstr "Công cụ Chrome"
 
 #: src/renderer/views/GitHubActionsView/GitHubActionsView.tsx
 msgid "CI Actions: Workflows"
@@ -2614,6 +2646,7 @@ msgstr "Nhân bản…"
 #: src/renderer/components/common/BottomSheet.tsx
 #: src/renderer/components/mcp/McpServersManager.tsx
 #: src/renderer/components/skills/SkillViewModal.tsx
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/views/ExperimentView/parts/ExperimentJudgeRunDialog.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserPanel.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/DevTerminalPanel/parts/MobileTerminalLayout.tsx
@@ -2632,6 +2665,10 @@ msgstr "Đóng terminal {purposeNoun}"
 #: src/mobile/views/ManageProjectsView.tsx
 #~ msgid "Close add project"
 #~ msgstr "Đóng thêm dự án"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Close background tasks"
+msgstr "Đóng tác vụ nền"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserPanel.tsx
 msgid "Close browser"
@@ -2829,7 +2866,9 @@ msgstr "Đã sao chép mã."
 msgid "Codex"
 msgstr "Codex"
 
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/components/thread/ThreadErrorDock.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 msgid "Collapse"
 msgstr "Thu gọn"
@@ -2849,6 +2888,10 @@ msgstr "Thu gọn tất cả"
 #: src/renderer/views/FileEditorOverlay/parts/ProjectTreeView/ProjectTreeView.tsx
 msgid "Collapse all folders"
 msgstr "Thu gọn tất cả các thư mục"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Collapse background tasks"
+msgstr "Thu gọn tác vụ nền"
 
 #: src/renderer/components/thread/ThreadComposerSection.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/MobileQuickCompose.tsx
@@ -2871,6 +2914,10 @@ msgstr "Thu gọn chân thanh bên"
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserTabStrip.tsx
 msgid "Collapse group"
 msgstr "Thu gọn nhóm"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Collapse images"
+msgstr "Thu gọn hình ảnh"
 
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/TerminalSettings.tsx
@@ -3057,6 +3104,7 @@ msgstr "Điều khiển trình soạn thảo"
 #: src/renderer/components/composer/ComposerAddMenu.tsx
 #: src/renderer/components/mcp/McpServersManager.tsx
 #: src/renderer/components/plugins/pluginCopy.ts
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 #: src/renderer/components/thread/ThreadComposerSection.tsx
 #: src/renderer/components/thread/ThreadDraftComposerArea.tsx
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
@@ -3072,12 +3120,28 @@ msgstr "Sử dụng máy tính"
 #~ msgstr "Computer Use điều khiển máy tính đã ghép nối. Đừng dùng máy đó khi agent đang nhấp hoặc gõ."
 
 #: src/renderer/components/composer/AttachmentBar.tsx
-msgid "Computer Use enabled — controls the paired desktop; don't use that machine while the agent is controlling it"
-msgstr "Computer Use đã bật — điều khiển máy tính đã ghép nối; đừng dùng máy đó khi agent đang điều khiển"
+#~ msgid "Computer Use enabled — controls the paired desktop; don't use that machine while the agent is controlling it"
+#~ msgstr "Computer Use đã bật — điều khiển máy tính đã ghép nối; đừng dùng máy đó khi agent đang điều khiển"
 
 #: src/renderer/components/composer/AttachmentBar.tsx
-msgid "Computer Use enabled — interactive actions take over the desktop; don't use the machine while the agent is controlling it"
-msgstr "Computer Use đã bật — thao tác tương tác chiếm quyền điều khiển máy tính; đừng dùng máy khi agent đang điều khiển"
+#~ msgid "Computer Use enabled — interactive actions take over the desktop; don't use the machine while the agent is controlling it"
+#~ msgstr "Computer Use đã bật — thao tác tương tác chiếm quyền điều khiển máy tính; đừng dùng máy khi agent đang điều khiển"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+#~ msgid "Computer Use enabled — the agent drives apps on the paired desktop in the background; it only takes over that desktop's mouse and keyboard when a step explicitly needs the foreground"
+#~ msgstr "Đã bật Computer Use — tác nhân điều khiển ứng dụng trên máy tính đã ghép nối ở chế độ nền; tác nhân chỉ tiếp quản chuột và bàn phím của máy đó khi một bước yêu cầu rõ ràng chế độ tiền cảnh"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+msgid "Computer Use enabled — the agent drives apps on the paired desktop in the background; it only takes over that desktop's mouse and keyboard when a step explicitly needs the foreground or when that desktop's system-approved portal requires it"
+msgstr "Đã bật Sử dụng máy tính — tác nhân điều khiển ứng dụng trên máy tính đã ghép nối ở chế độ nền; tác nhân chỉ chiếm quyền chuột và bàn phím của máy tính đó khi một bước yêu cầu rõ ràng chế độ tiền cảnh hoặc khi cổng được hệ thống phê duyệt của máy tính đó yêu cầu"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+#~ msgid "Computer Use enabled — the agent drives desktop apps in the background; it only takes over the mouse and keyboard when a step explicitly needs the foreground"
+#~ msgstr "Đã bật Computer Use — tác nhân điều khiển ứng dụng máy tính ở chế độ nền; tác nhân chỉ tiếp quản chuột và bàn phím khi một bước yêu cầu rõ ràng chế độ tiền cảnh"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+msgid "Computer Use enabled — the agent drives desktop apps in the background; it only takes over the mouse and keyboard when a step explicitly needs the foreground or when a system-approved desktop portal requires it"
+msgstr "Đã bật Sử dụng máy tính — tác nhân điều khiển ứng dụng máy tính ở chế độ nền; tác nhân chỉ chiếm quyền chuột và bàn phím khi một bước yêu cầu rõ ràng chế độ tiền cảnh hoặc khi cổng máy tính được hệ thống phê duyệt yêu cầu"
 
 #: src/renderer/components/composer/AttachmentBar.tsx
 #~ msgid "Computer Use enabled for this thread"
@@ -3304,8 +3368,12 @@ msgid "Control an external Chrome browser."
 msgstr "Điều khiển trình duyệt Chrome bên ngoài."
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Control desktop apps and complete visual workflows."
-msgstr "Điều khiển ứng dụng máy tính và hoàn thành quy trình trực quan."
+#~ msgid "Control desktop apps and complete visual workflows."
+#~ msgstr "Điều khiển ứng dụng máy tính và hoàn thành quy trình trực quan."
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Control desktop apps in the background and complete visual workflows."
+msgstr "Điều khiển ứng dụng máy tính ở chế độ nền và hoàn thành quy trình làm việc trực quan."
 
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
 msgid "Control the desktop."
@@ -3316,8 +3384,8 @@ msgid "Control which files appear in the @file mention search. Per-project overr
 msgstr "Kiểm soát những tập tin nào xuất hiện trong tìm kiếm đề cập đến @file. Ghi đè cho mỗi dự án trực tiếp trong cài đặt của từng dự án."
 
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Controls the paired desktop while the agent clicks or types"
-msgstr "Điều khiển máy tính đã ghép nối khi agent nhấp hoặc gõ"
+#~ msgid "Controls the paired desktop while the agent clicks or types"
+#~ msgstr "Điều khiển máy tính đã ghép nối khi agent nhấp hoặc gõ"
 
 #: src/renderer/views/PrReviewOverlay/parts/PrTabsPill.tsx
 #: src/renderer/views/PrReviewOverlay/PrReviewOverlay.tsx
@@ -4432,6 +4500,10 @@ msgstr "Gắn bên trái"
 msgid "Dock right"
 msgstr "Gắn bên phải"
 
+#: src/renderer/components/layout/PanelDock/panelTabMeta.ts
+msgid "Docks"
+msgstr "Dock"
+
 #: src/renderer/views/SettingsOverlay/parts/AcpRegistrySettings.tsx
 msgid "Docs"
 msgstr "Tài liệu"
@@ -4513,6 +4585,22 @@ msgstr "Kéo để sắp xếp lại; nhấp đúp để chỉnh sửa"
 #: src/renderer/views/SettingsOverlay/parts/RemoteHostFolderPicker.tsx
 msgid "Drives"
 msgstr "Ổ đĩa"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Drives apps on the paired desktop in the background; takes over that desktop only when the agent asks for the foreground"
+#~ msgstr "Điều khiển ứng dụng trên máy tính đã ghép nối ở chế độ nền; chỉ tiếp quản máy đó khi tác nhân yêu cầu chế độ tiền cảnh"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "Drives apps on the paired desktop in the background; takes over that desktop only when the agent asks for the foreground or its system-approved portal requires it"
+msgstr "Điều khiển ứng dụng trên máy tính đã ghép nối ở chế độ nền; chỉ chiếm quyền máy tính đó khi tác nhân yêu cầu chế độ tiền cảnh hoặc khi cổng được hệ thống phê duyệt yêu cầu"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Drives desktop apps in the background; takes over the desktop only when the agent asks for the foreground"
+#~ msgstr "Điều khiển ứng dụng máy tính ở chế độ nền; chỉ tiếp quản máy tính khi tác nhân yêu cầu chế độ tiền cảnh"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "Drives desktop apps in the background; takes over the desktop only when the agent asks for the foreground or a system-approved portal requires it"
+msgstr "Điều khiển ứng dụng máy tính ở chế độ nền; chỉ chiếm quyền máy tính khi tác nhân yêu cầu chế độ tiền cảnh hoặc khi cổng được hệ thống phê duyệt yêu cầu"
 
 #: src/renderer/components/thread/ThreadComposer.tsx
 msgid "Drop here to attach"
@@ -4697,9 +4785,17 @@ msgstr "Đã bật"
 msgid "Enabled agents, model visibility and order"
 msgstr "Agent đã bật, khả năng hiển thị và thứ tự mô hình"
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Enabled MCP servers stay on for new threads"
+msgstr "Các máy chủ MCP đã bật vẫn hoạt động cho các luồng mới"
+
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Enabled servers stay on for new threads"
-msgstr "Các máy chủ đã bật vẫn hoạt động cho các luồng mới"
+msgid "Enabled plugins stay on for new threads"
+msgstr "Các plugin đã bật vẫn hoạt động cho các luồng mới"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Enabled servers stay on for new threads"
+#~ msgstr "Các máy chủ đã bật vẫn hoạt động cho các luồng mới"
 
 #: src/renderer/views/SettingsOverlay/parts/BrowserSettings.tsx
 msgid "Enables <0>cookies</0> and <1>storage</1>. Cookies can contain session tokens and storage often holds auth state — only enable when you trust both the agent and the sites it visits."
@@ -4871,6 +4967,11 @@ msgstr "Loại khỏi đồng bộ hóa"
 msgid "Exclude patterns"
 msgstr "Loại trừ mẫu"
 
+#. placeholder {0}: parsed.exitCode
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
+msgid "Exit code {0}"
+msgstr "Mã thoát {0}"
+
 #: src/renderer/components/thread/ChatPane/parts/items/toolDisplay.ts
 msgid "Exit plan mode"
 msgstr "Thoát khỏi chế độ kế hoạch"
@@ -4890,7 +4991,9 @@ msgstr "Thoát khỏi chế độ kế hoạch"
 msgid "Exited with code {0}. Close to retry."
 msgstr "Đã thoát với mã {0}. Đóng để thử lại."
 
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/components/thread/ThreadErrorDock.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 msgid "Expand"
 msgstr "Mở rộng"
@@ -4902,6 +5005,10 @@ msgstr "Mở rộng {label}"
 #: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsagePanelHeaderActions.tsx
 msgid "Expand all"
 msgstr "Mở rộng tất cả"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Expand background tasks"
+msgstr "Mở rộng tác vụ nền"
 
 #: src/renderer/components/thread/ThreadErrorDock.tsx
 msgid "Expand error"
@@ -4919,6 +5026,10 @@ msgstr "Mở rộng chân thanh bên"
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserTabStrip.tsx
 msgid "Expand group"
 msgstr "Mở rộng nhóm"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Expand images"
+msgstr "Mở rộng hình ảnh"
 
 #: src/renderer/views/SettingsOverlay/parts/RemoteAccessSettings.tsx
 msgid "Expand to review or revoke access."
@@ -5054,6 +5165,7 @@ msgstr "Factory Droid"
 msgid "failed"
 msgstr "thất bại"
 
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/SubAgentOverlay.tsx
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 #: src/renderer/utils/prStatus.ts
@@ -5185,6 +5297,7 @@ msgstr "Tệp quá lớn để hiển thị ({0, plural, one {# dòng đã thay 
 msgid "File uses an unsupported encoding."
 msgstr "Tệp sử dụng mã hóa không được hỗ trợ."
 
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/layout/PanelDock/panelTabMeta.ts
 #: src/renderer/components/thread/ThreadToolRail.tsx
 #: src/renderer/views/MainView/parts/MobileWorkspacePage.tsx
@@ -5315,8 +5428,12 @@ msgid "First-class Kimi Code CLI integration using Poracode's native runtime."
 msgstr "Tích hợp Kimi Code CLI hạng nhất bằng cách sử dụng thời gian chạy gốc của Poracode."
 
 #: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
-msgid "First-class Muse Code CLI integration using Poracode's native terminal runtime."
-msgstr "Tích hợp Muse Code CLI hạng nhất bằng cách sử dụng thời gian chạy terminal gốc của Poracode."
+#~ msgid "First-class Muse Code CLI integration using Poracode's native terminal runtime."
+#~ msgstr "Tích hợp Muse Code CLI hạng nhất bằng cách sử dụng thời gian chạy terminal gốc của Poracode."
+
+#: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
+msgid "First-class Muse Code integration using Poracode's native terminal and GUI runtimes."
+msgstr "Tích hợp Muse Code hạng nhất bằng thời gian chạy terminal và GUI gốc của Poracode."
 
 #: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
 msgid "First-class OpenCode integration using Poracode's native SDK runtime."
@@ -5723,6 +5840,8 @@ msgid "Go forward in navigation history"
 msgstr "Tiến tới trong lịch sử điều hướng"
 
 #: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Goal"
 msgstr "Mục tiêu"
@@ -5730,6 +5849,10 @@ msgstr "Mục tiêu"
 #: src/renderer/components/thread/ThreadGoalControls.tsx
 msgid "Goal objective"
 msgstr "Nội dung mục tiêu"
+
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#~ msgid "Goal, plan, agents, and background tasks for this thread."
+#~ msgstr "Mục tiêu, kế hoạch, agent và tác vụ nền của luồng này."
 
 #: src/mobile/views/DesktopWorkspacePanel.tsx
 #: src/renderer/components/layout/UnifiedRightPanel.tsx
@@ -5823,6 +5946,11 @@ msgstr "Các chủ đề tiếp tục ẩn sẽ được quét 5 phút một l�
 #: src/renderer/views/MainView/parts/Sidebar/parts/WhatsNewButton.tsx
 msgid "Hide"
 msgstr "Ẩn"
+
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+msgid "Hide {label}"
+msgstr "Ẩn {label}"
 
 #: src/renderer/views/SettingsOverlay/parts/UsageProviderRow.tsx
 msgid "Hide {label} circle in sidebar"
@@ -5991,6 +6119,9 @@ msgstr "Hình ảnh"
 msgid "Image preview"
 msgstr "Xem trước hình ảnh"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/ProjectIconPicker.tsx
 msgid "Images"
 msgstr "Ảnh"
@@ -6151,6 +6282,10 @@ msgstr "Bên trong dự án này"
 msgid "Inspect canonical runtime items"
 msgstr "Kiểm tra các mục thời gian chạy chuẩn"
 
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Inspect threads and terminal panes, and drive git, pull requests, and schedules."
+msgstr "Kiểm tra luồng và bảng terminal, điều khiển git, pull request và lịch chạy."
+
 #: src/renderer/views/LoginTerminalOverlay/LoginTerminalOverlay.tsx
 msgid "install"
 msgstr "cài đặt"
@@ -6181,6 +6316,10 @@ msgstr "Cài đặt {0} để tạo chủ đề."
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 msgid "Install {0}."
 msgstr "Cài đặt {0}."
+
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
+msgid "Install {badge}"
+msgstr "Cài đặt {badge}"
 
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 #~ msgid "Install {env}"
@@ -6383,7 +6522,7 @@ msgstr "Lệnh nội bộ và tác nhân"
 msgid "Interrupted"
 msgstr "Bị gián đoạn"
 
-#: src/renderer/state/slices/runtimeEventSlice.ts
+#: src/renderer/state/slices/staleSubAgents.ts
 msgid "Interrupted: agent session ended before completion."
 msgstr "Bị gián đoạn: phiên tác nhân đã kết thúc trước khi hoàn thành."
 
@@ -6827,6 +6966,10 @@ msgstr "Quản lý"
 #~ msgid "Manage global and project agent skills, including skills imported from other providers."
 #~ msgstr "Quản lý skill tác tử toàn cục và theo dự án, bao gồm cả skill được nhập từ nhà cung cấp khác."
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Manage MCP servers"
+msgstr "Quản lý máy chủ MCP"
+
 #: src/renderer/views/MainView/parts/Sidebar/parts/SidebarRemoteServers.tsx
 #~ msgid "Manage remote environments"
 #~ msgstr "Quản lý môi trường từ xa"
@@ -6990,10 +7133,13 @@ msgstr "MCP"
 #~ msgid "MCP Market"
 #~ msgstr "MCP Market"
 
-#: src/renderer/components/thread/ThreadComposerSection.tsx
-#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 msgid "MCP server"
 msgstr "Máy chủ MCP"
+
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "MCP server actions"
+msgstr "Thao tác máy chủ MCP"
 
 #: src/renderer/components/mcp/McpServerEditor.tsx
 msgid "MCP server arguments"
@@ -7043,13 +7189,15 @@ msgstr "Thời gian chờ của máy chủ MCP tính bằng mili giây"
 msgid "MCP server URL"
 msgstr "URL của máy chủ MCP"
 
-#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/plugins/PluginDetail.tsx
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/ProfileSettings.tsx
 msgid "MCP servers"
 msgstr "Máy chủ MCP"
 
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/McpSection.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/MobileProjectSettingsIndex.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/SettingsSidebar.tsx
@@ -7312,6 +7460,7 @@ msgstr "Mô hình"
 msgid "Modes"
 msgstr "Chế độ"
 
+#: src/renderer/components/layout/UnifiedRightPanel.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/MobileHomeActions.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/SidebarFooterNav.tsx
 #: src/renderer/views/ProfileOverlay/parts/ActivityHeatmap.tsx
@@ -7425,8 +7574,8 @@ msgstr "Chuyển sang cây làm việc kèm thay đổi"
 #~ msgstr "Chuyển sang cây làm việc…"
 
 #: src/renderer/components/thread/ThreadTodoDock.tsx
-msgid "Move todo dock to right panel"
-msgstr "Di chuyển khay việc cần làm sang bảng bên phải"
+#~ msgid "Move todo dock to right panel"
+#~ msgstr "Di chuyển khay việc cần làm sang bảng bên phải"
 
 #. placeholder {0}: fallback.name
 #: src/renderer/actions/workspaceActions.ts
@@ -7980,9 +8129,13 @@ msgstr "Không có lịch phù hợp."
 msgid "No matching threads"
 msgstr "Không có luồng nào phù hợp"
 
-#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 msgid "No MCP servers are enabled for this run"
 msgstr "Không có máy chủ MCP nào được bật cho lần chạy này"
+
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "No MCP servers configured"
+msgstr "Chưa cấu hình máy chủ MCP nào"
 
 #: src/renderer/components/mcp/McpExternalImportModal.tsx
 msgid "No MCP servers found in this scope."
@@ -8025,6 +8178,10 @@ msgstr "Không có mẫu."
 #: src/renderer/components/thread/ChatPane/parts/items/WorkflowOverlayBody.tsx
 msgid "No phases yet."
 msgstr "Chưa có giai đoạn nào."
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "No plugins are enabled for this run"
+msgstr "Không có plugin nào được bật cho lần chạy này"
 
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 msgid "No plugins match your search."
@@ -8172,6 +8329,10 @@ msgstr "Không có luồng nào"
 msgid "No threads yet."
 msgstr "Chưa có luồng nào."
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "no verdict arrived — the CLI may have blocked /goal (workspace trust or hooks settings) or the evaluator could not run"
+msgstr "không nhận được phán quyết — CLI có thể đã chặn /goal (độ tin cậy không gian làm việc hoặc cài đặt hook) hoặc trình đánh giá không chạy được"
+
 #: src/renderer/components/providers/usageFormat.ts
 msgid "No windows reported"
 msgstr "Không có cửa sổ nào được báo cáo"
@@ -8221,6 +8382,10 @@ msgstr "Chưa được phát hiện trên máy này."
 #: src/renderer/components/thread/AgentDiscoveryScreen.tsx
 msgid "Not found"
 msgstr "Không tìm thấy"
+
+#: src/renderer/views/SettingsOverlay/parts/nativeAgentRuntimes.ts
+msgid "not installed"
+msgstr "chưa được cài đặt"
 
 #: src/renderer/components/providers/CombinedRuntimeVersionList.tsx
 #: src/renderer/views/SettingsOverlay/parts/antigravityRuntimeInstall.ts
@@ -8303,7 +8468,6 @@ msgid "Official sources only"
 msgstr "Chỉ nguồn chính thức"
 
 #: src/renderer/components/common/RemoteServerStatusDot.tsx
-#: src/renderer/views/SettingsOverlay/parts/machineScope/MachineSelect.tsx
 msgid "Offline"
 msgstr "Ngoại tuyến"
 
@@ -8498,7 +8662,14 @@ msgstr "Mở Git Review"
 msgid "Open git review as a right-side panel or a full page."
 msgstr "Mở đánh giá git dưới dạng bảng điều khiển bên phải hoặc toàn trang."
 
+#. placeholder {0}: index + 1
+#. placeholder {1}: gallery.length
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Open image {0} of {1}"
+msgstr "Mở hình ảnh {0}/{1}"
+
 #: src/renderer/components/thread/ChatPane/parts/items/ImageCard.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 msgid "Open image preview"
 msgstr "Mở xem trước hình ảnh"
 
@@ -8659,6 +8830,10 @@ msgstr "Mở bộ chọn mô hình"
 msgid "OpenCode"
 msgstr "OpenCode"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "OpenCode request failed, retrying..."
+msgstr "Yêu cầu OpenCode thất bại, đang thử lại..."
+
 #. placeholder {0}: request.receivedAt
 #. placeholder {1}: index + 1
 #: src/renderer/components/thread/ChatPane/ChatRuntimeDebugPanel.tsx
@@ -8795,8 +8970,8 @@ msgid "Pair a phone, tablet, or browser with this desktop."
 msgstr "Ghép đôi điện thoại, máy tính bảng hoặc trình duyệt với máy tính này."
 
 #: src/renderer/views/SettingsOverlay/parts/machineScope/MachineSelect.tsx
-msgid "Pair a remote machine…"
-msgstr "Ghép nối máy từ xa…"
+#~ msgid "Pair a remote machine…"
+#~ msgstr "Ghép nối máy từ xa…"
 
 #: src/mobile/components.tsx src/mobile/remoteConnectionState.ts
 #~ msgid "Pair again"
@@ -9082,9 +9257,10 @@ msgstr "Đã ghim"
 msgid "Pinned task routes"
 msgstr "Tuyến tác vụ đã ghim"
 
-#: src/renderer/components/layout/PanelDock/panelTabMeta.ts
 #: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
 #: src/renderer/components/providers/composerControlBuilders.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 #: src/renderer/views/SettingsOverlay/parts/CursorProviderSettings.tsx
 msgid "Plan"
@@ -9106,13 +9282,16 @@ msgid "Play notification sound"
 msgstr "Phát âm thanh thông báo"
 
 #: src/renderer/components/skills/SkillsManager.tsx
-#: src/renderer/components/skills/useSkills.ts
 msgid "Plugin"
 msgstr "Plugin"
 
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 msgid "Plugin folder"
 msgstr "Thư mục plugin"
+
+#: src/renderer/components/mcp/McpServersManager.tsx
+msgid "Plugin servers"
+msgstr "Máy chủ plugin"
 
 #: src/renderer/components/plugins/pluginCopy.ts
 msgid "plugin.json could not be read as JSON."
@@ -9130,6 +9309,8 @@ msgstr "plugin.json không hợp lệ theo đặc tả Agent Plugins."
 msgid "plugin.json targets an Agent Plugins version this build does not support."
 msgstr "plugin.json nhắm tới phiên bản Agent Plugins mà bản dựng này không hỗ trợ."
 
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
@@ -9152,6 +9333,14 @@ msgstr "Trỏ hồ sơ này tới nhà cung cấp ngoài Anthropic (z.ai, …) v
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Popular editor themes adapted to Poracode. Each follows the light or dark mode above."
 msgstr "Các chủ đề biên tập phổ biến được điều chỉnh cho phù hợp với Poracode. Mỗi cái đều theo chế độ sáng hoặc tối ở trên."
+
+#: src/renderer/components/mcp/McpServersManager.tsx
+#: src/renderer/components/plugins/pluginCopy.ts
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
+#: src/renderer/components/thread/ThreadComposerSection.tsx
+#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+msgid "Poracode"
+msgstr "Poracode"
 
 #: src/renderer/views/SettingsOverlay/parts/SshConnectionForm.tsx
 msgid "Poracode and your agents run on the remote machine. SSH is used only to start the remote environment and secure its local tunnel."
@@ -9377,10 +9566,15 @@ msgstr "Chính sách quyền riêng tư"
 #~ msgid "Private key"
 #~ msgstr "Khóa riêng"
 
-#. placeholder {0}: agent.label
 #. placeholder {0}: updateAllProgress.agentLabel
+#. placeholder {1}: updateAllProgress.current
+#. placeholder {2}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Probing {0} ({1} of {2})"
+msgstr "Đang kiểm tra {0} ({1}/{2})"
+
+#. placeholder {0}: agent.label
 #. placeholder {1}: update.targetVersion
-#. placeholder {1}: updateAllProgress.targetVersion
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
 msgid "Probing {0} v{1}"
 msgstr "Đang kiểm tra {0} v{1}"
@@ -9431,6 +9625,8 @@ msgstr "Hồ sơ"
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/common/MobileProjectPicker.tsx
 #: src/renderer/components/mcp/McpExternalImportModal.tsx
+#: src/renderer/components/plugins/PluginDetail.tsx
+#: src/renderer/components/plugins/PluginMarketplace.tsx
 #: src/renderer/components/thread/ThreadCommandPanel.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsMobileWorkflowList.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsSidebar.tsx
@@ -9806,6 +10002,18 @@ msgstr "Chạy lại tất cả công việc"
 #: src/renderer/views/GitHubActionsView/GitHubActionsRunList.tsx
 msgid "Re-run failed jobs"
 msgstr "Chạy lại các công việc thất bại"
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read and drive Poracode itself: threads, terminal panes, git, pull requests, and schedules."
+msgstr "Đọc và điều khiển chính Poracode: luồng, bảng terminal, git, pull request và lịch chạy."
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read the Terminal panel attached to this worktree and report the evidence."
+msgstr "Đọc bảng Terminal của cây làm việc này và báo cáo bằng chứng."
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read the Terminal panel attached to this worktree and report what it is printing."
+msgstr "Đọc bảng Terminal của cây làm việc này và báo cáo nội dung đang in."
 
 #: src/renderer/views/ExperimentView/parts/ExperimentJudgeRunDialog.tsx
 msgid "Reading each candidate's changes…"
@@ -10270,6 +10478,7 @@ msgstr "Trình kết xuất gặp một promise rejection chưa được xử l�
 msgid "Reorder {0}"
 msgstr "Sắp xếp lại {0}"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
 msgid "Reorder {label}"
 msgstr "Sắp xếp lại {label}"
@@ -10587,6 +10796,7 @@ msgid "Right"
 msgstr "Phải"
 
 #: src/renderer/views/SettingsOverlay/parts/BrowserSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsOptions.ts
 msgid "Right panel"
 msgstr "Bảng bên phải"
 
@@ -10612,12 +10822,20 @@ msgstr "Chạy {0}"
 
 #. placeholder {0}: agentStatus.loginCommand
 #: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
-msgid "Run {0} before this thread can run."
-msgstr "Chạy {0} trước khi luồng này có thể chạy."
+#~ msgid "Run {0} before this thread can run."
+#~ msgstr "Chạy {0} trước khi luồng này có thể chạy."
 
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
-msgid "Run {loginCommand} to sign in."
-msgstr "Chạy {loginCommand} để đăng nhập."
+#~ msgid "Run {loginCommand} to sign in."
+#~ msgstr "Chạy {loginCommand} để đăng nhập."
+
+#: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
+msgid "Run {loginCommandDisplay} before this thread can run."
+msgstr "Chạy {loginCommandDisplay} trước khi luồng này có thể chạy."
+
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
+msgid "Run {loginCommandDisplay} to sign in."
+msgstr "Chạy {loginCommandDisplay} để đăng nhập."
 
 #. placeholder {0}: server.label
 #: src/renderer/views/RemoteProjectModal/RemoteProjectModal.tsx
@@ -10730,7 +10948,6 @@ msgstr "Sẽ hết sau {runOut}"
 #: src/renderer/components/providers/CombinedRuntimeVersionList.tsx
 #: src/renderer/views/MainView/parts/CreateProject/CloneProjectModal.tsx
 #: src/renderer/views/MainView/parts/CreateProject/CreateProjectModal.tsx
-#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Runtime"
 msgstr "Thời gian chạy"
 
@@ -11220,6 +11437,10 @@ msgstr "Gửi văn bản chung chung thay vì tiêu đề cuộc trò chuyện q
 msgid "Send message"
 msgstr "Gửi tin nhắn"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "Gửi dữ liệu vào terminal"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "Đã gửi lựa chọn đến thiết bị đầu cuối."
@@ -11270,9 +11491,17 @@ msgstr "Đặt hoặc xem mục tiêu thử nghiệm"
 msgid "Set shortcut"
 msgstr "Đặt phím tắt"
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Set when this session started — start a new thread to change MCP servers"
+msgstr "Được cố định khi phiên này bắt đầu — hãy tạo luồng mới để thay đổi máy chủ MCP"
+
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Set when this session started — start a new thread to change servers"
-msgstr "Được cố định khi phiên này bắt đầu — hãy tạo luồng mới để thay đổi máy chủ"
+msgid "Set when this session started — start a new thread to change plugins"
+msgstr "Được cố định khi phiên này bắt đầu — hãy tạo luồng mới để thay đổi plugin"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Set when this session started — start a new thread to change servers"
+#~ msgstr "Được cố định khi phiên này bắt đầu — hãy tạo luồng mới để thay đổi máy chủ"
 
 #: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
 #: src/renderer/views/MainView/parts/MainPageLayout.tsx
@@ -11318,6 +11547,10 @@ msgstr "Phím tắt"
 #: src/renderer/components/providers/ProviderUsageRail.tsx
 msgid "Show {0}"
 msgstr "Hiển thị {0}"
+
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+msgid "Show {label}"
+msgstr "Hiện {label}"
 
 #: src/renderer/views/SettingsOverlay/parts/UsageProviderRow.tsx
 msgid "Show {label} circle in sidebar"
@@ -11373,6 +11606,14 @@ msgstr "Hiển thị trình soạn thảo"
 msgid "Show context usage details"
 msgstr "Hiển thị chi tiết sử dụng ngữ cảnh"
 
+#: src/renderer/components/thread/ThreadDocksPlacementToggle.tsx
+msgid "Show docks above the composer"
+msgstr "Hiện dock phía trên trình soạn"
+
+#: src/renderer/components/thread/ThreadDocksPlacementToggle.tsx
+msgid "Show docks in the right panel"
+msgstr "Hiện dock trong bảng bên phải"
+
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/UsageSettings.tsx
 msgid "Show estimated cost"
@@ -11382,6 +11623,10 @@ msgstr "Hiển thị chi phí ước tính"
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #~ msgid "Show GitHub Actions in the sidebar footer."
 #~ msgstr "Hiển thị GitHub Actions ở chân thanh bên."
+
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+msgid "Show images"
+msgstr "Hiển thị ảnh"
 
 #: src/renderer/components/thread/ChatPane/parts/items/InlineFolderPathChip.tsx
 msgid "Show in file explorer"
@@ -12070,8 +12315,8 @@ msgid "Subagent"
 msgstr "Tác nhân phụ"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Subagent Delegation"
-msgstr "Ủy quyền cho tác nhân phụ"
+#~ msgid "Subagent Delegation"
+#~ msgstr "Ủy quyền cho tác nhân phụ"
 
 #: src/renderer/components/thread/ChatPane/parts/items/SubAgentOverlay.tsx
 msgid "Subagent not found."
@@ -12313,8 +12558,8 @@ msgid "Take Screenshot"
 msgstr "Chụp ảnh màn hình"
 
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Takes over the desktop while the agent clicks or types"
-msgstr "Chiếm quyền điều khiển máy tính khi agent nhấp hoặc gõ"
+#~ msgid "Takes over the desktop while the agent clicks or types"
+#~ msgstr "Chiếm quyền điều khiển máy tính khi agent nhấp hoặc gõ"
 
 #: src/renderer/views/SettingsOverlay/parts/MobileRemoteProjectsSheet.tsx
 msgid "Tap + to add a folder or clone a repository on your desktop."
@@ -12341,9 +12586,17 @@ msgstr "Nhánh mục tiêu"
 msgid "Task"
 msgstr "Tác vụ"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Task {id}"
+msgstr "Tác vụ {id}"
+
 #: src/renderer/views/SettingsOverlay/parts/crossagent/CrossagentRankedRow.tsx
 msgid "Task match"
 msgstr "Khớp tác vụ"
+
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
+msgid "Task Notification"
+msgstr "Thông báo tác vụ"
 
 #: src/renderer/components/thread/ChatPane/parts/items/toolDisplay.ts
 msgid "Task output"
@@ -12369,8 +12622,7 @@ msgstr "Cho nhà cung cấp mục tiêu biết phải làm gì tiếp theo..."
 #: src/renderer/commands/registry.ts
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/layout/PanelDock/panelTabMeta.ts
-#: src/renderer/components/thread/ThreadComposerSection.tsx
-#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+#: src/renderer/components/plugins/pluginCopy.ts
 #: src/renderer/components/thread/ThreadToolRail.tsx
 #: src/renderer/views/MainView/parts/MainPageLayout.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserToolbar.tsx
@@ -12671,6 +12923,10 @@ msgstr "Giao diện và cỡ chữ chat"
 msgid "These built-in MCP servers are shared by OpenCode threads. Saving updates running GUI projects; removing a server can interrupt an active turn. Terminal threads pick up changes on their next launch."
 msgstr "Các máy chủ MCP tích hợp sẵn này được chia sẻ giữa các luồng OpenCode. Việc lưu sẽ cập nhật các dự án GUI đang chạy; xóa một máy chủ có thể làm gián đoạn lượt đang hoạt động. Các luồng terminal sẽ nhận thay đổi ở lần khởi chạy tiếp theo."
 
+#: src/renderer/components/mcp/McpServersManager.tsx
+msgid "These servers come from plugins. Enable or disable them from Plugins; they cannot be edited here."
+msgstr "Các máy chủ này đến từ plugin. Bật hoặc tắt chúng từ Plugin; không thể chỉnh sửa ở đây."
+
 #: src/renderer/components/common/EffortContextMenu/EffortContextMenu.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/Reasoning.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/ReasoningInline.tsx
@@ -12852,10 +13108,18 @@ msgstr "Máy chủ này chạy trên máy này và không khả dụng cho dự 
 msgid "This system-wide shortcut is unavailable. Choose another key combination."
 msgstr "Phím tắt toàn hệ thống này không khả dụng. Hãy chọn tổ hợp phím khác."
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "This thread switched provider without transferring context: {agent} started without Poracode's read_thread tool, so it cannot read the earlier conversation. Re-enable the app-controls MCP tool, or summarize what it needs."
+msgstr "Luồng này đã đổi nhà cung cấp mà không chuyển ngữ cảnh: {agent} khởi động mà không có công cụ read_thread của Poracode nên không thể đọc cuộc trò chuyện trước đó. Hãy bật lại công cụ MCP app-controls hoặc tóm tắt những gì nó cần."
+
 #. placeholder {0}: props.worktreeBranch
 #: src/renderer/views/MainView/parts/Sidebar/parts/DeleteWorktreePopover.tsx
 #~ msgid "This thread uses worktree <0>{0}</0>. Also remove the worktree directory?"
 #~ msgstr "Luồng này sử dụng cây làm việc <0>{0}</0>. Cũng xóa thư mục cây làm việc?"
+
+#: src/renderer/i18n/sharedMessages.ts
+msgid "This thread was forked without transferring context: {agent} started without Poracode's read_thread tool, so it cannot read the original conversation. Re-enable the app-controls MCP tool, or summarize what it needs."
+msgstr "Luồng này đã được fork mà không chuyển ngữ cảnh: {agent} khởi động mà không có công cụ read_thread của Poracode nên không thể đọc cuộc trò chuyện gốc. Hãy bật lại công cụ MCP app-controls hoặc tóm tắt những gì nó cần."
 
 #: src/renderer/views/MainView/parts/Sidebar/parts/DeleteWorktreePopover.tsx
 #~ msgid "This will permanently delete the thread and its worktree."
@@ -12911,6 +13175,16 @@ msgstr "Mặc định luồng và phạm vi Home"
 msgid "Thread dock"
 msgstr "Dock luồng"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Thread docks"
+msgstr "Dock của luồng"
+
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+msgid "Thread docks placement"
+msgstr "Vị trí dock của luồng"
+
 #: src/renderer/components/thread/ThreadView.tsx
 msgid "Thread failed to start."
 msgstr "Luồng không thể bắt đầu."
@@ -12923,6 +13197,14 @@ msgstr "Luồng đã kết thúc hoặc đang chờ bạn nhập."
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Thread goal dock"
 msgstr "Dock mục tiêu luồng"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Thread images"
+msgstr "Hình ảnh của luồng"
+
+#: src/renderer/views/MainView/parts/ProjectAuxiliaryPanel.tsx
+msgid "Thread info"
+msgstr "Thông tin luồng"
 
 #: src/renderer/views/MainView/parts/Sidebar/parts/ThreadContextMenu.tsx
 msgid "Thread is already unloaded."
@@ -12953,6 +13235,7 @@ msgstr "Không tìm thấy luồng"
 msgid "Thread todo dock"
 msgstr "Dock việc cần làm của luồng"
 
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 #: src/renderer/views/SettingsOverlay/parts/ThreadSettings.tsx
 #: src/renderer/views/ThreadSearchOverlay/ThreadSearchOverlay.tsx
@@ -13233,8 +13516,10 @@ msgstr "Không thể xác định nhánh nguồn của thử nghiệm."
 msgid "Unable to install {0} hooks."
 msgstr "Không thể cài đặt hook {0}."
 
+#. placeholder {0}: agent.label
 #. placeholder {0}: input.label
 #: src/renderer/actions/agentLoginActions.ts
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Unable to install {0}."
 msgstr "Không thể cài đặt {0}."
 
@@ -13617,10 +13902,20 @@ msgstr "cập nhật"
 #: src/renderer/components/thread/ThreadAgentUpdateDock.tsx
 #: src/renderer/views/SettingsOverlay/parts/AcpRegistrySettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/CursorSdkRuntimeSetup.tsx
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/HookPluginSettings.tsx
-#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Update"
 msgstr "cập nhật"
+
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Update {0}"
+msgstr "Cập nhật {0}"
+
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Update {0} ({env})"
+msgstr "Cập nhật {0} ({env})"
 
 #. placeholder {0}: agent.label
 #. placeholder {0}: props.agentLabel
@@ -13630,8 +13925,12 @@ msgid "Update {0} to {updateLabel}"
 msgstr "Cập nhật {0} lên {updateLabel}"
 
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
-msgid "Update all"
-msgstr "Cập nhật tất cả"
+#~ msgid "Update all"
+#~ msgstr "Cập nhật tất cả"
+
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Update all ({outdatedCount})"
+msgstr "Cập nhật tất cả ({outdatedCount})"
 
 #: src/renderer/views/SettingsOverlay/parts/antigravityRuntimeInstall.ts
 #~ msgid "Update Antigravity"
@@ -13738,10 +14037,23 @@ msgstr "Đã cập nhật {0}"
 msgid "Updating"
 msgstr "Đang cập nhật"
 
+#. placeholder {0}: updateAllProgress.current
+#. placeholder {1}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Updating ({0}/{1})"
+msgstr "Đang cập nhật ({0}/{1})"
+
 #. placeholder {0}: props.agentLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 msgid "Updating {0}"
 msgstr "Đang cập nhật {0}"
+
+#. placeholder {0}: updateAllProgress.agentLabel
+#. placeholder {1}: updateAllProgress.current
+#. placeholder {2}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Updating {0} ({1} of {2})"
+msgstr "Đang cập nhật {0} ({1}/{2})"
 
 #. placeholder {0}: props.agentLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
@@ -13749,9 +14061,7 @@ msgid "Updating {0} ({env})"
 msgstr "Đang cập nhật {0} ({env})"
 
 #. placeholder {0}: agent.label
-#. placeholder {0}: updateAllProgress.agentLabel
 #. placeholder {1}: update.targetVersion
-#. placeholder {1}: updateAllProgress.targetVersion
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
 msgid "Updating {0} to v{1}"
 msgstr "Đang cập nhật {0} lên v{1}"
@@ -14208,6 +14518,11 @@ msgstr "Khi bạn đóng cửa sổ, hãy giữ Poracode chạy trong khay hệ 
 #: src/renderer/views/SettingsOverlay/parts/TerminalSettings.tsx
 msgid "Where a browser element-picker selection goes in terminal-native threads. A collapsed composer always routes to the terminal."
 msgstr "Nơi lựa chọn từ bộ chọn phần tử trình duyệt được đưa vào các luồng gốc của thiết bị đầu cuối. Trình soạn thảo đang thu gọn luôn định tuyến tới thiết bị đầu cuối."
+
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Where a thread's goal, plan, agents, and background tasks appear. In the right panel, compact bubbles above the composer open them."
+msgstr "Nơi hiển thị mục tiêu, kế hoạch, agent và tác vụ nền của luồng. Ở bảng bên phải, các bong bóng nhỏ phía trên trình soạn sẽ mở chúng."
 
 #: src/renderer/views/WelcomeOverlay.tsx
 msgid "Where do you want to begin?"

@@ -36,6 +36,7 @@ describe("sharedSettingsStore", () => {
       crossagentSelectionUsage: [],
       crossagentRoutingOverrides: [],
       providerOrder: [],
+      threadDocksOrder: ["goal", "plan", "agents", "backgroundTasks", "images"],
       sidebarShortcutOrder: ["pullRequests", "githubActions", "schedules"],
       lastUsedProjectDirs: {},
       enabledMcpServers: {},
@@ -115,6 +116,18 @@ describe("sharedSettingsStore", () => {
       "schedules",
       "pullRequests",
       "githubActions",
+    ]);
+  });
+
+  it("reorders thread docks and keeps every supported dock", () => {
+    useSharedSettings.getState().setThreadDocksOrder(["backgroundTasks", "plan"]);
+
+    expect(useSharedSettings.getState().threadDocksOrder).toEqual([
+      "backgroundTasks",
+      "plan",
+      "goal",
+      "agents",
+      "images",
     ]);
   });
 
@@ -231,7 +244,7 @@ describe("sharedSettingsStore", () => {
     useSharedSettings.getState().installPlugin(pluginFixture("browser-tools"));
     expect(persistedPlugins()).toEqual({
       "browser-tools": {
-        version: "1.1.0",
+        version: pluginFixture("browser-tools").manifest.version,
         enabled: true,
         disabledSkillIds: [],
         disabledMcpServerNames: [],
@@ -239,9 +252,11 @@ describe("sharedSettingsStore", () => {
     });
 
     useSharedSettings.getState().setPluginEnabled(pluginFixture("browser-tools"), false);
-    useSharedSettings.getState().setPluginSkillEnabled("browser-tools", "browser-control", false);
+    useSharedSettings
+      .getState()
+      .setPluginSkillEnabled(pluginFixture("browser-tools"), "browser-control", false);
     expect(persistedPlugins()["browser-tools"]).toEqual({
-      version: "1.1.0",
+      version: pluginFixture("browser-tools").manifest.version,
       enabled: false,
       disabledSkillIds: ["browser-control"],
       disabledMcpServerNames: [],

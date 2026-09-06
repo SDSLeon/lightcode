@@ -37,6 +37,7 @@ import {
   ComputerUseDesktopOverlay,
   ComputerUseMcpIngress,
   type ComputerUseMcpIngressInfo,
+  resolveComputerUseHelperBinaryPath,
 } from "./computer-use";
 import { createAutoUpdaterController } from "./updates/autoUpdater";
 import { showOsNotification } from "./osNotifications";
@@ -1030,14 +1031,28 @@ if (!hasSingleInstanceLock) {
       chromeBridgeServer.start().catch((err) => {
         console.error("[poracode] chrome bridge server failed to start:", err);
       });
-      // Computer-use drives the host desktop and is only supported on macOS and
-      // Windows (matches createComputerUseDriver). On other platforms the ingress
+      const computerUseHelperRoot = app.isPackaged
+        ? join(process.resourcesPath, "computer-use-helper")
+        : join(
+            __dirname,
+            "..",
+            "..",
+            "resources",
+            isDev ? "computer-use-helper-dev" : "computer-use-helper",
+          );
+      // Windows and macOS keep a legacy in-process driver, so they stay
+      // supported even without a staged helper. Everywhere else the helper is
+      // the only backend: with no binary for this platform/arch the ingress
       // would advertise tools that all fail and would still inject a token into
-      // launches, so skip it entirely — resolveExtraEnv then naturally yields
+      // every agent launch, so skip it entirely and let resolveExtraEnv yield
       // nothing because getInfo() stays null.
+      const computerUseSupported =
+        process.platform === "win32" ||
+        process.platform === "darwin" ||
+        resolveComputerUseHelperBinaryPath(computerUseHelperRoot) !== null;
       let computerUseMcpInfoReady: Promise<ComputerUseMcpIngressInfo | null> =
         Promise.resolve(null);
-      if (process.platform === "win32" || process.platform === "darwin") {
+      if (computerUseSupported) {
         computerUseDesktopOverlay = new ComputerUseDesktopOverlay({
           onExit: (threadIds) => {
             computerUseMcpIngress?.interruptActiveActions();
@@ -1052,6 +1067,11 @@ if (!hasSingleInstanceLock) {
           },
         });
         computerUseMcpIngress = new ComputerUseMcpIngress({
+          driverOptions: {
+            helperRootDir: computerUseHelperRoot,
+            stateDir: join(app.getPath("userData"), "computer-use"),
+            warn: (message) => console.warn(`[poracode] ${message}`),
+          },
           onActivity: (event) => computerUseDesktopOverlay?.setActivity(event),
         });
         computerUseMcpInfoReady = computerUseMcpIngress.start().catch((err) => {

@@ -3,6 +3,10 @@ package com.poracode.app.transport.settings
 import com.poracode.app.model.settings.AgentStatusesSnapshot
 import com.poracode.app.model.settings.HostSettingsPatch
 import com.poracode.app.model.settings.HostSettingsSnapshot
+import com.poracode.app.model.settings.GlobalMcpSettingsCommand
+import com.poracode.app.model.settings.GlobalMcpSettingsOperation
+import com.poracode.app.model.settings.GlobalMcpSettingsOperationResult
+import com.poracode.app.model.settings.GlobalMcpSettingsResponse
 import com.poracode.app.model.settings.ProfileCoreStatsSnapshot
 import com.poracode.app.model.settings.ProfileDevicesSnapshot
 import com.poracode.app.model.settings.ProfileIdentityRequest
@@ -22,6 +26,11 @@ interface SettingsRemoteGateway {
     suspend fun updateProfileIdentity(request: ProfileIdentityRequest): ProfileIdentitySnapshot
     suspend fun readSettings(): HostSettingsSnapshot
     suspend fun writeSettings(patch: HostSettingsPatch): HostSettingsSnapshot
+    suspend fun readGlobalMcpSettings(): GlobalMcpSettingsResponse
+    suspend fun commandGlobalMcpSettings(command: GlobalMcpSettingsCommand): GlobalMcpSettingsResponse
+    suspend fun operateGlobalMcpSettings(
+        operation: GlobalMcpSettingsOperation,
+    ): GlobalMcpSettingsOperationResult
 }
 
 fun interface SettingsRemoteGatewayProvider {

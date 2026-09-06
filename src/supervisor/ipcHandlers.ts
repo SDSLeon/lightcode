@@ -1,4 +1,6 @@
+import type { ListPluginsPayload } from "@/shared/contracts";
 import { defineSupervisorIpcHandlers, type SupervisorIpcHandlerMap } from "@/shared/ipc";
+import { getProjectFsPath } from "@/shared/wsl";
 import type { SupervisorRuntime } from "./supervisorRuntime";
 
 /**
@@ -24,8 +26,10 @@ export function createSupervisorIpcHandlers(runtime: SupervisorRuntime): Supervi
   const externalMcpDiscovery = runtime.externalMcpDiscoveryService;
   const skills = runtime.skillsService;
   const pluginRegistry = runtime.pluginRegistry;
-  const listPlugins = () => ({
-    plugins: pluginRegistry.listPlugins(),
+  const listPlugins = (payload: ListPluginsPayload) => ({
+    plugins: pluginRegistry.listPlugins(
+      payload.projectLocation ? getProjectFsPath(payload.projectLocation) : undefined,
+    ),
     userPluginsDir: pluginRegistry.ensureUserPluginsDir(),
   });
   return defineSupervisorIpcHandlers({
@@ -72,6 +76,7 @@ export function createSupervisorIpcHandlers(runtime: SupervisorRuntime): Supervi
     readTerminalScrollback: ({ threadId }) => threads.readTerminalScrollback(threadId),
     readTerminalSize: ({ threadId }) => threads.readTerminalSize(threadId),
     readTerminalSnapshot: ({ threadId }) => threads.readTerminalSnapshot(threadId),
+    readThreadBackgroundTasks: ({ threadId }) => [...threads.readThreadBackgroundTasks(threadId)],
     subagentSubscribe: (payload) => threads.subagentSubscribe(payload),
     subagentUnsubscribe: async (payload) => {
       threads.subagentUnsubscribe(payload);
@@ -335,10 +340,10 @@ export function createSupervisorIpcHandlers(runtime: SupervisorRuntime): Supervi
     importSkills: (payload) => skills.import(payload),
     listSkillMarketplace: (payload) => skills.listMarketplace(payload),
     installMarketplaceSkill: (payload) => skills.installMarketplace(payload),
-    listPlugins: () => listPlugins(),
-    refreshPlugins: () => {
+    listPlugins: (payload) => listPlugins(payload),
+    refreshPlugins: (payload) => {
       pluginRegistry.refresh();
-      return listPlugins();
+      return listPlugins(payload);
     },
   });
 }

@@ -47,4 +47,18 @@
     <string name="git_change_reconciled">The result was uncertain. Poracode did not retry it and fetched authoritative Git status once.</string>
     <string name="git_change_unknown">The result was uncertain and status could not be refreshed. Check the desktop before trying again.</string>
     <string name="git_operation_failed">The Git action failed.</string>
+    <string name="git_view_branches">View branches</string>
+    <string name="git_view_worktrees">View worktrees</string>
+    <string name="git_worktrees_title">Worktrees</string>
+    <string name="git_branch_list_empty">No branches found.</string>
+    <string name="git_branch_current_badge">Current</string>
+    <string name="git_branch_remote_badge">Remote</string>
+    <string name="git_branch_switch_action">Switch to %1$s</string>
+    <string name="git_branch_delete_action">Delete %1$s</string>
+    <string name="git_worktree_list_empty">No worktrees found.</string>
+    <string name="git_worktree_main_badge">Main</string>
+    <string name="git_worktree_actions_description">Actions for %1$s</string>
+    <string name="git_worktree_source_branch_dialog_title">Source branch</string>
+    <string name="git_worktree_source_branch_dialog_hint">e.g. main</string>
+    <string name="git_close_sheet">Close</string>
 </resources>

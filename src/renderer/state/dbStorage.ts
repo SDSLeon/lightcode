@@ -204,6 +204,7 @@ class AppStoreWriteQueue {
 
 /** Load projects + threads + view from SQLite and assemble into Zustand persist format. */
 async function loadAppStore(): Promise<StorageValue<unknown> | null> {
+  const startedAt = performance.now();
   const [projects, threads, viewJson] = await Promise.all([
     readBridge().dbGetProjects(),
     readBridge().dbGetThreads(),
@@ -225,6 +226,9 @@ async function loadAppStore(): Promise<StorageValue<unknown> | null> {
 
   let groupLayouts: Record<string, unknown> = {};
   const groupLayoutsJson = await readBridge().dbGetState("groupLayouts");
+  if (import.meta.env.DEV) {
+    performance.measure("poracode:database hydration", { start: startedAt });
+  }
   if (groupLayoutsJson) {
     try {
       groupLayouts = JSON.parse(groupLayoutsJson) as Record<string, unknown>;

@@ -71,17 +71,26 @@ export class WslBridgeClient {
   /**
    * Walk the project tree (skipping `ignore` directories) up to `maxEntries`.
    * The server enumerates inside the distro — orders of magnitude faster than
-   * a recursive UNC readdir over the 9P bridge.
+   * a recursive UNC readdir over the 9P bridge. `newestFirst` asks the server
+   * to scan the full tree and retain the newest matching files.
    */
   async find(
     location: WslLocation,
-    options: { root?: string; maxEntries: number; ignore?: string[] },
+    options: {
+      root?: string;
+      maxEntries: number;
+      ignore?: string[];
+      fileName?: string;
+      newestFirst?: boolean;
+    },
   ): Promise<{ entries: WslFindEntry[]; truncated: boolean }> {
     return this.call<{ entries: WslFindEntry[]; truncated: boolean }>(location, "/v1/fs/find", {
       projectRoot: location.linuxPath,
       root: options.root ?? location.linuxPath,
       maxEntries: options.maxEntries,
       ignore: options.ignore ?? [],
+      ...(options.fileName ? { fileName: options.fileName } : {}),
+      ...(options.newestFirst ? { newestFirst: true } : {}),
     });
   }
 
@@ -217,6 +226,19 @@ export class WslBridgeClient {
     });
   }
 
+  /** Move a path without replacing a destination created concurrently. */
+  async moveNoReplace(
+    location: WslLocation,
+    fromAbsolute: string,
+    toAbsolute: string,
+  ): Promise<void> {
+    await this.call(location, "/v1/fs/move-no-replace", {
+      projectRoot: location.linuxPath,
+      from: fromAbsolute,
+      to: toAbsolute,
+    });
+  }
+
   /**
    * Subscribe to filesystem changes under `paths`. Listener is registered
    * BEFORE the HTTP request so the first event cannot race in ahead of the
@@ -247,6 +269,7 @@ export class WslBridgeClient {
       unsubscribe: async () => {
         if (disposed) return;
         disposed = true;
+        if (!this.server.hasWatchListener(subscriptionId)) return;
         this.server.unregisterWatchListener(subscriptionId);
         await this.call(location, "/v1/watch/unsubscribe", { subscriptionId }).catch((error) => {
           console.warn(`[wsl-bridge] unsubscribe ${subscriptionId} failed:`, error);
@@ -256,6 +279,15 @@ export class WslBridgeClient {
   }
 
   private async call<T>(location: WslLocation, path: string, body: unknown): Promise<T> {
+    const endRequest = this.server.beginRequest(location.distro);
+    try {
+      return await this.request<T>(location, path, body);
+    } finally {
+      endRequest();
+    }
+  }
+
+  private async request<T>(location: WslLocation, path: string, body: unknown): Promise<T> {
     const handle = await this.server.ensureBridge(location.distro);
     if (!handle) {
       throw asNodeErr("EUNAVAIL", `WSL bridge unavailable for distro ${location.distro}`);
@@ -357,6 +389,7 @@ export interface WslFindEntry {
   path: string;
   name: string;
   type: "file" | "directory";
+  mtimeMs?: number;
 }
 
 export type WslReadFileResult =

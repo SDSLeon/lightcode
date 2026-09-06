@@ -18,6 +18,10 @@ import {
  * and the Settings → Usage rows so both surfaces behave identically (browser
  * overlay capture, API-key paste, and persistent stored-session sync). Reads the
  * live snapshot to decide whether a "Sign in" affordance is warranted.
+ *
+ * Only the credentials the usage collector itself consumes (a browser cookie
+ * session or a pasted API key) are offered here. The agent CLI's own login is a
+ * different credential and lives with the agent install UI, not the usage box.
  */
 export function useUsageProviderLogin(id: string) {
   const snapshot = useProviderUsage(id);
@@ -52,7 +56,6 @@ export function useUsageProviderLogin(id: string) {
   const canBrowserSignIn = canSignIn && isBrowserLogin;
   const canApiKeySignIn = canSignIn && isApiKeyLogin;
   const canSignOut = supportsLogin && hasStoredSession;
-
   const handleSignIn = async () => {
     setSigningIn(true);
     // Open the browser-overlay drawer (not maximized) so the login tab renders

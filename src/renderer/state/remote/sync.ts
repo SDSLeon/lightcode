@@ -61,9 +61,27 @@ function toCompletedTurnRecords(
   });
 }
 
+/**
+ * Reads the highest WS event seq the client has already applied on that host,
+ * passed by callers that track it (the desktop-as-client store). A history
+ * snapshot built before one of those events must not overwrite the event's
+ * fresher background-task level. The mobile PWA's ~1s refresh loop self-heals
+ * the same race, so callers without a seq simply omit the option.
+ */
+function snapshotBackgroundTasksAreStale(
+  snapshot: RemoteThreadSnapshot,
+  lastSeenEventSeq: number | undefined,
+): boolean {
+  const remoteServerId = snapshot.thread.remoteServerId;
+  if (remoteServerId === undefined || lastSeenEventSeq === undefined) return false;
+  return snapshot.snapshotSeq < lastSeenEventSeq;
+}
+
 export function applyThreadSnapshot(
   snapshot: RemoteThreadSnapshot,
-  options: { readonly fromServer: boolean } = { fromServer: true },
+  options: { readonly fromServer: boolean; readonly lastSeenEventSeq?: number } = {
+    fromServer: true,
+  },
 ): void {
   if (isBrowserClientRuntime()) void cacheBrowserThreadSnapshot(snapshot);
   const threadId = snapshot.thread.id;
@@ -143,6 +161,9 @@ export function applyThreadSnapshot(
     state.hydrateThreadCompletedTurns(threadId, turns);
   }
   syncRuntimeTurnBoundaryFromSnapshot(snapshot, options);
+  if (options.fromServer) {
+    applyBackgroundTasksFromSnapshot(snapshot, options.lastSeenEventSeq);
+  }
   if (snapshot.contextUsage) {
     const contextUsage = snapshot.contextUsage;
     useAppStore.setState((current) => ({
@@ -151,6 +172,36 @@ export function applyThreadSnapshot(
   }
 
   syncRuntimeRequestsFromSnapshot(snapshot);
+}
+
+/**
+ * Authoritative snapshot write of the background-task level, following the
+ * reducer's own convention: REPLACE, and an empty level drops the key. A
+ * snapshot built before a live `background_tasks.changed` the client already
+ * applied (the history request was in flight when the event landed) must not
+ * resurrect the stale level — REPLACE has no undo, and on a now-idle thread no
+ * later event or refresh would correct it.
+ */
+function applyBackgroundTasksFromSnapshot(
+  snapshot: RemoteThreadSnapshot,
+  lastSeenEventSeq: number | undefined,
+): void {
+  if (snapshotBackgroundTasksAreStale(snapshot, lastSeenEventSeq)) return;
+  const threadId = snapshot.thread.id;
+  const tasks = snapshot.backgroundTasks ?? [];
+  useAppStore.setState((current) => {
+    if (tasks.length === 0) {
+      if (!(threadId in current.runtimeBackgroundTasksByThread)) return {};
+      const { [threadId]: _dropped, ...rest } = current.runtimeBackgroundTasksByThread;
+      return { runtimeBackgroundTasksByThread: rest };
+    }
+    return {
+      runtimeBackgroundTasksByThread: {
+        ...current.runtimeBackgroundTasksByThread,
+        [threadId]: tasks,
+      },
+    };
+  });
 }
 
 /**

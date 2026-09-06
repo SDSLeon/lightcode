@@ -67,8 +67,10 @@ describe("usageProviders", () => {
     expect(supportsApiKeyLogin("zai")).toBe(true);
     expect(supportsApiKeyLogin("kimi")).toBe(true);
     expect(supportsApiKeyLogin("qwen")).toBe(true);
+    expect(supportsApiKeyLogin("qoder")).toBe(true);
     expect(supportsApiKeyLogin("grok")).toBe(false);
     expect(supportsBrowserLogin("qwen")).toBe(true);
+    expect(supportsBrowserLogin("qoder")).toBe(true);
   });
 
   it("identifies providers whose empty local snapshot still needs browser usage auth", () => {
@@ -165,6 +167,16 @@ describe("usageProviders", () => {
     expect(rings.inner?.id).toBe("weekly");
   });
 
+  it("rings Muse Code with the 5h window outside and the weekly quota inside", () => {
+    const windows: UsageWindow[] = [
+      { id: "weekly", label: "Weekly", usedPercent: 10 },
+      { id: "session-5h", label: "Session (5h)", usedPercent: 70 },
+    ];
+    const rings = pickUsageRings("muse", windows);
+    expect(rings.outer?.id).toBe("session-5h");
+    expect(rings.inner?.id).toBe("weekly");
+  });
+
   it("rings Alibaba Token Plan with the 5h quota outside and weekly quota inside", () => {
     const windows: UsageWindow[] = [
       { id: "monthly", label: "Monthly", usedPercent: 5 },
@@ -174,6 +186,14 @@ describe("usageProviders", () => {
     const rings = pickUsageRings("qwen", windows);
     expect(rings.outer?.id).toBe("session-5h");
     expect(rings.inner?.id).toBe("weekly");
+  });
+
+  it("rings Qoder with the monthly credits window", () => {
+    const windows: UsageWindow[] = [
+      { id: "monthly", label: "Credits", usedPercent: 45, unit: "credits" },
+    ];
+    const rings = pickUsageRings("qoder", windows);
+    expect(rings.outer?.id).toBe("monthly");
   });
 
   describe("Antigravity ring groups", () => {

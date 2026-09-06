@@ -209,6 +209,51 @@ describe("applyProviderSwitch", () => {
     expect(useAppStore.getState().runtimeRequestsByThread[thread.id]).toBeUndefined();
   });
 
+  it("closes the sub-agent overlay, which pointed into the abandoned session", () => {
+    const thread = switchedThread();
+    useAppStore.getState().openSubAgent(thread.id, "tool-1");
+    expect(useAppStore.getState().openSubAgentByThread[thread.id]).toBe("tool-1");
+
+    useAppStore.getState().applyProviderSwitch(thread.id, {
+      agentKind: "copilot",
+      config: { model: "gpt-5" },
+      presentationMode: "gui",
+    });
+
+    expect(useAppStore.getState().openSubAgentByThread[thread.id]).toBeUndefined();
+  });
+
+  it("closes the old provider's open turn, which nothing will ever settle", () => {
+    const thread = switchedThread();
+    useAppStore.getState().applyRuntimeEvent(thread.id, {
+      type: "turn.started",
+      threadId: thread.id,
+      turnId: "turn-1",
+    });
+    expect(useAppStore.getState().runtimeOpenTurnByThread[thread.id]).toBe(true);
+
+    useAppStore.getState().applyProviderSwitch(thread.id, {
+      agentKind: "copilot",
+      config: { model: "gpt-5" },
+      presentationMode: "gui",
+    });
+
+    expect(useAppStore.getState().runtimeOpenTurnByThread[thread.id]).toBeUndefined();
+  });
+
+  it("drops the custom MCP server names recorded for the abandoned launch", () => {
+    const thread = switchedThread();
+    useAppStore.getState().setThreadMcpLaunchCustomServerNames(thread.id, ["docs-mcp"]);
+
+    useAppStore.getState().applyProviderSwitch(thread.id, {
+      agentKind: "copilot",
+      config: { model: "gpt-5" },
+      presentationMode: "gui",
+    });
+
+    expect(useAppStore.getState().mcpLaunchCustomServerNamesByThreadId[thread.id]).toBeUndefined();
+  });
+
   it("keeps the transcript the new provider is continuing from", () => {
     const thread = switchedThread();
     useAppStore.getState().applyRuntimeEvent(thread.id, {
@@ -252,13 +297,13 @@ describe("queueThreadLaunch provider switch marker", () => {
       pendingLaunchSegments: {},
       pendingLaunchUserMessageItemIds: {},
       pendingLaunchProviderSwitches: {},
+      pendingLaunchMentionHandoffs: {},
     }));
   });
 
   it("carries the switch marker and clears it once consumed", () => {
     useAppStore.getState().queueThreadLaunch("thread-1", "continue", undefined, undefined, {
-      fromAgentKind: "claude",
-      handoffItemId: "handoff-1",
+      providerSwitch: { fromAgentKind: "claude", handoffItemId: "handoff-1" },
     });
 
     expect(useAppStore.getState().pendingLaunchProviderSwitches["thread-1"]).toEqual({
@@ -274,5 +319,70 @@ describe("queueThreadLaunch provider switch marker", () => {
   it("leaves an ordinary launch unmarked", () => {
     useAppStore.getState().queueThreadLaunch("thread-2", "hello");
     expect(useAppStore.getState().pendingLaunchProviderSwitches["thread-2"]).toBeUndefined();
+  });
+
+  // The supervisor cancels the old session's delegated agents when it tears the
+  // session down, but their rows live in this store and nothing would ever
+  // complete them; a spinning sub-agent above the divider would also keep the
+  // composer dock open under the new provider.
+  it("finalizes running sub-agent and Crossagents rows left by the previous provider", () => {
+    const project = useAppStore.getState().addProject({ kind: "windows", path: "C:\\repo" });
+    const thread = useAppStore.getState().createThread({
+      projectId: project.id,
+      agentKind: "claude",
+      config: { model: "claude-opus-5" },
+      prompt: "start the task",
+      presentationMode: "gui",
+    });
+    useAppStore.setState((state) => ({
+      ...state,
+      runtimeItemIdsByThread: { [thread.id]: ["sub", "cross", "done"] },
+      runtimeItemsByIdByThread: {
+        [thread.id]: {
+          sub: {
+            id: "sub",
+            type: "tool_call",
+            state: "started",
+            payload: { name: "Task", status: "running", isSubAgent: true },
+            streams: {},
+          },
+          cross: {
+            id: "cross",
+            type: "tool_call",
+            state: "started",
+            payload: {
+              name: "spawn_agent",
+              status: "running",
+              isCrossagent: true,
+              crossagentStatus: "running",
+            },
+            streams: {},
+          },
+          done: {
+            id: "done",
+            type: "tool_call",
+            state: "completed",
+            payload: { name: "Task", status: "completed", isSubAgent: true, result: { ok: true } },
+            streams: {},
+          },
+        },
+      },
+      runtimeStructuralVersionByThread: { [thread.id]: 3 },
+    }));
+
+    useAppStore.getState().applyProviderSwitch(thread.id, {
+      agentKind: "codex",
+      config: { model: "gpt-5" },
+      presentationMode: "gui",
+    });
+
+    const items = useAppStore.getState().runtimeItemsByIdByThread[thread.id]!;
+    expect(items.sub).toMatchObject({ state: "completed", payload: { status: "error" } });
+    expect(items.cross).toMatchObject({
+      state: "completed",
+      payload: { status: "error", crossagentStatus: "failed" },
+    });
+    expect(items.done).toMatchObject({ state: "completed", payload: { status: "completed" } });
+    expect(useAppStore.getState().runtimeStructuralVersionByThread[thread.id]).toBe(4);
   });
 });

@@ -21,4 +21,7 @@
     <string name="thread_lifecycle_close">Fermer</string>
     <string name="thread_lifecycle_failure_ambiguous">Le résultat est incertain. La liste des fils est actualisée.</string>
     <string name="thread_lifecycle_failure_generic">L’action du fil n’a pas pu être effectuée. Actualisez la liste et réessayez.</string>
+    <string name="archived_threads_title">Fils archivés</string>
+    <string name="archived_threads_description">Restaurez ou supprimez définitivement les fils archivés.</string>
+    <string name="archived_threads_empty">Aucun fil archivé</string>
 </resources>

@@ -42,10 +42,13 @@ internal fun AdvancedOperationDetail(
     composition: AdvancedOpsProductionComposition,
     projects: List<RemoteProject>,
     selectedProjectId: String?,
+    defaultContentLanguage: String?,
     modifier: Modifier,
 ) {
     val state by composition.controller.state.collectAsStateWithLifecycle()
-    var draft by remember(action) { mutableStateOf(AdvancedDraft()) }
+    var draft by remember(action, defaultContentLanguage) {
+        mutableStateOf(advancedDraftDefaults(action, defaultContentLanguage))
+    }
     var parseFailure by remember(action) { mutableStateOf<AdvancedParseResult?>(null) }
     val gate = composition.controller.gate(action)
 

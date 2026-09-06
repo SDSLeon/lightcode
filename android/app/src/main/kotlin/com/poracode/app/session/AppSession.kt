@@ -10,6 +10,8 @@ import com.poracode.app.transport.RemoteApiGatewayFactory
 import com.poracode.app.transport.RemoteEventSocket
 import com.poracode.app.transport.RemoteEventSocketFactory
 import com.poracode.app.transport.RemoteWebSocketClient
+import com.poracode.app.push.PushRouteV1
+import com.poracode.app.push.RemoteUserNotificationPresentationCenter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,22 +26,14 @@ import kotlinx.coroutines.withContext
 class AppSession(
     private val credentials: SessionCredentialRepository,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
-    private val apiFactory: RemoteApiGatewayFactory =
-        RemoteApiGatewayFactory { endpoint, token ->
-            com.poracode.app.transport.RemoteApiClient(
-                endpoint = endpoint,
-                accessToken = token,
-                networkGate = ForegroundNetworkGate.shared,
-            )
-        },
-    private val socketFactory: RemoteEventSocketFactory =
-        RemoteEventSocketFactory { api ->
-            RemoteWebSocketClient(api = api, networkGate = ForegroundNetworkGate.shared)
-        },
+    private val apiFactory: RemoteApiGatewayFactory = defaultRemoteApiFactory(),
+    private val socketFactory: RemoteEventSocketFactory = defaultRemoteEventSocketFactory(),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val networkGate: ForegroundNetworkGate = ForegroundNetworkGate.shared,
     private val hasEndpointPermission: (String) -> Boolean = { true },
     private val beforeHostRemoval: suspend (com.poracode.app.model.ClientConnectionId, SessionCredentials) -> Unit = { _, _ -> },
+    private val remoteNotifications: RemoteUserNotificationPresentationCenter =
+        RemoteUserNotificationPresentationCenter(),
 ) {
     enum class Phase {
         Launching,
@@ -104,6 +98,8 @@ class AppSession(
     )
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
+    private val notificationBridge = AppSessionRemoteNotifications(remoteNotifications)
+    val notificationBanners = notificationBridge.banners
     private val owner = SessionOperationOwner()
     private val jobs = SessionLifecycleJobs()
     private val lifecycleGate = AppLifecycleGate()
@@ -174,6 +170,9 @@ class AppSession(
             applyGitInterests = { live.webSocket?.setGitInterests(it) },
             onReplaySideEffects = { outcome -> replaySideEffectSink?.invoke(outcome) },
             heavyReviewTarget = { heavyReviewTargetSupplier?.invoke() },
+            presentRemoteNotification = { notification, replay ->
+                notificationBridge.receive(notification, replay, _state.value, lifecycleGate.isForeground)
+            },
         )
         threads = ThreadController(
             scope = scope,
@@ -335,16 +334,12 @@ class AppSession(
     }
 
     fun bootstrap() = bootstrapController.start()
-    internal fun resetBootstrapForTests() {
-        bootstrapController.resetForTests()
-    }
+    internal fun resetBootstrapForTests() = bootstrapController.resetForTests()
     internal fun isBootstrappedForTests(): Boolean = bootstrapController.hasStartedForTests()
     internal fun bootstrapAttemptForTests(): Int = bootstrapController.attemptForTests()
     internal fun userInvokableAuthoritativeRefreshForTests(): Boolean =
         resync.userInvokableAuthoritativeRefresh
-    fun retryAuthoritativeRefresh() {
-        resync.requestUserAuthoritativeRefresh()
-    }
+    fun retryAuthoritativeRefresh() = resync.requestUserAuthoritativeRefresh()
 
     internal fun openThreadGenerationForTests(): Int = hydration.currentGeneration
     internal fun lastSeenSeqForTests(): Int? = live.lastSeenSeq
@@ -355,9 +350,21 @@ class AppSession(
     internal fun authoritativeRefreshRequiredForTests(): Boolean =
         resync.authoritativeRefreshRequired
 
-    fun onAppBackground() = lifecycleCoordinator.onBackground()
+    fun onAppBackground() {
+        notificationBridge.dismiss()
+        lifecycleCoordinator.onBackground()
+    }
 
-    fun onAppForeground() = lifecycleCoordinator.onForeground()
+    fun onAppForeground() =
+        notificationBridge.onForeground(_state.value, lifecycleCoordinator::onForeground)
+
+    fun dismissRemoteNotification(id: Long? = null) = notificationBridge.dismiss(id)
+
+    fun openRemoteNotification(id: Long): Boolean =
+        notificationBridge.open(id, _state.value, ::openThread)
+
+    fun shouldPresentPush(route: PushRouteV1): Boolean =
+        notificationBridge.shouldPresentPush(route)
 
     fun clearGlobalError() {
         _state.update { it.copy(globalError = null) }
@@ -381,9 +388,14 @@ class AppSession(
             fingerprint = fingerprint,
         )
 
-    fun unpair() = _state.value.hostCatalog.selectedConnectionId?.let(hosts::remove) ?: pairing.unpair()
-    fun selectHost(id: com.poracode.app.model.ClientConnectionId) = hosts.select(id)
-    fun removeHost(id: com.poracode.app.model.ClientConnectionId) = hosts.remove(id)
+    fun unpair() = notificationBridge.dismiss().also {
+        _state.value.hostCatalog.selectedConnectionId?.let(hosts::remove) ?: pairing.unpair() }
+    fun selectHost(id: com.poracode.app.model.ClientConnectionId) =
+        notificationBridge.dismiss().also { hosts.select(id) }
+    fun removeHost(id: com.poracode.app.model.ClientConnectionId) =
+        notificationBridge.dismiss().also { hosts.remove(id) }
+    fun renameHost(id: com.poracode.app.model.ClientConnectionId, label: String) =
+        hosts.rename(id, label)
     fun refreshSnapshot() {
         live.refreshSnapshot()
         scope.launch { hosts.refreshHostSnapshots() }

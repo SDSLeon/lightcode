@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">停止镜像</string>
     <string name="browser_mirror_empty">没有打开的浏览器标签页。</string>
     <string name="browser_mirror_stopped">浏览器镜像已停止。</string>
+    <string name="browser_mirror_move_left">左移</string>
+    <string name="browser_mirror_move_right">右移</string>
+    <string name="browser_mirror_privacy_notice">镜像页面可能显示个人内容。图像仅保留在此设备上，离开此屏幕后会被清除。</string>
 </resources>

@@ -68,22 +68,29 @@ export function BottomSheet(props: {
   });
   const body = typeof props.children === "function" ? props.children({ expanded }) : props.children;
 
-  useEffect(() => {
-    if (!controlled) return;
-
+  // Controlled open/close adjusts during render: reopening mid-exit keeps the
+  // surface rendered without an enter flash, and closing starts the shared
+  // exit motion on the same frame the `isOpen` flip commits. The unmount at
+  // the end of the exit stays in the timer effect below (a side effect), whose
+  // cleanup cancels a pending exit when the sheet reopens.
+  const [prevRequestedOpen, setPrevRequestedOpen] = useState(requestedOpen);
+  if (controlled && prevRequestedOpen !== requestedOpen) {
+    setPrevRequestedOpen(requestedOpen);
     if (requestedOpen) {
-      if (exitTimer.current) {
-        clearTimeout(exitTimer.current);
-        exitTimer.current = null;
-      }
       setInternalClosing(false);
       setRendered(true);
-      return;
+    } else if (rendered) {
+      setInternalClosing(true);
     }
+  }
 
-    if (!rendered || exitTimer.current) return;
-    setInternalClosing(true);
-    exitTimer.current = setTimeout(finishClose, BOTTOM_SHEET_EXIT_MS);
+  useEffect(() => {
+    if (!controlled || requestedOpen || !rendered) return;
+    const timeout = setTimeout(() => {
+      setInternalClosing(false);
+      setRendered(false);
+    }, BOTTOM_SHEET_EXIT_MS);
+    return () => clearTimeout(timeout);
   }, [controlled, rendered, requestedOpen]);
 
   useEffect(

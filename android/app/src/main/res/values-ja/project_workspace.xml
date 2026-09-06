@@ -72,4 +72,21 @@
     <string name="workspace_permission_denied">このセッションには、その操作を行う権限がありません。</string>
     <string name="workspace_project_changed">選択したプロジェクトまたはデスクトップが変更されました。もう一度お試しください。</string>
     <string name="workspace_invalid_response">デスクトップから無効なワークスペース応答が返されました。</string>
+    <string name="workspace_create_entry">ファイルまたはフォルダーを作成</string>
+    <string name="workspace_create_file">ファイルを作成</string>
+    <string name="workspace_create_folder">フォルダーを作成</string>
+    <string name="workspace_file_actions">%1$s の操作</string>
+    <string name="workspace_rename">名前を変更</string>
+    <string name="workspace_move">移動</string>
+    <string name="workspace_delete">削除</string>
+    <string name="workspace_delete_message">%1$s を削除しますか？この操作は元に戻せません。</string>
+    <string name="workspace_delete_folder_message">%1$s とその中身をすべて削除しますか？この操作は元に戻せません。</string>
+    <string name="workspace_mutation_uncertain">デスクトップがファイル操作を確認する前に接続が終了しました。フォルダーを更新しました。次の操作の前に確認してください。</string>
+    <string name="workspace_parent_folder">移動先フォルダー</string>
+    <string name="workspace_entry_name">名前</string>
+    <string name="workspace_confirm">確認</string>
+    <string name="workspace_copy_relative_path">パスをコピー</string>
+    <string name="workspace_copy_absolute_path">絶対パスをコピー</string>
+    <string name="workspace_markdown_preview">Markdownプレビュー</string>
+    <string name="workspace_markdown_edit">Markdownを編集</string>
 </resources>

@@ -72,4 +72,21 @@
     <string name="workspace_permission_denied">Cette session n’est pas autorisée à effectuer cette action.</string>
     <string name="workspace_project_changed">Le projet ou l’ordinateur sélectionné a changé. Réessayez.</string>
     <string name="workspace_invalid_response">L’ordinateur a renvoyé une réponse d’espace de travail non valide.</string>
+    <string name="workspace_create_entry">Créer un fichier ou un dossier</string>
+    <string name="workspace_create_file">Créer un fichier</string>
+    <string name="workspace_create_folder">Créer un dossier</string>
+    <string name="workspace_file_actions">Actions pour %1$s</string>
+    <string name="workspace_rename">Renommer</string>
+    <string name="workspace_move">Déplacer</string>
+    <string name="workspace_delete">Supprimer</string>
+    <string name="workspace_delete_message">Supprimer %1$s ? Cette action est irréversible.</string>
+    <string name="workspace_delete_folder_message">Supprimer %1$s et tout son contenu ? Cette action est irréversible.</string>
+    <string name="workspace_mutation_uncertain">La connexion s’est interrompue avant la confirmation de l’action par l’ordinateur. Le dossier a été actualisé ; vérifiez-le avant une autre action.</string>
+    <string name="workspace_parent_folder">Dossier de destination</string>
+    <string name="workspace_entry_name">Nom</string>
+    <string name="workspace_confirm">Confirmer</string>
+    <string name="workspace_copy_relative_path">Copier le chemin</string>
+    <string name="workspace_copy_absolute_path">Copier le chemin absolu</string>
+    <string name="workspace_markdown_preview">Aperçu Markdown</string>
+    <string name="workspace_markdown_edit">Modifier le Markdown</string>
 </resources>

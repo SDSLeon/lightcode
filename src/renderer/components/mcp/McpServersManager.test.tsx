@@ -165,21 +165,27 @@ describe("McpServersManager", () => {
     expect(screen.getByRole("button", { name: "Edit memory" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete memory" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Delete Browser" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "46 tools" })).toBeInTheDocument();
+    const browserRow = document.querySelector('[data-built-in-mcp-server="browser"]');
+    expect(browserRow).not.toBeNull();
+    expect(
+      within(browserRow as HTMLElement).getByRole("button", {
+        name: `${BUILT_IN_MCP_SERVER_TOOL_COUNTS.browser} tools`,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("identifies plugin-managed built-ins without exposing edit or delete controls", () => {
     render(
       managerElement({
         disabledBuiltIns: {},
-        managedBuiltIns: { browser: "Browser Tools" },
+        managedBuiltIns: { browser: "Browser" },
         onBuiltInDisabledChange: () => undefined,
       }),
     );
 
     const row = document.querySelector('[data-built-in-mcp-server="browser"]');
     expect(row).not.toBeNull();
-    expect(within(row as HTMLElement).getByText("Managed by Browser Tools")).toBeInTheDocument();
+    expect(within(row as HTMLElement).getByText("Managed by Browser")).toBeInTheDocument();
     expect(within(row as HTMLElement).queryByText("Built-in")).not.toBeInTheDocument();
     expect(
       within(row as HTMLElement).queryByRole("button", { name: "Edit Browser" }),
@@ -187,9 +193,12 @@ describe("McpServersManager", () => {
     expect(
       within(row as HTMLElement).queryByRole("button", { name: "Delete Browser" }),
     ).not.toBeInTheDocument();
+    expect(
+      within(row as HTMLElement).queryByRole("switch", { name: "Disable Browser" }),
+    ).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("textbox", { name: "Search MCP servers" }), {
-      target: { value: "Browser Tools" },
+      target: { value: "Browser" },
     });
     expect(document.querySelector('[data-built-in-mcp-server="browser"]')).not.toBeNull();
     expect(document.querySelector('[data-built-in-mcp-server="chrome"]')).toBeNull();
@@ -214,7 +223,7 @@ describe("McpServersManager", () => {
       }),
     );
 
-    const dialog = screen.getByRole("dialog", { name: "App Controls" });
+    const dialog = screen.getByRole("dialog", { name: "Poracode" });
     expect(within(dialog).getByText("list_schedules")).toBeInTheDocument();
     expect(within(dialog).getByText("delete_schedule")).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("switch", { name: "Enable delete_schedule" }));

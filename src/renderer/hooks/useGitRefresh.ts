@@ -12,6 +12,7 @@ import { usePanelStore } from "@/renderer/state/panelStore";
 import { useSidebarUiStore } from "@/renderer/state/sidebarUiStore";
 import { useRemoteServersStore } from "@/renderer/state/remoteServersStore";
 import { isRemoteProjectStatusUnreachable } from "@/renderer/state/remoteServers/reachability";
+import { shouldPollProject } from "@/renderer/state/wslBackgroundActivity";
 import {
   cleanupGitRefreshProjects,
   getWatcherRefreshMode,
@@ -65,9 +66,13 @@ export function useGitRefresh(storeHydrated: boolean) {
   );
 
   useEffect(() => {
-    const allActiveProjects = useAppStore
-      .getState()
-      .projects.filter((project) => !project.disabled);
+    // `activeProjectsKey` is this run's request identity: the project set
+    // below must derive from the same store snapshot, otherwise the key raced
+    // ahead and this run would watch/fetch a stale set.
+    const requestKey = activeProjectsKey;
+    const projectsSnapshot = useAppStore.getState().projects;
+    if (buildActiveProjectsKey(projectsSnapshot) !== requestKey) return;
+    const allActiveProjects = projectsSnapshot.filter((project) => !project.disabled);
     if (!storeHydrated) return;
     cleanupGitRefreshProjects(new Set(allActiveProjects.map((project) => project.id)));
     const reachableRemoteServerIds = new Set(
@@ -163,6 +168,7 @@ export function useGitRefresh(storeHydrated: boolean) {
         ) {
           continue;
         }
+        if (!shouldPollProject(project)) continue;
         void prefetchBranchPrData(project);
       }
     }
@@ -254,6 +260,7 @@ export function useGitRefresh(storeHydrated: boolean) {
         [...priorityProjectIds].filter((projectId) => !previousPriorityProjectIds.has(projectId)),
       );
       const projectsToFetch = activeProjects.filter((project) => {
+        if (lastFetchTimes.has(project.id) && !shouldPollProject(project)) return false;
         const isPriority = priorityProjectIds.has(project.id);
         const interval = isPriority
           ? GIT_FETCH_PRIORITY_INTERVAL_MS
@@ -296,6 +303,7 @@ export function useGitRefresh(storeHydrated: boolean) {
       const priorityProjectIds = getPriorityProjectIds();
       for (const project of activeProjects) {
         if (project.location.kind !== "wsl") continue;
+        if (!shouldPollProject(project)) continue;
         if (!priorityProjectIds.has(project.id)) continue;
         void refreshGitProject(project, "poll", "status", { isActive: isActiveCheck });
       }

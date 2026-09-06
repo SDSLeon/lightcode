@@ -21,4 +21,7 @@
     <string name="thread_lifecycle_close">Close</string>
     <string name="thread_lifecycle_failure_ambiguous">The result is uncertain. The thread list is being refreshed.</string>
     <string name="thread_lifecycle_failure_generic">The thread action could not be completed. Refresh the list and try again.</string>
+    <string name="archived_threads_title">Archived threads</string>
+    <string name="archived_threads_description">Restore or permanently delete threads you archived.</string>
+    <string name="archived_threads_empty">No archived threads</string>
 </resources>

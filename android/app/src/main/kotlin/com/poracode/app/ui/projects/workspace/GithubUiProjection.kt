@@ -64,7 +64,22 @@ internal fun JsonElement?.arrayObjects(name: String): List<JsonObject> =
     ((this as? JsonObject)?.get(name) as? JsonArray)?.mapNotNull { it as? JsonObject }.orEmpty()
 
 internal fun JsonObject.string(name: String): String = (this[name] as? JsonPrimitive)?.content.orEmpty()
-private fun JsonObject.long(name: String): Long? = (this[name] as? JsonPrimitive)?.content?.toLongOrNull()
+
+internal fun JsonObject.stringOrNull(name: String): String? =
+    (this[name] as? JsonPrimitive)?.content?.takeIf(String::isNotBlank)
+
+internal fun JsonObject.long(name: String): Long? = (this[name] as? JsonPrimitive)?.content?.toLongOrNull()
+
+internal fun JsonObject.boolean(name: String): Boolean =
+    (this[name] as? JsonPrimitive)?.content?.toBooleanStrictOrNull() == true
+
+internal fun JsonElement?.child(name: String): JsonObject? = (this as? JsonObject)?.get(name) as? JsonObject
+
+internal fun JsonElement?.childString(name: String): String =
+    ((this as? JsonObject)?.get(name) as? JsonPrimitive)?.content.orEmpty()
+
+internal fun JsonObject.objects(name: String): List<JsonObject> =
+    (this[name] as? JsonArray)?.mapNotNull { it as? JsonObject }.orEmpty()
 
 internal const val MAX_GITHUB_ROWS = 100
 internal const val MAX_GITHUB_TEXT = 20_000

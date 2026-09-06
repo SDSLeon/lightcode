@@ -13,10 +13,11 @@ import kotlinx.serialization.json.jsonPrimitive
 
 /** Secret-bearing, encrypted transaction journal with exact target bytes. */
 object HostTransactionJournal {
-    const val VERSION = 1
+    const val VERSION = 2
+    private const val OLDEST_SUPPORTED_VERSION = 1
 
     @Serializable
-    enum class Kind { Add, Select, Remove }
+    enum class Kind { Add, Select, Remove, Rename }
 
     @Serializable
     enum class Phase { Intent, VaultApplied, RegistryApplied }
@@ -88,7 +89,7 @@ object HostTransactionJournal {
             RemoteJson.parseToJsonElement(raw).jsonObject["version"]?.jsonPrimitive?.int
         }.getOrNull() ?: return Decode.Corrupt
         if (version > VERSION) return Decode.Future
-        if (version < VERSION) return Decode.Corrupt
+        if (version < OLDEST_SUPPORTED_VERSION) return Decode.Corrupt
         val record = runCatching {
             RemoteJson.decodeFromString<Record>(raw).requireValid()
         }.getOrNull()

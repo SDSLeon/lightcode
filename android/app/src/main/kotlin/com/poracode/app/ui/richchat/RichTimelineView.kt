@@ -34,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.poracode.app.R
 import com.poracode.app.chat.RichItemState
 import com.poracode.app.chat.RichItemTypes
@@ -43,6 +44,7 @@ import com.poracode.app.chat.RichTimeline
 import com.poracode.app.chat.RichTimelineEntry
 import com.poracode.app.chat.RichVisibleTimelineNode
 import com.poracode.app.session.richchat.RichChatSessionRuntime
+import com.poracode.app.ui.theme.LocalChatTextSizeSp
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
@@ -243,8 +245,18 @@ private fun RichTimelineItem(
                 }
             }
             if (text.isNotBlank()) {
-                SelectionContainer {
-                    Text(text, style = MaterialTheme.typography.bodyMedium)
+                if (item.type == RichItemTypes.ASSISTANT_MESSAGE) {
+                    RichMarkdownView(text)
+                } else {
+                    val chatTextSize = LocalChatTextSizeSp.current
+                    SelectionContainer {
+                        Text(
+                            text,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontSize = chatTextSize.sp,
+                            lineHeight = (chatTextSize + 6).sp,
+                        )
+                    }
                 }
             }
             images.forEach { RichRemoteImage(it, runtime) }

@@ -70,6 +70,22 @@ class SelectedRichChatHostLeaseSourceTest {
         assertNull(source.state.value)
     }
 
+    @Test
+    fun terminalUiRequiresOnlineReadyAndTerminalOperateScope() {
+        assertTrue(richLease().canOperateTerminal())
+        assertFalse(richLease(online = false).canOperateTerminal())
+        assertFalse(richLease(ready = false).canOperateTerminal())
+        assertFalse(
+            richLease(scopes = setOf("session:read", "session:operate", "terminal:read"))
+                .canOperateTerminal(),
+        )
+        assertFalse(
+            richLease(scopes = setOf("session:read", "session:operate", "terminal:operate"))
+                .canOperateTerminal(),
+        )
+        assertFalse((null as RichChatHostLease?).canOperateTerminal())
+    }
+
     private fun profile(
         id: ClientConnectionId,
         scopes: List<String> = listOf("session:read", "session:operate"),

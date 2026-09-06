@@ -20,7 +20,12 @@ import {
 import type { CanonicalContentBlock, MessageItemPayload } from "@/shared/contracts";
 import { AttachmentBar } from "@/renderer/components/composer/AttachmentBar";
 import { openAttachmentLightbox } from "@/renderer/components/composer/ImageLightbox";
+import { attachmentImageUrl } from "@/renderer/components/composer/useAttachments";
 import { openPdfPreview } from "@/renderer/components/pdf/openPdfPreview";
+import {
+  getThreadGalleryImages,
+  openThreadGallery,
+} from "@/renderer/components/thread/useThreadGalleryImages";
 import type { Attachment } from "@/renderer/components/composer/useAttachments";
 import {
   diffCommentTarget,
@@ -155,6 +160,12 @@ export const UserMessage = memo(function UserMessage({
   });
 
   useLayoutEffect(() => {
+    // With no text and no attachments the component renders null (see the
+    // guard below), so no post-paint overflow can exist — skip scheduling the
+    // two frames. A slash-command chip or inline block with empty body text
+    // still renders a measurable row (bodyRef set), so only the truly empty
+    // case bails, keyed on the same values that re-arm the measurement.
+    if (text.length === 0 && attachments.length === 0 && bodyRef.current === null) return;
     // Defer the forced layout read until after first paint. Thread switches
     // mount many user rows; measuring in useLayoutEffect blocked first paint
     // (~100ms in CDP). Double-rAF lands after the browser has painted the
@@ -285,6 +296,18 @@ export const UserMessage = memo(function UserMessage({
               imagesAsPreview
               {...(imageUrlForPath ? { imageUrlForPath } : {})}
               onPreviewImage={(att) => {
+                // Prefer the thread-wide gallery so prev/next walks the whole
+                // history (resolved click-time, no extra subscription); fall
+                // back to this message's attachments when the gallery cannot
+                // resolve the same URL (e.g. ephemeral preview).
+                const gallery = getThreadGalleryImages(threadId);
+                if (gallery.length > 1) {
+                  const src = attachmentImageUrl(att, imageUrlForPath);
+                  if (gallery.some((img) => img.src === src)) {
+                    openThreadGallery(gallery, src);
+                    return;
+                  }
+                }
                 const imageAttachments = attachments.filter((a) => a.isImage);
                 const idx = imageAttachments.findIndex((a) => a.id === att.id);
                 if (idx >= 0) openAttachmentLightbox(imageAttachments, idx, imageUrlForPath);
@@ -513,11 +536,11 @@ function UserMessageSlashChip({
 }) {
   const { t } = useLingui();
   const skill = label;
-  const resolvedAriaLabel = skillName ? t`Skill: ${skill}` : undefined;
+  const resolvedAriaLabel = pluginId ? label : skillName ? t`Skill: ${skill}` : undefined;
   return (
     <span
       className="poracode-slash-chip mr-1.5"
-      title={title}
+      title={title ?? label}
       {...(resolvedAriaLabel ? { "aria-label": resolvedAriaLabel } : {})}
       {...(skillName ? { "data-skill-name": skillName } : {})}
       {...(mcpName ? { "data-mcp-name": mcpName } : {})}
@@ -558,18 +581,27 @@ function UserMessageThreadChip({
   };
 
   return (
-    <button
-      type="button"
-      className="poracode-slash-chip poracode-thread-mention-chip mr-1.5"
-      title={label}
-      aria-label={t`Open ${label}`}
-      data-thread-mention-id={threadId}
-      {...(threadTitle ? { "data-thread-mention-title": threadTitle } : {})}
-      onClick={handleClick}
-    >
-      <span className="poracode-slash-chip__slash">{icon}</span>
-      <span className="poracode-slash-chip__name">{label}</span>
-    </button>
+    <Tooltip delay={200}>
+      {/* tabIndex={-1} role="none" neutralize the trigger's own button semantics —
+          the inner button is the single tab stop. Inline layout comes from the
+          global .tooltip__trigger rule; don't let the wrapper become block. */}
+      <Tooltip.Trigger className="max-w-full align-middle" tabIndex={-1} role="none">
+        <button
+          type="button"
+          className="poracode-slash-chip poracode-thread-mention-chip mr-1.5"
+          aria-label={t`Open ${label}`}
+          data-thread-mention-id={threadId}
+          {...(threadTitle ? { "data-thread-mention-title": threadTitle } : {})}
+          onClick={handleClick}
+        >
+          <span className="poracode-slash-chip__slash">{icon}</span>
+          <span className="poracode-slash-chip__name">{label}</span>
+        </button>
+      </Tooltip.Trigger>
+      <Tooltip.Content placement="top" className="pointer-events-none max-w-sm break-words">
+        {threadTitle || label}
+      </Tooltip.Content>
+    </Tooltip>
   );
 }
 

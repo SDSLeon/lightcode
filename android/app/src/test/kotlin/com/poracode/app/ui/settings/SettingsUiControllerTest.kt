@@ -1,6 +1,10 @@
 package com.poracode.app.ui.settings
 
 import com.poracode.app.model.settings.HostSettingsPatch
+import com.poracode.app.model.settings.GlobalMcpProbeResult
+import com.poracode.app.model.settings.GlobalMcpSettingsCommand
+import com.poracode.app.model.settings.GlobalMcpSettingsOperation
+import com.poracode.app.model.settings.GlobalMcpSettingsOperationResult
 import com.poracode.app.model.settings.ProfileIdentityRequest
 import com.poracode.app.model.settings.ProfileStatsRequest
 import com.poracode.app.session.settings.FakeSettingsRemoteGateway
@@ -24,6 +28,41 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsUiControllerTest {
+    @Test
+    fun globalMcpOperationsAreSerializedUntilTheCurrentRequestCompletes() = runTest {
+        val session = MutableStateFlow<SettingsHostLease?>(
+            lease(scopes = setOf("projects:manage")),
+        )
+        val started = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        var calls = 0
+        val gateway = FakeSettingsSessionGateway().apply {
+            mcpOperationHandler = { _, _ ->
+                calls += 1
+                started.complete(Unit)
+                release.await()
+                GlobalMcpSettingsOperationResult.Probe(
+                    GlobalMcpProbeResult("available", 12, 1, listOf("read")),
+                )
+            }
+        }
+        val controller = GlobalMcpSettingsController(session, gateway, backgroundScope)
+
+        controller.probe("first")
+        runCurrent()
+        started.await()
+        assertTrue(controller.state.value.mutating)
+        controller.probe("second")
+        runCurrent()
+        assertEquals(1, calls)
+
+        release.complete(Unit)
+        runCurrent()
+        assertFalse(controller.state.value.mutating)
+        assertTrue("first" in controller.state.value.probes)
+        assertFalse("second" in controller.state.value.probes)
+    }
+
     @Test
     fun ambiguousSettingsMutationIsAttemptedOnceThenReadOnce() = runTest {
         val session = MutableStateFlow<SettingsHostLease?>(lease())
@@ -130,6 +169,19 @@ class SettingsUiControllerTest {
                 lease: SettingsHostLease,
                 patch: HostSettingsPatch,
             ) = remote.writeSettings(patch).also { called("settings-write") }
+
+            override suspend fun readGlobalMcpSettings(lease: SettingsHostLease) =
+                remote.readGlobalMcpSettings()
+
+            override suspend fun commandGlobalMcpSettings(
+                lease: SettingsHostLease,
+                command: GlobalMcpSettingsCommand,
+            ) = remote.commandGlobalMcpSettings(command)
+
+            override suspend fun operateGlobalMcpSettings(
+                lease: SettingsHostLease,
+                operation: GlobalMcpSettingsOperation,
+            ) = remote.operateGlobalMcpSettings(operation)
         }
         val information = SettingsHostInformationController(session, gateway)
         val controller = SettingsUiController(
@@ -140,6 +192,7 @@ class SettingsUiControllerTest {
         )
 
         controller.refresh(SettingsPane.Agents)
+        controller.refresh(SettingsPane.Usage)
         controller.refresh(SettingsPane.Profile)
         controller.refresh(SettingsPane.Preferences)
         runCurrent()
@@ -149,19 +202,18 @@ class SettingsUiControllerTest {
         runCurrent()
 
         assertEquals(
-            setOf(
-                "agent-statuses",
-                "provider-usage",
-                "profile-devices",
-                "profile-core-stats",
-                "profile-token-stats",
-                "profile-identity",
-                "settings-read",
-                "settings-write",
+            mapOf(
+                "agent-statuses" to 2,
+                "provider-usage" to 1,
+                "profile-devices" to 1,
+                "profile-core-stats" to 1,
+                "profile-token-stats" to 1,
+                "profile-identity" to 1,
+                "settings-read" to 1,
+                "settings-write" to 1,
             ),
-            calls.keys,
+            calls,
         )
-        assertTrue(calls.values.all { it == 1 })
     }
 
     private fun patch(): HostSettingsPatch = HostSettingsPatch.from(

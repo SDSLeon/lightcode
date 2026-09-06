@@ -40,7 +40,15 @@ internal class SessionBootstrapController(
                 return@launch
             }
             if (!owner.isCurrent(token)) return@launch
-            hosts.refreshCatalog()
+            try {
+                hosts.refreshCatalog()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                if (!owner.isCurrent(token)) return@launch
+                updateState { it.copy(phase = AppSession.Phase.LocalStoreInconsistent) }
+                return@launch
+            }
             when (outcome) {
                 SessionCredentialLoadOutcome.Empty ->
                     updateState { it.copy(phase = AppSession.Phase.NeedsPairing) }

@@ -72,4 +72,21 @@
     <string name="workspace_permission_denied">Phiên này không có quyền thực hiện thao tác đó.</string>
     <string name="workspace_project_changed">Dự án hoặc máy tính đã chọn đã thay đổi. Hãy thử lại.</string>
     <string name="workspace_invalid_response">Máy tính đã trả về phản hồi không gian làm việc không hợp lệ.</string>
+    <string name="workspace_create_entry">Tạo tệp hoặc thư mục</string>
+    <string name="workspace_create_file">Tạo tệp</string>
+    <string name="workspace_create_folder">Tạo thư mục</string>
+    <string name="workspace_file_actions">Thao tác cho %1$s</string>
+    <string name="workspace_rename">Đổi tên</string>
+    <string name="workspace_move">Di chuyển</string>
+    <string name="workspace_delete">Xóa</string>
+    <string name="workspace_delete_message">Xóa %1$s? Không thể hoàn tác thao tác này.</string>
+    <string name="workspace_delete_folder_message">Xóa %1$s và toàn bộ nội dung? Không thể hoàn tác thao tác này.</string>
+    <string name="workspace_mutation_uncertain">Kết nối đã kết thúc trước khi máy tính xác nhận thao tác tệp. Thư mục đã được làm mới; hãy kiểm tra trước khi thử thao tác khác.</string>
+    <string name="workspace_parent_folder">Thư mục đích</string>
+    <string name="workspace_entry_name">Tên</string>
+    <string name="workspace_confirm">Xác nhận</string>
+    <string name="workspace_copy_relative_path">Sao chép đường dẫn</string>
+    <string name="workspace_copy_absolute_path">Sao chép đường dẫn tuyệt đối</string>
+    <string name="workspace_markdown_preview">Xem trước Markdown</string>
+    <string name="workspace_markdown_edit">Chỉnh sửa Markdown</string>
 </resources>

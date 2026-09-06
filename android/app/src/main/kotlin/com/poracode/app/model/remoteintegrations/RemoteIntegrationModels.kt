@@ -98,6 +98,19 @@ data class ScheduledTask(
 
 enum class ScheduleRunStatus { Never, Running, Succeeded, Failed }
 
+enum class ScheduleHistoryStatus { Running, Succeeded, Failed, Interrupted }
+
+data class ScheduleRun(
+    val id: String,
+    val scheduleId: String,
+    val threadId: String,
+    val startedAt: String,
+    val completedAt: String?,
+    val status: ScheduleHistoryStatus,
+    /** Raw host diagnostics are discarded before this model is constructed. */
+    val hasError: Boolean,
+)
+
 private fun ScheduleRecurrence.isValid(): Boolean = when (this) {
     is ScheduleRecurrence.Hourly -> minute in 0..59
     is ScheduleRecurrence.Weekly -> days.isNotEmpty() && days.all { it in 0..6 } &&

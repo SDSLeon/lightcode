@@ -94,11 +94,55 @@ struct RootView: View {
     }
     .animation(.easeInOut(duration: 0.2), value: session.phase)
     .animation(.easeInOut(duration: 0.2), value: session.selectedConnectionId?.rawValue)
+    // Deep-link consent must not depend on which root presentation is up: a link
+    // arriving while Home retries a dead stored endpoint still needs its confirm UI.
+    .sheet(isPresented: pendingPairingSheet) {
+      if let pending = session.pendingPairing {
+        PendingPairingConsentSheet(session: session, pending: pending)
+      }
+    }
     #if DEBUG
       // Type erasure gives injected body implementations a stable dynamic
       // boundary while preserving the identity and state above it.
       .eraseToAnyViewForNativeHotReload()
     #endif
+  }
+
+  /// Onboarding renders the consent card inline; the sheet covers Home/splash.
+  private var pendingPairingSheet: Binding<Bool> {
+    Binding(
+      get: {
+        session.pendingPairing != nil
+          && RootPresentation.resolve(
+            phase: session.phase,
+            hasProfile: session.profile != nil
+          ) != .onboarding
+      },
+      set: { presented in
+        if !presented { session.cancelPendingPairing() }
+      }
+    )
+  }
+}
+
+/// Root-level consent surface for a deep-linked pairing while Home is visible.
+private struct PendingPairingConsentSheet: View {
+  @Bindable var session: AppSession
+  let pending: PendingPairingState
+
+  var body: some View {
+    ScrollView {
+      OnboardingPendingPairingCard(
+        pending: pending,
+        onCancel: { session.cancelPendingPairing() },
+        onConfirm: { Task { await session.confirmPendingPairing() } }
+      )
+      .padding(20)
+      .frame(maxWidth: 560)
+      .frame(maxWidth: .infinity)
+    }
+    .presentationDetents([.medium, .large])
+    .presentationDragIndicator(.visible)
   }
 }
 

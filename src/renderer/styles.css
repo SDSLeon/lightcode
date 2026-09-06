@@ -1199,6 +1199,10 @@ html[data-compact-layout] [data-sticky-windowed-header] .poracode-model-menu-hea
        a set, tinted like the sidebar (side chrome) rather than the pane beneath
        it. Derived, so it follows --sidebar-background in every theme. */
     --floating-chrome-surface: color-mix(in oklab, var(--sidebar-background) 82%, transparent);
+    /* Selected floating chrome keeps the theme accent but steers its oklch hue
+       halfway toward violet (~300): derived from --accent per element, so it
+       reads violet-leaning on every theme without pinning a brand hex. */
+    --floating-chrome-selected-accent: oklch(from var(--accent) l c calc(h + (300 - h) / 2));
     /* Selected floating chrome stays dark: make the glass denser with the
        sidebar tone instead of brightening it with the foreground color. */
     --floating-chrome-active-surface: color-mix(
@@ -3495,18 +3499,23 @@ html[data-platform="win32"][data-native-material="on"][data-theme="dark"] {
    conversation pane, not over the OS window material, so their glass is
    entirely ours to author.
 
-   The dark treatment stays deliberately low-alpha with a short blur: underlying
-   transcript shapes remain perceptible instead of being homogenized into a
-   bright frosted patch. A faint edge and shallow shadow separate the control
-   without the specular gradients or inset highlights of a raised glossy button.
-   Windows remains slightly denser because Chromium's blur is visually weaker. */
+   The dark treatment stays low-alpha with a short blur — but lifted with a
+   touch of foreground so the pills read against the dark pane instead of
+   vanishing into it, while underlying transcript shapes remain perceptible.
+   A faint edge and shallow shadow separate the control without the specular
+   gradients or inset highlights of a raised glossy button. Windows remains
+   slightly denser because Chromium's blur is visually weaker. */
 html[data-platform="darwin"] {
   --floating-chrome-surface: color-mix(in oklab, var(--sidebar-background) 38%, transparent);
   --floating-chrome-backdrop: blur(12px) saturate(140%);
 }
 html[data-platform="darwin"].dark,
 html[data-platform="darwin"][data-theme="dark"] {
-  --floating-chrome-surface: color-mix(in oklab, var(--sidebar-background) 24%, transparent);
+  --floating-chrome-surface: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--sidebar-background) 91%, var(--foreground) 9%) 34%,
+    transparent
+  );
   --floating-chrome-backdrop: blur(10px) saturate(135%);
 }
 html[data-platform="win32"] {
@@ -3515,7 +3524,11 @@ html[data-platform="win32"] {
 }
 html[data-platform="win32"].dark,
 html[data-platform="win32"][data-theme="dark"] {
-  --floating-chrome-surface: color-mix(in oklab, var(--sidebar-background) 30%, transparent);
+  --floating-chrome-surface: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--sidebar-background) 91%, var(--foreground) 9%) 40%,
+    transparent
+  );
   --floating-chrome-backdrop: blur(10px) saturate(130%);
 }
 html:is([data-platform="darwin"], [data-platform="win32"]) .poracode-floating-chrome {
@@ -3530,6 +3543,41 @@ html:is([data-platform="darwin"], [data-platform="win32"]) .poracode-floating-ch
 }
 html:is([data-platform="darwin"], [data-platform="win32"]) .poracode-floating-chrome--active {
   border-color: color-mix(in oklab, var(--foreground) 12%, transparent);
+}
+
+/* Composer bubbles: at rest they read as the composer surface — a translucent
+   layer of it over the blurred pane (the color is a tint, not a fill) — with a
+   barely-there edge that firms up on hover. The platform glass rule above is
+   matched in specificity so this wins by order on every platform. */
+html .poracode-floating-chrome.poracode-floating-chrome--bubble {
+  background-color: color-mix(in oklab, var(--composer-surface) 70%, transparent);
+  border-color: color-mix(in oklab, var(--foreground) 2%, transparent);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.1),
+    0 3px 10px rgb(0 0 0 / 0.14);
+}
+html .poracode-floating-chrome.poracode-floating-chrome--bubble:hover {
+  border-color: color-mix(in oklab, var(--foreground) 5%, transparent);
+}
+/* Bubble whose panel is open: the sidebar Git badge idiom (`bg-accent/15
+   hover:bg-accent/25`) — a violet-steered theme wash over the same translucent
+   composer layer, so the open state reads as selected, not just lit. The glyph
+   keeps its own tone; only the glass and edge take the wash. */
+html .poracode-floating-chrome.poracode-floating-chrome--bubble-active {
+  background-color: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--composer-surface) 70%, transparent) 85%,
+    var(--floating-chrome-selected-accent) 15%
+  );
+  border-color: color-mix(in oklab, var(--floating-chrome-selected-accent) 18%, transparent);
+}
+html .poracode-floating-chrome.poracode-floating-chrome--bubble-active:hover {
+  background-color: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--composer-surface) 70%, transparent) 75%,
+    var(--floating-chrome-selected-accent) 25%
+  );
+  border-color: color-mix(in oklab, var(--floating-chrome-selected-accent) 25%, transparent);
 }
 
 /* 2. In-app fallback: opaque window, faux-translucent gradient sidebar. */
@@ -4768,10 +4816,24 @@ html[data-app-unfocused] .poracode-provider-icon--finished {
   vertical-align: middle;
   user-select: none;
   cursor: default;
+  max-width: 100%;
+  min-width: 0;
 }
 
-.poracode-thread-mention-chip {
+/* Cursor + hover/active + transition only on the clickable message chip; the
+   composer chip is an inert contentEditable decoration and must not advertise
+   a click. */
+button.poracode-thread-mention-chip {
   cursor: var(--interactive-cursor, pointer);
+  transition: background 120ms ease;
+}
+
+button.poracode-thread-mention-chip:hover {
+  background: color-mix(in oklab, var(--accent) 22%, var(--surface));
+}
+
+button.poracode-thread-mention-chip:active {
+  background: color-mix(in oklab, var(--accent) 28%, var(--surface));
 }
 
 .poracode-thread-mention-chip:focus-visible {
@@ -4780,7 +4842,8 @@ html[data-app-unfocused] .poracode-provider-icon--finished {
 }
 
 .poracode-slash-chip[data-skill-name],
-.poracode-slash-chip[data-mcp-name] {
+.poracode-slash-chip[data-mcp-name],
+.poracode-thread-mention-chip {
   gap: 0.25em;
 }
 
@@ -4801,10 +4864,13 @@ html[data-app-unfocused] .poracode-provider-icon--finished {
 }
 
 .poracode-slash-chip__name {
-  display: inline-flex;
-  align-items: center;
-  font-weight: 400;
+  display: inline-block;
+  min-width: 0;
+  max-width: min(20rem, 100%);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 400;
 }
 
 .poracode-diff-comment-chip {
@@ -5235,7 +5301,7 @@ html[data-app-unfocused] .poracode-provider-icon--finished {
 /* ── Mention Popover (file search dropdown) ──────────────── */
 
 .poracode-mention-popover {
-  width: 30rem;
+  width: min(30rem, calc(100vw - 1rem));
   max-height: 20rem;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
@@ -5254,6 +5320,26 @@ html[data-app-unfocused] .poracode-provider-icon--finished {
   width: 1.125rem;
   height: 1.125rem;
   flex-shrink: 0;
+}
+
+.poracode-mention-popover__section + .poracode-mention-popover__section {
+  margin-top: 0.25rem;
+  border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  padding-top: 0.25rem;
+}
+
+.poracode-mention-popover__section-label {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--overlay);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .poracode-mention-popover__item {

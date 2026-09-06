@@ -1,6 +1,10 @@
 package com.poracode.app.ui.advancedops
 
+import com.poracode.app.model.ClientConnectionId
 import com.poracode.app.protocol.advancedops.AdvancedOperation
+import com.poracode.app.ui.HomeDestination
+import com.poracode.app.ui.PoracodeNavigationState
+import com.poracode.app.ui.homeDestination
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -22,10 +26,47 @@ class AdvancedOpsReachabilityTest {
     fun `settings navigation reaches the production advanced screen`() {
         val root = projectFile("app/src/main/kotlin/com/poracode/app/ui")
         val app = root.resolve("PoracodeApp.kt").readText()
+        val destination = root.resolve("HomeDestination.kt").readText()
+        val destinationContent = root.resolve("PoracodeHomeDestinations.kt").readText()
         val settings = root.resolve("settings/SettingsScreen.kt").readText()
-        assertTrue(app.contains("AdvancedOperationsScreen("))
-        assertTrue(app.contains("onOpenAdvancedOperations"))
-        assertTrue(settings.contains("onOpenAdvancedOperations"))
+        val navigation = PoracodeNavigationState().apply { showAdvancedOperations = true }
+
+        assertEquals(
+            HomeDestination.AdvancedOperations,
+            homeDestination(
+                navigation = navigation,
+                pendingPairConfirm = null,
+                selectedConnectionId = ClientConnectionId(
+                    "10000000-0000-4000-8000-000000000001",
+                ),
+                projectUtility = null,
+            ),
+        )
+        assertTrue(
+            "Settings must expose the advanced-operations navigation action",
+            settings.contains("onOpenAdvanced = onOpenAdvancedOperations"),
+        )
+        assertTrue(
+            "The settings action must activate the typed advanced destination",
+            destinationContent.contains("onOpenAdvancedOperations = {") &&
+                destinationContent.contains("navigation.showAdvancedOperations = true"),
+        )
+        assertTrue(
+            "The destination resolver must map that state to AdvancedOperations",
+            destination.contains(
+                "if (navigation.showAdvancedOperations) return HomeDestination.AdvancedOperations",
+            ),
+        )
+        assertTrue(
+            "The Home shell must dispatch the typed advanced destination",
+            app.contains(
+                "is HomeDestination.AdvancedOperations -> AdvancedOperationsDestinationContent(",
+            ),
+        )
+        assertTrue(
+            "The advanced destination must render the production screen",
+            destinationContent.contains("AdvancedOperationsScreen("),
+        )
     }
 
     private fun projectFile(path: String): File {

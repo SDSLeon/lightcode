@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="terminal_title">Терминал</string>
     <string name="terminal_output_description">Вывод терминала</string>
     <string name="terminal_input_label">Ввод терминала</string>
     <string name="terminal_input_placeholder">Введите команду</string>
@@ -7,6 +8,17 @@
     <string name="terminal_control_c">Ctrl+C</string>
     <string name="terminal_tab">Tab</string>
     <string name="terminal_close">Закрыть терминал</string>
+    <string name="terminal_close_confirm_title">Закрыть этот терминал?</string>
+    <string name="terminal_close_confirm_message">Работающий процесс будет остановлен. Его можно будет запустить снова позже.</string>
+    <string name="terminal_cancel">Отмена</string>
+    <string name="terminal_control_modifier">Ctrl</string>
+    <string name="terminal_key_escape">Esc</string>
+    <string name="terminal_key_enter">Enter</string>
+    <string name="terminal_key_backspace">⌫</string>
+    <string name="terminal_key_arrow_left">Стрелка влево</string>
+    <string name="terminal_key_arrow_up">Стрелка вверх</string>
+    <string name="terminal_key_arrow_down">Стрелка вниз</string>
+    <string name="terminal_key_arrow_right">Стрелка вправо</string>
     <string name="terminal_reconnect">Переподключить</string>
     <string name="terminal_start">Запустить терминал</string>
     <string name="terminal_start_description">Запустить терминал разработки для этого проекта</string>

@@ -171,6 +171,10 @@ async function initialize(
       });
     },
     onReset: () => {
+      // Match the headless host: no `thread-exited` is emitted for sessions
+      // that died with the old supervisor, so the desktop remote server must
+      // also drop its cached background-task levels here.
+      desktopServices?.handleSupervisorReset();
       for (const event of desktopServices?.markLiveThreadsInactive() ?? []) {
         const filtered = eventRouter.filter(event);
         if (filtered) {

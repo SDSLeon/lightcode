@@ -23,6 +23,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,11 +67,21 @@ internal fun AddProjectDialog(
     var path by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var cloneUrl by remember { mutableStateOf("") }
+    var nameEditedByUser by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<ProjectOperationFailure?>(null) }
     var validationMessage by remember { mutableStateOf<Int?>(null) }
     var showFolders by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // Clone mode derives the destination folder/project name from the repository URL, matching
+    // the compact PWA clone flow and iOS's ProjectCloneNaming, so cloning never asks for a
+    // second, redundant name. The user can still type over the derived value.
+    LaunchedEffect(mode, cloneUrl) {
+        if (mode == ProjectAddMode.CLONE && !nameEditedByUser) {
+            name = projectNameFromCloneUrl(cloneUrl)
+        }
+    }
 
     fun validateAndBuild(): ProjectCommand? {
         validationMessage = when {
@@ -164,7 +175,7 @@ internal fun AddProjectDialog(
                 }
                 OutlinedTextField(
                     value = name,
-                    onValueChange = { name = it; validationMessage = null },
+                    onValueChange = { name = it; nameEditedByUser = true; validationMessage = null },
                     label = {
                         Text(
                             stringResource(

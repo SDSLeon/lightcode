@@ -72,4 +72,21 @@
     <string name="workspace_permission_denied">У этого сеанса нет разрешения на данное действие.</string>
     <string name="workspace_project_changed">Выбранный проект или компьютер изменился. Повторите попытку.</string>
     <string name="workspace_invalid_response">Компьютер вернул недопустимый ответ рабочей области.</string>
+    <string name="workspace_create_entry">Создать файл или папку</string>
+    <string name="workspace_create_file">Создать файл</string>
+    <string name="workspace_create_folder">Создать папку</string>
+    <string name="workspace_file_actions">Действия для %1$s</string>
+    <string name="workspace_rename">Переименовать</string>
+    <string name="workspace_move">Переместить</string>
+    <string name="workspace_delete">Удалить</string>
+    <string name="workspace_delete_message">Удалить %1$s? Это действие нельзя отменить.</string>
+    <string name="workspace_delete_folder_message">Удалить %1$s и всё содержимое? Это действие нельзя отменить.</string>
+    <string name="workspace_mutation_uncertain">Соединение завершилось до подтверждения операции компьютером. Папка обновлена; проверьте её перед следующей операцией.</string>
+    <string name="workspace_parent_folder">Папка назначения</string>
+    <string name="workspace_entry_name">Имя</string>
+    <string name="workspace_confirm">Подтвердить</string>
+    <string name="workspace_copy_relative_path">Копировать путь</string>
+    <string name="workspace_copy_absolute_path">Копировать полный путь</string>
+    <string name="workspace_markdown_preview">Просмотр Markdown</string>
+    <string name="workspace_markdown_edit">Редактировать Markdown</string>
 </resources>

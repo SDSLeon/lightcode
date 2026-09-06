@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -74,12 +75,14 @@ class MainActivity : ComponentActivity() {
                 app.onRichChatForeground()
                 app.onBrowserMirrorForeground()
                 app.push.onForeground()
+                app.settings.onForeground()
             }
 
             override fun onStop(owner: LifecycleOwner) {
                 app.push.onBackground()
                 app.remoteIntegrations.cancelTransientWork()
                 app.settingsIntegrations.onBackground()
+                app.settings.onBackground()
                 app.onRichChatBackground()
                 app.ports.enterBackground()
                 app.onAdvancedOperationsBackground()
@@ -101,6 +104,7 @@ class MainActivity : ComponentActivity() {
                 remoteIntegrations = app.remoteIntegrations,
                 settingsIntegrations = app.settingsIntegrations,
                 browserMirror = app.browserMirror,
+                deviceSettings = app.deviceSettings,
                 localNetworkPermissionUi = localNetworkPermissionUi,
                 requestLocalNetworkPermission = ::requestLocalNetworkPermission,
                 continueLocalNetworkPermission = ::continueLocalNetworkPermission,
@@ -113,6 +117,7 @@ class MainActivity : ComponentActivity() {
                 openExternalUrl = { url ->
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                 },
+                onThemeDarkChanged = ::updateSystemBarAppearance,
             )
         }
 
@@ -196,6 +201,13 @@ class MainActivity : ComponentActivity() {
                 ),
             )
             else -> Unit
+        }
+    }
+
+    private fun updateSystemBarAppearance(dark: Boolean) {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = !dark
+            isAppearanceLightNavigationBars = !dark
         }
     }
 }

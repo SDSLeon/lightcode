@@ -78,12 +78,27 @@
     <string name="home_no_matching_threads">Keine passenden Threads</string>
     <string name="home_no_matching_threads_message">Passe die Suche oder den Projektfilter an.</string>
     <string name="home_quick_compose_prompt">Planen, fragen, entwickeln…</string>
+    <string name="home_quick_compose_camera_capture">Foto aufnehmen</string>
     <string name="home_more">Mehr</string>
+    <string name="home_connections">Verbindungen</string>
     <string name="home_new_thread">Neuer Thread</string>
     <string name="home_project">Projekt</string>
+    <string name="home_project_host">%1$s — %2$s</string>
     <string name="home_agent_value">Agent: %1$s</string>
     <string name="home_model_value">Modell: %1$s</string>
     <string name="home_start">Starten</string>
+    <string name="home_quick_compose_agent">KI-Agent</string>
+    <string name="home_quick_compose_presentation">Darstellung</string>
+    <string name="home_quick_compose_chat">Gespräch</string>
+    <string name="home_quick_compose_terminal">Terminal</string>
+    <string name="home_quick_compose_controls">Starteinstellungen</string>
+    <string name="home_quick_compose_worktree_title">Worktree</string>
+    <string name="home_quick_compose_current_branch">Projekt-Branch</string>
+    <string name="home_quick_compose_project_default">Projektstandard verwenden</string>
+    <string name="home_quick_compose_existing_worktree">Vorhandener Worktree</string>
+    <string name="home_quick_compose_no_worktrees">Für dieses Projekt gibt es keine vorhandenen Worktrees.</string>
+    <string name="home_quick_compose_commands">Befehle</string>
+    <string name="home_quick_compose_no_commands">Für diesen Agenten sind keine Befehle verfügbar.</string>
     <string name="home_quick_compose_defaults_description">Verwendet die zuletzt gewählten Agent- und Modelleinstellungen dieses Projekts.</string>
     <string name="home_quick_compose_unavailable">Noch kein Projekt hat Starteinstellungen. Starte zuerst einen Thread am Desktop.</string>
     <string name="home_new_thread_failed">Der neue Thread konnte nicht gestartet werden.</string>
@@ -131,4 +146,5 @@
     <!-- Local store inconsistency after failed rollback -->
     <string name="local_store_inconsistent_title">Fehler im Anmeldedatenspeicher</string>
     <string name="local_store_inconsistent_message">Der lokale Anmeldedatenspeicher ist inkonsistent. Vergiss diesen Computer und kopple ihn neu.</string>
+
 </resources>

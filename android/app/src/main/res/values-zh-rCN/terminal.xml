@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="terminal_title">终端</string>
     <string name="terminal_output_description">终端输出</string>
     <string name="terminal_input_label">终端输入</string>
     <string name="terminal_input_placeholder">输入命令</string>
@@ -7,6 +8,17 @@
     <string name="terminal_control_c">Ctrl+C</string>
     <string name="terminal_tab">Tab</string>
     <string name="terminal_close">关闭终端</string>
+    <string name="terminal_close_confirm_title">关闭此终端?</string>
+    <string name="terminal_close_confirm_message">正在运行的进程将被停止。之后可以重新启动。</string>
+    <string name="terminal_cancel">取消</string>
+    <string name="terminal_control_modifier">Ctrl</string>
+    <string name="terminal_key_escape">Esc</string>
+    <string name="terminal_key_enter">回车</string>
+    <string name="terminal_key_backspace">⌫</string>
+    <string name="terminal_key_arrow_left">左箭头</string>
+    <string name="terminal_key_arrow_up">上箭头</string>
+    <string name="terminal_key_arrow_down">下箭头</string>
+    <string name="terminal_key_arrow_right">右箭头</string>
     <string name="terminal_reconnect">重新连接</string>
     <string name="terminal_start">启动终端</string>
     <string name="terminal_start_description">为此项目启动开发终端</string>

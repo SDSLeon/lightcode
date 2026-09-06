@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">Zatrzymaj kopię</string>
     <string name="browser_mirror_empty">Brak otwartych kart przeglądarki.</string>
     <string name="browser_mirror_stopped">Kopia przeglądarki została zatrzymana.</string>
+    <string name="browser_mirror_move_left">Przenieś w lewo</string>
+    <string name="browser_mirror_move_right">Przenieś w prawo</string>
+    <string name="browser_mirror_privacy_notice">Kopiowane strony mogą wyświetlać treści osobiste. Obrazy pozostają na tym urządzeniu i są usuwane po opuszczeniu tego ekranu.</string>
 </resources>

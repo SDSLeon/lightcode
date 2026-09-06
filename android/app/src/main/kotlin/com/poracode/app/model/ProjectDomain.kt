@@ -6,6 +6,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonClassDiscriminator
 
+/** Existing cross-platform wire/storage ID; mirrored by shared/homeScope.ts and iOS RemoteProject. */
+const val HOME_PROJECT_ID = "__lightcode_home__"
+
 /** Collision-free identity for one project on one paired host. */
 @Serializable
 data class ProjectIdentity(

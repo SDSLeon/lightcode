@@ -319,6 +319,7 @@ private fun ManualConnectionFields(
                 .semantics { contentDescription = tokenCd },
             label = { Text(stringResource(R.string.one_time_pairing_token)) },
             visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
             enabled = enabled,

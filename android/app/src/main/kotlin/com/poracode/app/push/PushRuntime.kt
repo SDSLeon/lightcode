@@ -132,9 +132,9 @@ class PushRuntime(
     }
 
     private fun notificationPermissionGranted(): Boolean =
-        Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(
+        (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(
             context,
             PushPermissionPolicy.PERMISSION,
-        ) == PackageManager.PERMISSION_GRANTED &&
+        ) == PackageManager.PERMISSION_GRANTED) &&
             NotificationManagerCompat.from(context).areNotificationsEnabled()
 }

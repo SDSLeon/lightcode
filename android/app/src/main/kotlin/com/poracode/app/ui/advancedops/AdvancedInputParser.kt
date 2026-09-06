@@ -13,6 +13,15 @@ data class AdvancedDraft(
     fun flag(field: AdvancedField): Boolean = field in flags
 }
 
+internal fun advancedDraftDefaults(
+    action: AdvancedAction,
+    contentLanguage: String?,
+): AdvancedDraft = AdvancedDraft(
+    text = contentLanguage?.takeIf { AdvancedField.Language in action.fields }
+        ?.let { mapOf(AdvancedField.Language to it) }
+        .orEmpty(),
+)
+
 sealed interface AdvancedParseResult {
     data class Valid(val input: AdvancedInput) : AdvancedParseResult
     data object MissingRequired : AdvancedParseResult

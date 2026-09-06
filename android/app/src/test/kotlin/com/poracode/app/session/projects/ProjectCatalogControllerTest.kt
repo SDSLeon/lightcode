@@ -268,4 +268,24 @@ class ProjectCatalogControllerTest {
         assertEquals(projectB, controller.project(ProjectIdentity(connectionB, "same")))
         assertEquals(2, controller.state.value.catalogs.size)
     }
+
+    @Test
+    fun identityGuardRejectsCollidingHostAndMismatchedProjectBeforeMutation() = runTest {
+        val session = MutableStateFlow<ProjectHostLease?>(lease(connectionB))
+        val gateway = FakeProjectGateway()
+        val controller = ProjectCatalogController(session, gateway, ProjectRefreshScheduler {})
+
+        val wrongHost = controller.execute(
+            ProjectIdentity(connectionA, "same"),
+            RemoveProject("same"),
+        ) as ProjectCommandOutcome.Rejected
+        val wrongProject = controller.execute(
+            ProjectIdentity(connectionB, "expected"),
+            RemoveProject("different"),
+        ) as ProjectCommandOutcome.Rejected
+
+        assertSame(ProjectOperationFailure.InvalidProjectIdentity, wrongHost.failure)
+        assertSame(ProjectOperationFailure.InvalidProjectIdentity, wrongProject.failure)
+        assertTrue(gateway.commands.isEmpty())
+    }
 }

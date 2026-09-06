@@ -29,7 +29,7 @@ import type { CrossagentRoutingState } from "@/shared/crossagentRanking";
 import type { ConfirmCrossagentRoutingOverridePayload } from "@/shared/ipc/procedures/mcp";
 import { msg } from "@/shared/messages";
 import { resolvePoracodePaths } from "@/shared/poracodePaths";
-import { joinProjectPosixPath } from "@/shared/wsl";
+import { getProjectFsPath, joinProjectPosixPath } from "@/shared/wsl";
 import { prefetchNativeNodeRuntime } from "./runtime/prefetchNativeNode";
 import {
   setSessionFsBridgeClient,
@@ -238,7 +238,7 @@ export class SupervisorRuntime {
       resolveAgentVersion: (kind, wslDistro) =>
         this.agentStatusService.getCachedVersion(kind, wslDistro),
       readInstalledPlugins: () => this.sharedSettingsCache.readFresh().installedPlugins,
-      readPlugins: () => this.pluginRegistry.listPlugins(),
+      readPlugins: (projectFsPath) => this.pluginRegistry.listPlugins(projectFsPath),
     });
 
     // Boot the CLI hook plugin coordinator BEFORE the thread session manager so
@@ -312,6 +312,8 @@ export class SupervisorRuntime {
       const bridge = new WslBridgeServer({
         onEvent: (envelope) => runHookDispatch(envelope, "wsl-bridge"),
         onBridgeExit: (distro) => this._projectWatcher?.handleWslBridgeExit(distro),
+        onBridgeResume: (distro) => this._projectWatcher?.handleWslBridgeResume(distro),
+        hasLiveSession: (distro) => this.hasLiveWslSession(distro),
         onError: (message, error) => {
           if (isPoracodeHookDebug()) {
             console.warn(`[supervisor] hook-debug: ${message}`, error);
@@ -358,11 +360,12 @@ export class SupervisorRuntime {
       host: {
         getParentContext: (threadId) =>
           this.threadSessionManager.getSubagentParentContext(threadId),
-        resolveParentMcpAccess: (threadId, identity, targetAgentKind) =>
+        resolveParentMcpAccess: (threadId, identity, targetAgentKind, projectLocation) =>
           this.threadSessionManager.resolveSubagentParentMcpAccess(
             threadId,
             identity,
             targetAgentKind,
+            projectLocation,
           ),
         appendRuntimeEvent: (parentThreadId, event) =>
           this.threadSessionManager.appendSubagentRuntimeEvent(parentThreadId, event),
@@ -463,7 +466,7 @@ export class SupervisorRuntime {
           console.warn(`[plugins] failed to inspect native ${agentKind} plugins:`, error);
         }
         const result = resolvePluginMcpServers(
-          this.pluginRegistry.listPlugins(),
+          this.pluginRegistry.listPlugins(getProjectFsPath(projectLocation)),
           this.sharedSettingsCache.readFresh().installedPlugins,
           {
             pluginDataRoot: this.pluginDataDir,
@@ -517,10 +520,9 @@ export class SupervisorRuntime {
 
     // The usage credential WSL fallback boots every installed distro (and
     // keeps its VM alive via the resident bridge) just to look for tokens.
-    // Restrict it to when the user actually uses WSL — a watched WSL project
-    // or a live WSL session — so a Windows-only setup never spins up VmmemWSL.
+    // Restrict it to live WSL sessions so idle projects can release their bridge.
     this.disposeWslCredentialProjectScope = setWslCredentialProjectScope(() =>
-      this.hasActiveWslContext(),
+      this.hasLiveWslSession(),
     );
     this.usageService = new UsageService({
       emit,
@@ -546,6 +548,7 @@ export class SupervisorRuntime {
     // icons are local. Fire-and-forget — never blocks the window from opening.
     void this.agentRegistryService.cacheLocalAcpIconsOnLaunch();
     void this.agentRegistryService.pruneAcpRegistryLeftoversOnLaunch();
+    void this.agentRegistryService.repairAcpRegistryInstallLayoutsOnLaunch();
   }
 
   /**
@@ -653,19 +656,6 @@ export class SupervisorRuntime {
       if (session.projectLocation.kind === "wsl") distros.add(session.projectLocation.distro);
     }
     return [...distros];
-  }
-
-  /**
-   * True when the user actively uses WSL: a watched (non-disabled) project
-   * lives in a distro, or a live session does. Gates the usage credential
-   * WSL fallback so it never boots a distro on its own.
-   */
-  private hasActiveWslContext(): boolean {
-    if (this._projectWatcher?.hasWslProjects()) return true;
-    for (const session of this.sessions.values()) {
-      if (!session.ptyExited && session.projectLocation.kind === "wsl") return true;
-    }
-    return false;
   }
 
   async gitRemoveWorktree(payload: GitRemoveWorktreePayload): Promise<void> {
@@ -779,10 +769,9 @@ export class SupervisorRuntime {
     const threadIds = new Set<string>();
 
     for (const [threadId, session] of this.sessions) {
+      const projectLocation = session.logicalProjectLocation ?? session.projectLocation;
       const sessionPath =
-        session.projectLocation.kind === "wsl"
-          ? session.projectLocation.uncPath
-          : session.projectLocation.path;
+        projectLocation.kind === "wsl" ? projectLocation.uncPath : projectLocation.path;
       if (normalizedTargets.has(normalizePath(sessionPath))) {
         threadIds.add(threadId);
       }
@@ -959,19 +948,24 @@ export class SupervisorRuntime {
   }
 
   releaseWslBridgeIfUnused(distro: string): void {
-    const hasLiveSession = [...this.sessions.values()].some(
-      (session) =>
-        session.status !== "inactive" &&
-        session.projectLocation.kind === "wsl" &&
-        session.projectLocation.distro === distro,
-    );
-    if (!hasLiveSession) {
+    if (!this.hasLiveWslSession(distro)) {
       this.wslHookBridge?.releaseBridge(distro);
     }
   }
 
   setIpcBackpressured(paused: boolean): void {
     this.threadSessionManager.setPtyOutputPaused(paused);
+  }
+
+  private hasLiveWslSession(distro?: string): boolean {
+    return [...this.sessions.values()].some(
+      (session) =>
+        session.status !== "inactive" &&
+        !session.ignoreExit &&
+        !session.ptyExited &&
+        session.projectLocation.kind === "wsl" &&
+        (distro === undefined || session.projectLocation.distro === distro),
+    );
   }
 
   dispose(): void {

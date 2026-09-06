@@ -89,6 +89,17 @@
     }
   },
   {
+    "type": "background_tasks.changed",
+    "threadId": "thread-fixture-001",
+    "tasks": [
+      {
+        "taskId": "task-fixture-001",
+        "kind": "command",
+        "description": "pnpm test"
+      }
+    ]
+  },
+  {
     "type": "request.opened",
     "threadId": "thread-fixture-001",
     "requestId": "request-fixture-001",

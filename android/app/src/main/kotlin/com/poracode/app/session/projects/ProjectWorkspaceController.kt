@@ -29,6 +29,8 @@ data class ProjectWorkspaceEntry(
     val searching: Boolean = false,
     val loadingFile: Boolean = false,
     val savingFile: Boolean = false,
+    val mutatingEntry: Boolean = false,
+    val mutationUncertain: Boolean = false,
     val loadingGit: Boolean = false,
     val failure: ProjectOperationFailure? = null,
 )
@@ -37,7 +39,7 @@ data class ProjectWorkspaceState(
     val entries: Map<ProjectIdentity, ProjectWorkspaceEntry> = emptyMap(),
 )
 
-private enum class WorkspaceChannel { Tree, Search, File, Git }
+private enum class WorkspaceChannel { Tree, Search, File, Entry, Git }
 
 private data class WorkspaceOperationKey(
     val identity: ProjectIdentity,
@@ -50,7 +52,7 @@ class ProjectWorkspaceController(
     private val gateway: ProjectWorkspaceGateway,
 ) : ProjectsChangedListener {
     private val revisions = ConcurrentHashMap<WorkspaceOperationKey, AtomicLong>()
-    private val saveMutexes = ConcurrentHashMap<ProjectIdentity, Mutex>()
+    private val mutationMutexes = ConcurrentHashMap<ProjectIdentity, Mutex>()
     private val mutableState = MutableStateFlow(ProjectWorkspaceState())
     val state: StateFlow<ProjectWorkspaceState> = mutableState.asStateFlow()
 
@@ -61,7 +63,14 @@ class ProjectWorkspaceController(
         target = target,
         channel = WorkspaceChannel.Tree,
         capability = ProjectCapability.Read,
-        begin = { it.copy(directoryPath = directoryPath, loadingTree = true, failure = null) },
+        begin = {
+            it.copy(
+                directoryPath = directoryPath,
+                loadingTree = true,
+                failure = null,
+                mutationUncertain = false,
+            )
+        },
         finish = { entry, value -> entry.copy(tree = value, loadingTree = false) },
         cancel = { it.copy(loadingTree = false) },
         fail = { entry, failure -> entry.copy(loadingTree = false, failure = failure) },
@@ -93,12 +102,15 @@ class ProjectWorkspaceController(
         finish = { entry, value -> entry.copy(openFile = value, loadingFile = false) },
         cancel = { it.copy(loadingFile = false) },
         fail = { entry, failure -> entry.copy(loadingFile = false, failure = failure) },
+        validate = { result ->
+            ProjectOperationFailure.InvalidResponse.takeIf { result.path != path }
+        },
     ) { lease -> gateway.readFile(lease, target, path) }
 
     suspend fun saveFile(
         target: ProjectWorkspaceTarget,
         content: String,
-    ): ProjectOperationResult<ProjectFileWriteResult> = saveMutexes
+    ): ProjectOperationResult<ProjectFileWriteResult> = mutationMutexes
         .getOrPut(target.identity) { Mutex() }
         .withLock {
             val current = state.value.entries[target.identity]?.openFile
@@ -131,6 +143,71 @@ class ProjectWorkspaceController(
                     current.modifiedAtMs,
                 )
             }
+        }
+
+    suspend fun mutateEntry(
+        target: ProjectWorkspaceTarget,
+        mutation: ProjectEntryMutation,
+    ): ProjectOperationResult<Unit> = mutationMutexes
+        .getOrPut(target.identity) { Mutex() }
+        .withLock {
+            revisions.computeIfAbsent(
+                WorkspaceOperationKey(target.identity, WorkspaceChannel.File),
+            ) { AtomicLong() }.incrementAndGet()
+            update(target.identity) { it.copy(loadingFile = false) }
+            val result = perform(
+                target = target,
+                channel = WorkspaceChannel.Entry,
+                capability = ProjectCapability.Operate,
+                begin = {
+                    it.copy(mutatingEntry = true, failure = null, mutationUncertain = false)
+                },
+                finish = { entry, _ ->
+                    entry.copy(
+                        mutatingEntry = false,
+                        mutationUncertain = false,
+                        openFile = entry.openFile?.takeUnless { mutation.invalidates(it.path) },
+                    )
+                },
+                cancel = { it.copy(mutatingEntry = false) },
+                fail = { entry, failure ->
+                    entry.copy(
+                        mutatingEntry = false,
+                        failure = failure,
+                        mutationUncertain = failure.isAmbiguousMutationFailure(),
+                    )
+                },
+                mutation = true,
+            ) { lease ->
+                when (mutation) {
+                    is ProjectEntryMutation.Create -> gateway.createEntry(
+                        lease, target, mutation.path, mutation.type.wireName,
+                    )
+                    is ProjectEntryMutation.Rename -> gateway.renameEntry(
+                        lease, target, mutation.path, mutation.nextName,
+                    )
+                    is ProjectEntryMutation.Move -> gateway.moveEntry(
+                        lease, target, mutation.path, mutation.nextParentPath,
+                    )
+                    is ProjectEntryMutation.Delete -> gateway.deleteEntry(
+                        lease, target, mutation.path,
+                    )
+                }
+            }
+            if (result is ProjectOperationResult.Success) {
+                val directory = state.value.entries[target.identity]?.directoryPath.orEmpty()
+                loadTree(target, directory)
+            } else if (
+                result is ProjectOperationResult.Failed &&
+                result.failure.isAmbiguousMutationFailure()
+            ) {
+                val directory = state.value.entries[target.identity]?.directoryPath.orEmpty()
+                loadTree(target, directory)
+                update(target.identity) {
+                    it.copy(failure = result.failure, mutationUncertain = true)
+                }
+            }
+            return result
         }
 
     suspend fun refreshGit(
@@ -171,6 +248,7 @@ class ProjectWorkspaceController(
         cancel: (ProjectWorkspaceEntry) -> ProjectWorkspaceEntry,
         fail: (ProjectWorkspaceEntry, ProjectOperationFailure) -> ProjectWorkspaceEntry,
         mutation: Boolean = false,
+        validate: (T) -> ProjectOperationFailure? = { null },
         operation: suspend (ProjectHostLease) -> T,
     ): ProjectOperationResult<T> {
         val (captured, gateFailure) = session.currentLease(capability)
@@ -186,6 +264,11 @@ class ProjectWorkspaceController(
         try {
             val result = operation(lease)
             if (!isCurrent(lease, key, revision)) return ProjectOperationResult.Stale
+            val validationFailure = validate(result)
+            if (validationFailure != null) {
+                update(target.identity) { fail(it, validationFailure) }
+                return ProjectOperationResult.Failed(validationFailure)
+            }
             update(target.identity) { finish(it, result) }
             return ProjectOperationResult.Success(result)
         } catch (error: CancellationException) {
@@ -215,3 +298,6 @@ class ProjectWorkspaceController(
         }
     }
 }
+
+private fun ProjectOperationFailure.isAmbiguousMutationFailure(): Boolean =
+    (this as? ProjectOperationFailure.Remote)?.requestMayHaveCommitted == true

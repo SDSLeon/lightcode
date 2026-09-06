@@ -263,13 +263,28 @@ public struct ProcedurerenameProjectEntryRequest_4a22ffc9b4: Codable, Sendable, 
   }
 }
 
+public struct ProcedurerollbackThreadConversationRequestU2DConfigU2DExecutionEnvironment_4cd2587996: Codable, Sendable, RemoteModelMetadata {
+  public var distro: String
+  public var kind: ProcedurebeginMcpServerOauthRequestU2DProjectLocationU2DOptionU2D2U2DKind_2d8274eae5
+  public static let unknownFieldPolicy: RemoteUnknownFieldPolicy = .strip
+  public static let fields: [RemoteFieldDescriptor] = [
+    .init(wireName: "distro", typeName: "String", required: true, nullable: false, minimum: nil, maximum: nil, minLength: 1, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
+    .init(wireName: "kind", typeName: "ProcedurebeginMcpServerOauthRequestU2DProjectLocationU2DOptionU2D2U2DKind_2d8274eae5", required: true, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
+  ]
+  public static let semanticValidatorIds: [String] = []
+  private enum CodingKeys: String, CodingKey {
+    case distro = "distro"
+    case kind = "kind"
+  }
+}
+
 public enum ProcedurerollbackThreadConversationRequestU2DConfigU2DMode_01e21946e9: String, Codable, Sendable {
   case agent = "agent"
   case plan = "plan"
   case autopilot = "autopilot"
 }
 
-public struct ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a: Codable, Sendable, RemoteModelMetadata {
+public struct ProcedurerollbackThreadConversationRequestU2DConfig_023567f089: Codable, Sendable, RemoteModelMetadata {
   public var approvalPolicy: RemoteField<String> = .missing
   public var approvalsReviewer: RemoteField<String> = .missing
   public var browserMcp: RemoteField<Bool> = .missing
@@ -278,6 +293,7 @@ public struct ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a: Co
   public var contextSize: RemoteField<String> = .missing
   public var crossagentMcp: RemoteField<Bool> = .missing
   public var effort: RemoteField<String> = .missing
+  public var executionEnvironment: RemoteField<ProcedurerollbackThreadConversationRequestU2DConfigU2DExecutionEnvironment_4cd2587996> = .missing
   public var fast: RemoteField<Bool> = .missing
   public var mode: RemoteField<ProcedurerollbackThreadConversationRequestU2DConfigU2DMode_01e21946e9> = .missing
   public var model: String
@@ -293,6 +309,7 @@ public struct ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a: Co
     .init(wireName: "contextSize", typeName: "String", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "crossagentMcp", typeName: "Bool", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "effort", typeName: "String", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
+    .init(wireName: "executionEnvironment", typeName: "ProcedurerollbackThreadConversationRequestU2DConfigU2DExecutionEnvironment_4cd2587996", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "fast", typeName: "Bool", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "mode", typeName: "ProcedurerollbackThreadConversationRequestU2DConfigU2DMode_01e21946e9", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "model", typeName: "String", required: true, nullable: false, minimum: nil, maximum: nil, minLength: 1, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
@@ -309,6 +326,7 @@ public struct ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a: Co
     case contextSize = "contextSize"
     case crossagentMcp = "crossagentMcp"
     case effort = "effort"
+    case executionEnvironment = "executionEnvironment"
     case fast = "fast"
     case mode = "mode"
     case model = "model"
@@ -317,13 +335,13 @@ public struct ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a: Co
   }
 }
 
-public struct ProcedurerollbackThreadConversationRequest_257f5640a1: Codable, Sendable, RemoteModelMetadata {
-  public var config: RemoteField<ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a> = .missing
+public struct ProcedurerollbackThreadConversationRequest_b50a220194: Codable, Sendable, RemoteModelMetadata {
+  public var config: RemoteField<ProcedurerollbackThreadConversationRequestU2DConfig_023567f089> = .missing
   public var numTurns: Int64
   public var threadId: String
   public static let unknownFieldPolicy: RemoteUnknownFieldPolicy = .strip
   public static let fields: [RemoteFieldDescriptor] = [
-    .init(wireName: "config", typeName: "ProcedurerollbackThreadConversationRequestU2DConfig_03b0262a8a", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
+    .init(wireName: "config", typeName: "ProcedurerollbackThreadConversationRequestU2DConfig_023567f089", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "numTurns", typeName: "Int64", required: true, nullable: false, minimum: 0, maximum: 9007199254740991, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "threadId", typeName: "String", required: true, nullable: false, minimum: nil, maximum: nil, minLength: 1, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
   ]

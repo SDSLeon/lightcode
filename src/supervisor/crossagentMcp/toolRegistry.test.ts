@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AgentKind, AgentStatus } from "@/shared/contracts";
 import type { AgentAdapter } from "@/supervisor/agents/base";
-import type { SubagentRunManager } from "./SubagentRunManager";
+import { MAX_CONCURRENT_CHILDREN_PER_PARENT, type SubagentRunManager } from "./SubagentRunManager";
 import { listCrossagentEligibleProviders } from "./routingSnapshot";
 import {
   buildSpawnableAgents,
@@ -548,11 +548,17 @@ describe("subagent tool registration", () => {
 
   it("declares required fields on the subagent tool schemas", () => {
     const byName = new Map(TOOLS.map((tool) => [tool.name, tool]));
+    // Cursor's backend rejects tool schemas with a root-level union and fails the
+    // whole turn with a provider error, so the prompt/tasks choice is documented
+    // in the tool description and enforced by the request parser instead.
+    expect(byName.get("spawn_agent")!.inputSchema).not.toHaveProperty("oneOf");
+    expect(byName.get("wait_for_agent")!.inputSchema).not.toHaveProperty("oneOf");
     expect(byName.get("spawn_agent")!.inputSchema).toMatchObject({
-      oneOf: [
-        { type: "object", required: ["prompt"] },
-        { type: "object", required: ["tasks"] },
-      ],
+      type: "object",
+      properties: expect.objectContaining({
+        prompt: expect.anything(),
+        tasks: expect.anything(),
+      }),
     });
     expect(byName.get("get_agent")!.inputSchema).toMatchObject({ required: ["id"] });
     expect(byName.get("set_routing_preference")!.inputSchema).toMatchObject({
@@ -562,10 +568,11 @@ describe("subagent tool registration", () => {
       required: ["tags"],
     });
     expect(byName.get("wait_for_agent")!.inputSchema).toMatchObject({
-      oneOf: [
-        { type: "object", required: ["run_id"] },
-        { type: "object", required: ["run_ids"] },
-      ],
+      type: "object",
+      properties: expect.objectContaining({
+        run_id: expect.anything(),
+        run_ids: expect.anything(),
+      }),
     });
     expect(byName.get("get_status")!.inputSchema).toMatchObject({ required: ["run_id"] });
     expect(byName.get("cancel")!.inputSchema).toMatchObject({ required: ["run_id"] });
@@ -870,7 +877,7 @@ describe("subagent tool registration", () => {
     const result = await dispatchTool(
       "spawn_agent",
       {
-        tasks: Array.from({ length: 5 }, (_, index) => ({
+        tasks: Array.from({ length: MAX_CONCURRENT_CHILDREN_PER_PARENT + 1 }, (_, index) => ({
           prompt: `task ${index}`,
         })),
       },
@@ -878,8 +885,52 @@ describe("subagent tool registration", () => {
     );
 
     expect(result.isError).toBe(true);
-    expect(resultText(result)).toContain("at most 4");
+    expect(resultText(result)).toContain(`at most ${MAX_CONCURRENT_CHILDREN_PER_PARENT}`);
     expect(listSpawnableAgents).not.toHaveBeenCalled();
+  });
+
+  it("advertises, spawns, and waits for sixteen parallel tasks", async () => {
+    const { ctx } = makeToolContext();
+    const runs = Array.from({ length: 16 }, (_, index) => ({ runId: `run-${index}` }));
+    const results = runs.map(({ runId }) => ({
+      run_id: runId,
+      status: "completed" as const,
+      output: "done",
+    }));
+    const spawnMany = vi.fn<SubagentRunManager["spawnMany"]>(() => runs);
+    const waitForMany = vi.fn<SubagentRunManager["waitForMany"]>(async () => results);
+    ctx.runManager = { spawnMany, waitForMany } as unknown as SubagentRunManager;
+
+    for (const [name, field] of [
+      ["spawn_agent", "tasks"],
+      ["wait_for_agent", "run_ids"],
+    ] as const) {
+      expect(TOOLS.find((tool) => tool.name === name)?.inputSchema).toMatchObject({
+        properties: { [field]: { maxItems: 16 } },
+      });
+    }
+    expect(CROSSAGENT_MCP_INSTRUCTIONS_BASE).toContain("up to 16 independent agents");
+    const spawned = await dispatchTool(
+      "spawn_agent",
+      {
+        background: true,
+        tasks: runs.map(({ runId }) => ({ provider: "codex", prompt: runId })),
+      },
+      ctx,
+    );
+    expect(spawned.isError).not.toBe(true);
+    expect(spawnMany.mock.calls[0]?.[1]).toHaveLength(16);
+
+    const waited = await dispatchTool(
+      "wait_for_agent",
+      {
+        run_ids: runs.map(({ runId }) => runId),
+      },
+      ctx,
+    );
+    expect(waited.isError).not.toBe(true);
+    expect(JSON.parse(resultText(waited))).toEqual(results);
+    expect(waitForMany).toHaveBeenCalledOnce();
   });
 
   it("returns immediately when spawn_agent is explicitly backgrounded", async () => {
@@ -938,40 +989,93 @@ describe("subagent tool registration", () => {
       status: "completed",
       output: "done",
     });
-    expect(waitOptions).toEqual({ fullOutput: true, currentAttemptOnly: true });
+    expect(waitOptions).toEqual({ fullOutput: false, currentAttemptOnly: true });
   });
 
-  it("requests complete output for a foreground task batch", async () => {
-    const { ctx } = makeToolContext();
-    let waitOptions: unknown;
-    ctx.runManager = {
-      spawnMany: () => [{ runId: "run-1" }, { runId: "run-2" }],
-      waitForMany: async (
-        _runIds: readonly string[],
-        _timeoutMs: number,
-        _parentThreadId: string | undefined,
-        options: unknown,
-      ) => {
-        waitOptions = options;
-        return [
-          { run_id: "run-1", status: "completed" as const, output: "one" },
-          { run_id: "run-2", status: "completed" as const, output: "two" },
-        ];
-      },
-    } as unknown as SubagentRunManager;
+  it.each([false, true])(
+    "respects full_output=%s for a foreground task batch",
+    async (fullOutput) => {
+      const { ctx } = makeToolContext();
+      let waitOptions: unknown;
+      ctx.runManager = {
+        spawnMany: () => [{ runId: "run-1" }, { runId: "run-2" }],
+        waitForMany: async (
+          _runIds: readonly string[],
+          _timeoutMs: number,
+          _parentThreadId: string | undefined,
+          options: unknown,
+        ) => {
+          waitOptions = options;
+          return [
+            { run_id: "run-1", status: "completed" as const, output: "one" },
+            { run_id: "run-2", status: "completed" as const, output: "two" },
+          ];
+        },
+      } as unknown as SubagentRunManager;
 
-    await dispatchTool(
-      "spawn_agent",
-      {
-        tasks: [
-          { provider: "codex", prompt: "one" },
-          { provider: "claude", prompt: "two" },
-        ],
-      },
+      await dispatchTool(
+        "spawn_agent",
+        {
+          full_output: fullOutput,
+          tasks: [
+            { provider: "codex", prompt: "one" },
+            { provider: "claude", prompt: "two" },
+          ],
+        },
+        ctx,
+      );
+
+      expect(waitOptions).toEqual({ fullOutput: fullOutput, currentAttemptOnly: true });
+    },
+  );
+
+  it("preserves list_runs and exposes capacity only when requested", async () => {
+    const { ctx } = makeToolContext();
+    const runs = [{ run_id: "r", status: "running", can_steer: true }];
+    const capacity = { running: 1, limit: 16, available_slots: 15 };
+    ctx.runManager = {
+      listRuns: () => runs,
+      getCapacity: () => capacity,
+    } as unknown as SubagentRunManager;
+    expect(JSON.parse(resultText(await dispatchTool("list_runs", {}, ctx)))).toEqual(runs);
+    expect(
+      JSON.parse(resultText(await dispatchTool("list_runs", { include_capacity: true }, ctx))),
+    ).toEqual({ runs, capacity });
+  });
+
+  it("routes wait-any and rejects invalid modes", async () => {
+    const { ctx } = makeToolContext();
+    const waitForMany = vi.fn<SubagentRunManager["waitForMany"]>(async () => []);
+    ctx.runManager = { waitForMany } as unknown as SubagentRunManager;
+    await dispatchTool("wait_for_agent", { run_ids: ["a", "b"], wait_mode: "any" }, ctx);
+    expect(waitForMany.mock.calls[0]?.[4]).toBe("any");
+    expect(
+      (await dispatchTool("wait_for_agent", { run_ids: ["a"], wait_mode: "wrong" }, ctx)).isError,
+    ).toBe(true);
+    expect(waitForMany).toHaveBeenCalledOnce();
+  });
+
+  it("validates and routes steering with parent ownership", async () => {
+    const { ctx } = makeToolContext();
+    const steer = vi.fn<SubagentRunManager["steer"]>(async () => {});
+    ctx.runManager = { steer } as unknown as SubagentRunManager;
+    expect((await dispatchTool("steer_agent", { run_id: "r", prompt: "  " }, ctx)).isError).toBe(
+      true,
+    );
+    expect((await dispatchTool("steer_agent", { prompt: "focus" }, ctx)).isError).toBe(true);
+    expect(steer).not.toHaveBeenCalled();
+    const result = await dispatchTool(
+      "steer_agent",
+      { run_id: "r", prompt: "focus on tests" },
       ctx,
     );
-
-    expect(waitOptions).toEqual({ fullOutput: true, currentAttemptOnly: true });
+    expect(JSON.parse(resultText(result))).toEqual({ run_id: "r", status: "accepted" });
+    expect(steer).toHaveBeenCalledWith("r", "focus on tests", ctx.parentThreadId);
+    expect(TOOLS.find((tool) => tool.name === "steer_agent")?.annotations).toMatchObject({
+      readOnlyHint: false,
+      destructiveHint: true,
+      openWorldHint: true,
+    });
   });
 
   it("uses the highest-ranked available selection when provider details are omitted", async () => {
@@ -1188,5 +1292,61 @@ describe("subagent tool registration", () => {
         { run_id: "run-2", status: "completed", output: "two" },
       ],
     });
+  });
+});
+
+describe("union-free schema runtime enforcement", () => {
+  function trackingManager() {
+    let calls = 0;
+    const bump = () => {
+      calls += 1;
+    };
+    const manager = {
+      spawn: () => {
+        bump();
+        return { runId: "run-1" };
+      },
+      spawnMany: () => {
+        bump();
+        return [{ runId: "run-1" }];
+      },
+      waitFor: async () => {
+        bump();
+        return { status: "completed", output: "" };
+      },
+      waitForMany: async () => {
+        bump();
+        return [];
+      },
+    } as unknown as SubagentRunManager;
+    return { manager, count: () => calls };
+  }
+
+  it("rejects spawn_agent calls that pass both prompt and tasks", async () => {
+    const { ctx } = makeToolContext();
+    const { manager, count } = trackingManager();
+    ctx.runManager = manager;
+    const result = await dispatchTool(
+      "spawn_agent",
+      { provider: "codex", prompt: "solo", tasks: [{ prompt: "batched" }] },
+      ctx,
+    );
+    expect(result.isError).toBe(true);
+    expect(resultText(result)).toContain("not both");
+    expect(count()).toBe(0);
+  });
+
+  it("rejects wait_for_agent calls that pass both run_id and run_ids", async () => {
+    const { ctx } = makeToolContext();
+    const { manager, count } = trackingManager();
+    ctx.runManager = manager;
+    const result = await dispatchTool(
+      "wait_for_agent",
+      { run_id: "run-1", run_ids: ["run-2"] },
+      ctx,
+    );
+    expect(result.isError).toBe(true);
+    expect(resultText(result)).toContain("not both");
+    expect(count()).toBe(0);
   });
 });

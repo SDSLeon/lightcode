@@ -363,7 +363,7 @@ public enum RouteprojectU2DCommandRequest_26d57a3148: Codable, Sendable {
   }
 }
 
-public struct RouteprojectU2DCommandResponseU2DProjectU2DLastDraftConfig_8277cc81c1: Codable, Sendable, RemoteModelMetadata {
+public struct RouteprojectU2DCommandResponseU2DProjectU2DLastDraftConfig_a0f4181c86: Codable, Sendable, RemoteModelMetadata {
   public var agentKind: String
   public var approvalPolicy: RemoteField<String> = .missing
   public var approvalsReviewer: RemoteField<String> = .missing
@@ -373,6 +373,7 @@ public struct RouteprojectU2DCommandResponseU2DProjectU2DLastDraftConfig_8277cc8
   public var contextSize: RemoteField<String> = .missing
   public var crossagentMcp: RemoteField<Bool> = .missing
   public var effort: RemoteField<String> = .missing
+  public var executionEnvironment: RemoteField<ProcedurerollbackThreadConversationRequestU2DConfigU2DExecutionEnvironment_4cd2587996> = .missing
   public var fast: RemoteField<Bool> = .missing
   public var mode: RemoteField<ProcedurerollbackThreadConversationRequestU2DConfigU2DMode_01e21946e9> = .missing
   public var model: String
@@ -390,6 +391,7 @@ public struct RouteprojectU2DCommandResponseU2DProjectU2DLastDraftConfig_8277cc8
     .init(wireName: "contextSize", typeName: "String", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "crossagentMcp", typeName: "Bool", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "effort", typeName: "String", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
+    .init(wireName: "executionEnvironment", typeName: "ProcedurerollbackThreadConversationRequestU2DConfigU2DExecutionEnvironment_4cd2587996", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "fast", typeName: "Bool", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "mode", typeName: "ProcedurerollbackThreadConversationRequestU2DConfigU2DMode_01e21946e9", required: false, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
     .init(wireName: "model", typeName: "String", required: true, nullable: false, minimum: nil, maximum: nil, minLength: nil, maxLength: nil, minItems: nil, maxItems: nil, pattern: nil, format: nil, semanticValidatorIds: []),
@@ -408,6 +410,7 @@ public struct RouteprojectU2DCommandResponseU2DProjectU2DLastDraftConfig_8277cc8
     case contextSize = "contextSize"
     case crossagentMcp = "crossagentMcp"
     case effort = "effort"
+    case executionEnvironment = "executionEnvironment"
     case fast = "fast"
     case mode = "mode"
     case model = "model"

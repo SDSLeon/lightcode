@@ -9,6 +9,8 @@ import { resolveFactoryCliToken } from "./factoryCredentials";
 import { resolveGeminiToken } from "./geminiCredentials";
 import { refreshRejectedGrokToken, resolveFreshGrokToken } from "./grokTokenRefresh";
 import { resolveKimiToken } from "./kimiCredentials";
+import { resolveMuseToken } from "./museCredentials";
+import { resolveQoderToken } from "./qoderCredentials";
 import { resolveQwenUsageToken } from "./qwenCredentials";
 import { resolveZaiToken } from "./zaiCredentials";
 
@@ -45,7 +47,9 @@ function tokenResolvers(
     factory: async () => resolveFactoryCliToken(),
     zai: resolveZaiToken,
     kimi: resolveKimiToken,
+    muse: resolveMuseToken,
     qwen: () => resolveQwenUsageToken(settingsPath),
+    qoder: resolveQoderToken,
   };
 }
 

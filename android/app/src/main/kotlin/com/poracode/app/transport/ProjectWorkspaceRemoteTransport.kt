@@ -57,6 +57,25 @@ interface ProjectWorkspaceRemoteGateway {
         baseModifiedAtMs: Double,
     ): ProjectFileWriteResult
 
+    suspend fun createProjectEntry(location: ProjectLocation, path: String, type: String): Unit =
+        throw UnsupportedOperationException("Project entry mutations are unavailable")
+
+    suspend fun renameProjectEntry(
+        location: ProjectLocation,
+        path: String,
+        nextName: String,
+    ): Unit =
+        throw UnsupportedOperationException("Project entry mutations are unavailable")
+
+    suspend fun moveProjectEntry(
+        location: ProjectLocation,
+        path: String,
+        nextParentPath: String?,
+    ): Unit = throw UnsupportedOperationException("Project entry mutations are unavailable")
+
+    suspend fun deleteProjectEntry(location: ProjectLocation, path: String): Unit =
+        throw UnsupportedOperationException("Project entry mutations are unavailable")
+
     suspend fun getGitStatus(
         location: ProjectLocation,
         detail: GitStatusDetail?,

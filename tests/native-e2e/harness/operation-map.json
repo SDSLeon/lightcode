@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
   "contract": "poracode.remote",
-  "protocolVersion": 8,
+  "protocolVersion": 9,
   "bindingFormatVersion": 2,
-  "manifestHash": "sha256:f9f4b7ec72dec44b791e9550c393d3e0b09f34956f65a4f5fb3998e37ed19487",
-  "keyCount": 207,
+  "manifestHash": "sha256:50eda066b0b8762cf0ce92df881b6aa54603f4c2c0de7958c2f0500fd0499e2b",
+  "keyCount": 208,
   "counts": {
     "route": 61,
     "procedure": 100,
     "ws-client": 8,
     "ws-server": 9,
     "replay": 15,
-    "runtime": 14
+    "runtime": 15
   },
   "operations": {
     "procedure:beginMcpServerOauth": {
@@ -546,13 +546,13 @@
       "kind": "route",
       "id": "ports-read"
     },
-    "route:pr-watch-check": {
-      "kind": "route",
-      "id": "pr-watch-check"
-    },
     "route:pr-watch-agent-sync": {
       "kind": "route",
       "id": "pr-watch-agent-sync"
+    },
+    "route:pr-watch-check": {
+      "kind": "route",
+      "id": "pr-watch-check"
     },
     "route:pr-watch-delete": {
       "kind": "route",
@@ -717,6 +717,10 @@
     "route:websocket-ticket": {
       "kind": "route",
       "id": "websocket-ticket"
+    },
+    "runtime:background_tasks.changed": {
+      "kind": "runtime",
+      "id": "background_tasks.changed"
     },
     "runtime:content.delta": {
       "kind": "runtime",

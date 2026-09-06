@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">미러링 중지</string>
     <string name="browser_mirror_empty">열려 있는 브라우저 탭이 없습니다.</string>
     <string name="browser_mirror_stopped">브라우저 미러링이 중지되었습니다.</string>
+    <string name="browser_mirror_move_left">왼쪽으로 이동</string>
+    <string name="browser_mirror_move_right">오른쪽으로 이동</string>
+    <string name="browser_mirror_privacy_notice">미러링된 페이지에는 개인 정보가 표시될 수 있습니다. 이미지는 이 기기에만 저장되며 이 화면을 벗어나면 삭제됩니다.</string>
 </resources>

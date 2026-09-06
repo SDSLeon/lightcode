@@ -298,6 +298,12 @@ msgstr "{0}件のプロンプト - {when}"
 msgid "{0} prompts - {when}"
 msgstr "{0}件のプロンプト - {when}"
 
+#. placeholder {0}: agent.label
+#. placeholder {1}: update.targetVersion
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "{0} queued for update to v{1}"
+msgstr "{0}はv{1}への更新待ち"
+
 #. placeholder {0}: item.runCount.toLocaleString()
 #: src/renderer/views/ProfileOverlay/parts/PluginUsage.tsx
 msgid "{0} run"
@@ -316,7 +322,7 @@ msgstr "{0}回の実行"
 #~ msgstr "{0} 件のスレッド"
 
 #. placeholder {0}: formatTokens(snapshot.tokens.total)
-#: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
+#: src/renderer/components/providers/UsageCostLine.tsx
 msgid "{0} tokens"
 msgstr "{0}トークン"
 
@@ -689,7 +695,7 @@ msgid "<0>{passed}</0> of {0} checks passed"
 msgstr "<0>{passed}</0> 件の{0}チェックに合格しました"
 
 #. placeholder {0}: snapshot.cost.period
-#: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
+#: src/renderer/components/providers/UsageCostLine.tsx
 msgid "~{money}{tokens} · {0} · est."
 msgstr "~{money}{tokens}·{0}· 推定。"
 
@@ -771,6 +777,10 @@ msgstr "マージの中止"
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 msgid "About"
 msgstr "バージョン情報"
+
+#: src/renderer/views/SettingsOverlay/parts/settingsOptions.ts
+msgid "Above the composer"
+msgstr "コンポーザーの上"
 
 #: src/renderer/views/FileEditorOverlay/parts/FileEditorPane/parts/mergeConflict/codeLensProvider.ts
 msgid "Accept Both Changes"
@@ -1162,6 +1172,8 @@ msgstr "エージェント:{description}"
 msgid "Agent: {subagent}"
 msgstr "エージェント:{subagent}"
 
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/views/SettingsOverlay/parts/MobileSettingsIndex.tsx
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
@@ -1374,6 +1386,10 @@ msgstr "別のチャットはこれと同じツリーを使用します。ファ
 msgid "Another operation for this experiment is still running."
 msgstr "この実験の別の操作がまだ実行中です。"
 
+#: src/renderer/components/thread/ThreadRuntimeRequestPanel/ThreadRuntimeRequestPanel.tsx
+msgid "Answer every question to submit"
+msgstr "送信するにはすべての質問に回答してください"
+
 #: src/renderer/components/providers/antigravity/manifest.ts
 msgid "Antigravity"
 msgstr "Antigravity"
@@ -1419,8 +1435,9 @@ msgid "App Browser"
 msgstr "アプリブラウザ"
 
 #: src/renderer/components/mcp/McpServersManager.tsx
-msgid "App Controls"
-msgstr "アプリコントロール"
+#: src/renderer/components/plugins/pluginCopy.ts
+#~ msgid "App Controls"
+#~ msgstr "アプリコントロール"
 
 #: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/MobileSettingsIndex.tsx
@@ -1568,16 +1585,16 @@ msgid "Attach"
 msgstr "添付する"
 
 #: src/renderer/components/thread/ContinueInProviderDialog.tsx
-msgid "Attach files"
-msgstr "ファイルを添付する"
+#~ msgid "Attach files"
+#~ msgstr "ファイルを添付する"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserToolbar.tsx
 msgid "Attach to thread"
 msgstr "スレッドに添付"
 
 #: src/renderer/components/thread/ThreadTodoDock.tsx
-msgid "Attach todo dock to composer"
-msgstr "todo ドックをコンポーザーにアタッチする"
+#~ msgid "Attach todo dock to composer"
+#~ msgstr "todo ドックをコンポーザーにアタッチする"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Attached browser selection."
@@ -1768,6 +1785,7 @@ msgstr "レビュー保留中"
 
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 #: src/renderer/components/layout/MobilePageHeader.tsx
 #: src/renderer/views/FileEditorOverlay/FileEditorOverlay.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsView.tsx
@@ -1810,9 +1828,16 @@ msgstr "バックグラウンドプロセスが実行されていません"
 msgid "Background process restarted"
 msgstr "バックグラウンドプロセスが再起動されました"
 
-#: src/renderer/components/thread/ChatPane/parts/items/ActiveSubAgentTile.tsx
-#~ msgid "Background tasks"
-#~ msgstr "バックグラウンドタスク"
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Background task"
+msgstr "バックグラウンドタスク"
+
+#: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+msgid "Background tasks"
+msgstr "バックグラウンドタスク"
 
 #: src/renderer/components/experiment/NewExperimentModal.tsx
 #~ msgid "Base branch"
@@ -1940,6 +1965,11 @@ msgstr "ブランチ"
 msgid "Bring back to panel"
 msgstr "パネルに戻す"
 
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Bring every {0} runtime up to date"
+msgstr "{0}のすべてのランタイムを最新にします"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserDockSlot.tsx
 msgid "Bring it back into this panel, or jump to the window it’s running in."
 msgstr "このパネルに戻すか、実行中のウィンドウに移動します。"
@@ -2027,8 +2057,8 @@ msgstr "ブラウザーでサインイン"
 #~ msgstr "ブラウザタブ"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Browser Tools"
-msgstr "ブラウザツール"
+#~ msgid "Browser Tools"
+#~ msgstr "ブラウザツール"
 
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Budget limit reached"
@@ -2040,6 +2070,7 @@ msgid "Building diff…"
 msgstr "差分を作成中…"
 
 #: src/renderer/components/mcp/McpServersManager.tsx
+#: src/renderer/components/plugins/PluginDetail.tsx
 #: src/renderer/components/skills/SkillsManager.tsx
 msgid "Built-in"
 msgstr "組み込み"
@@ -2208,6 +2239,7 @@ msgstr "プロジェクトフォルダーを変更"
 msgid "Change project icon"
 msgstr "プロジェクトアイコンを変更"
 
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 #: src/renderer/components/thread/ThreadDraftComposerArea.tsx
 msgid "Change servers in provider settings"
 msgstr "プロバイダー設定でサーバーを変更"
@@ -2488,8 +2520,8 @@ msgid "Chrome MCP enabled for this thread"
 msgstr "このスレッドに対して Chrome MCP が有効になっています"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Chrome Tools"
-msgstr "Chrome ツール"
+#~ msgid "Chrome Tools"
+#~ msgstr "Chrome ツール"
 
 #: src/renderer/views/GitHubActionsView/GitHubActionsView.tsx
 msgid "CI Actions: Workflows"
@@ -2613,6 +2645,7 @@ msgstr "クローン作成中…"
 #: src/renderer/components/common/BottomSheet.tsx
 #: src/renderer/components/mcp/McpServersManager.tsx
 #: src/renderer/components/skills/SkillViewModal.tsx
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/views/ExperimentView/parts/ExperimentJudgeRunDialog.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserPanel.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/DevTerminalPanel/parts/MobileTerminalLayout.tsx
@@ -2631,6 +2664,10 @@ msgstr "{purposeNoun}ターミナルを閉じる"
 #: src/mobile/views/ManageProjectsView.tsx
 #~ msgid "Close add project"
 #~ msgstr "プロジェクトの追加を閉じる"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Close background tasks"
+msgstr "バックグラウンドタスクを閉じる"
 
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/BrowserPanel.tsx
 msgid "Close browser"
@@ -2828,7 +2865,9 @@ msgstr "コードがコピーされました。"
 msgid "Codex"
 msgstr "Codex"
 
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/components/thread/ThreadErrorDock.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 msgid "Collapse"
 msgstr "折りたたむ"
@@ -2848,6 +2887,10 @@ msgstr "すべて折りたたむ"
 #: src/renderer/views/FileEditorOverlay/parts/ProjectTreeView/ProjectTreeView.tsx
 msgid "Collapse all folders"
 msgstr "すべてのフォルダーを折りたたむ"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Collapse background tasks"
+msgstr "バックグラウンドタスクを折りたたむ"
 
 #: src/renderer/components/thread/ThreadComposerSection.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/MobileQuickCompose.tsx
@@ -2870,6 +2913,10 @@ msgstr "フッターを折りたたむ"
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserTabStrip.tsx
 msgid "Collapse group"
 msgstr "グループを折りたたむ"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Collapse images"
+msgstr "画像を折りたたむ"
 
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/TerminalSettings.tsx
@@ -3056,6 +3103,7 @@ msgstr "コンポーザーの操作"
 #: src/renderer/components/composer/ComposerAddMenu.tsx
 #: src/renderer/components/mcp/McpServersManager.tsx
 #: src/renderer/components/plugins/pluginCopy.ts
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 #: src/renderer/components/thread/ThreadComposerSection.tsx
 #: src/renderer/components/thread/ThreadDraftComposerArea.tsx
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
@@ -3071,12 +3119,28 @@ msgstr "コンピュータ操作"
 #~ msgstr "Computer Use はペアリングしたデスクトップを操作します。エージェントがクリックや入力をしている間は、そのマシンを使わないでください。"
 
 #: src/renderer/components/composer/AttachmentBar.tsx
-msgid "Computer Use enabled — controls the paired desktop; don't use that machine while the agent is controlling it"
-msgstr "Computer Use が有効です — ペアリングしたデスクトップを操作します。エージェントが操作中はそのマシンを使わないでください"
+#~ msgid "Computer Use enabled — controls the paired desktop; don't use that machine while the agent is controlling it"
+#~ msgstr "Computer Use が有効です — ペアリングしたデスクトップを操作します。エージェントが操作中はそのマシンを使わないでください"
 
 #: src/renderer/components/composer/AttachmentBar.tsx
-msgid "Computer Use enabled — interactive actions take over the desktop; don't use the machine while the agent is controlling it"
-msgstr "Computer Use が有効です — インタラクティブ操作はデスクトップを占有します。エージェントが操作中はマシンを使わないでください"
+#~ msgid "Computer Use enabled — interactive actions take over the desktop; don't use the machine while the agent is controlling it"
+#~ msgstr "Computer Use が有効です — インタラクティブ操作はデスクトップを占有します。エージェントが操作中はマシンを使わないでください"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+#~ msgid "Computer Use enabled — the agent drives apps on the paired desktop in the background; it only takes over that desktop's mouse and keyboard when a step explicitly needs the foreground"
+#~ msgstr "Computer Use が有効です — エージェントはペアリング先のデスクトップ上のアプリをバックグラウンドで操作し、手順でフォアグラウンドが明示的に必要な場合にのみ、そのデスクトップのマウスとキーボードを操作します"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+msgid "Computer Use enabled — the agent drives apps on the paired desktop in the background; it only takes over that desktop's mouse and keyboard when a step explicitly needs the foreground or when that desktop's system-approved portal requires it"
+msgstr "Computer Use は有効です — エージェントはペアリング先のデスクトップ上のアプリをバックグラウンドで操作します。手順でフォアグラウンドが明示的に必要な場合、またはそのデスクトップのシステム承認済みポータルで必要な場合にのみ、マウスとキーボードを引き継ぎます"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+#~ msgid "Computer Use enabled — the agent drives desktop apps in the background; it only takes over the mouse and keyboard when a step explicitly needs the foreground"
+#~ msgstr "Computer Use が有効です — エージェントはデスクトップアプリをバックグラウンドで操作し、手順でフォアグラウンドが明示的に必要な場合にのみ、マウスとキーボードを操作します"
+
+#: src/renderer/components/composer/AttachmentBar.tsx
+msgid "Computer Use enabled — the agent drives desktop apps in the background; it only takes over the mouse and keyboard when a step explicitly needs the foreground or when a system-approved desktop portal requires it"
+msgstr "Computer Use は有効です — エージェントはデスクトップアプリをバックグラウンドで操作します。手順でフォアグラウンドが明示的に必要な場合、またはシステム承認済みのデスクトップポータルで必要な場合にのみ、マウスとキーボードを引き継ぎます"
 
 #: src/renderer/components/composer/AttachmentBar.tsx
 #~ msgid "Computer Use enabled for this thread"
@@ -3303,8 +3367,12 @@ msgid "Control an external Chrome browser."
 msgstr "外部の Chrome ブラウザを操作します。"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Control desktop apps and complete visual workflows."
-msgstr "デスクトップアプリを操作し、視覚的なワークフローを完了します。"
+#~ msgid "Control desktop apps and complete visual workflows."
+#~ msgstr "デスクトップアプリを操作し、視覚的なワークフローを完了します。"
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Control desktop apps in the background and complete visual workflows."
+msgstr "デスクトップアプリをバックグラウンドで操作し、視覚的なワークフローを完了します。"
 
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
 msgid "Control the desktop."
@@ -3315,8 +3383,8 @@ msgid "Control which files appear in the @file mention search. Per-project overr
 msgstr "@file メンション検索に表示されるファイルを制御します。プロジェクトごとのオーバーライドは、各プロジェクトの設定に反映されます。"
 
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Controls the paired desktop while the agent clicks or types"
-msgstr "エージェントがクリックや入力をしている間、ペアリングしたデスクトップを操作します"
+#~ msgid "Controls the paired desktop while the agent clicks or types"
+#~ msgstr "エージェントがクリックや入力をしている間、ペアリングしたデスクトップを操作します"
 
 #: src/renderer/views/PrReviewOverlay/parts/PrTabsPill.tsx
 #: src/renderer/views/PrReviewOverlay/PrReviewOverlay.tsx
@@ -4431,6 +4499,10 @@ msgstr "左にドッキング"
 msgid "Dock right"
 msgstr "右にドッキング"
 
+#: src/renderer/components/layout/PanelDock/panelTabMeta.ts
+msgid "Docks"
+msgstr "ドック"
+
 #: src/renderer/views/SettingsOverlay/parts/AcpRegistrySettings.tsx
 msgid "Docs"
 msgstr "ドキュメント"
@@ -4512,6 +4584,22 @@ msgstr "ドラッグして並べ替えます。ダブルクリックして編集
 #: src/renderer/views/SettingsOverlay/parts/RemoteHostFolderPicker.tsx
 msgid "Drives"
 msgstr "ドライブ"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Drives apps on the paired desktop in the background; takes over that desktop only when the agent asks for the foreground"
+#~ msgstr "ペアリング先のデスクトップ上のアプリをバックグラウンドで操作し、エージェントがフォアグラウンドを要求した場合にのみ、そのデスクトップを操作します"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "Drives apps on the paired desktop in the background; takes over that desktop only when the agent asks for the foreground or its system-approved portal requires it"
+msgstr "ペアリング先のデスクトップ上のアプリをバックグラウンドで操作します。エージェントがフォアグラウンドを要求した場合、またはシステム承認済みポータルで必要な場合にのみ、そのデスクトップを引き継ぎます"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Drives desktop apps in the background; takes over the desktop only when the agent asks for the foreground"
+#~ msgstr "デスクトップアプリをバックグラウンドで操作し、エージェントがフォアグラウンドを要求した場合にのみデスクトップを操作します"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "Drives desktop apps in the background; takes over the desktop only when the agent asks for the foreground or a system-approved portal requires it"
+msgstr "デスクトップアプリをバックグラウンドで操作します。エージェントがフォアグラウンドを要求した場合、またはシステム承認済みポータルで必要な場合にのみ、デスクトップを引き継ぎます"
 
 #: src/renderer/components/thread/ThreadComposer.tsx
 msgid "Drop here to attach"
@@ -4696,9 +4784,17 @@ msgstr "有効"
 msgid "Enabled agents, model visibility and order"
 msgstr "有効なエージェント、モデルの表示と順序"
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Enabled MCP servers stay on for new threads"
+msgstr "有効なMCPサーバーは新しいスレッドでも有効なままです"
+
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Enabled servers stay on for new threads"
-msgstr "有効なサーバーは新しいスレッドでも有効なままです"
+msgid "Enabled plugins stay on for new threads"
+msgstr "有効なプラグインは新しいスレッドでも有効なままです"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Enabled servers stay on for new threads"
+#~ msgstr "有効なサーバーは新しいスレッドでも有効なままです"
 
 #: src/renderer/views/SettingsOverlay/parts/BrowserSettings.tsx
 msgid "Enables <0>cookies</0> and <1>storage</1>. Cookies can contain session tokens and storage often holds auth state — only enable when you trust both the agent and the sites it visits."
@@ -4870,6 +4966,11 @@ msgstr "同期から除外"
 msgid "Exclude patterns"
 msgstr "パターンを除外する"
 
+#. placeholder {0}: parsed.exitCode
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
+msgid "Exit code {0}"
+msgstr "終了コード {0}"
+
 #: src/renderer/components/thread/ChatPane/parts/items/toolDisplay.ts
 msgid "Exit plan mode"
 msgstr "計画モードを終了する"
@@ -4889,7 +4990,9 @@ msgstr "計画モードを終了する"
 msgid "Exited with code {0}. Close to retry."
 msgstr "コード{0}で終了しました。閉じて再試行してください。"
 
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
 #: src/renderer/components/thread/ThreadErrorDock.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 msgid "Expand"
 msgstr "拡大する"
@@ -4901,6 +5004,10 @@ msgstr "{label}を展開する"
 #: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsagePanelHeaderActions.tsx
 msgid "Expand all"
 msgstr "すべて展開"
+
+#: src/renderer/components/thread/ThreadBackgroundTasksDock.tsx
+msgid "Expand background tasks"
+msgstr "バックグラウンドタスクを展開"
 
 #: src/renderer/components/thread/ThreadErrorDock.tsx
 msgid "Expand error"
@@ -4918,6 +5025,10 @@ msgstr "フッターを展開する"
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserTabStrip.tsx
 msgid "Expand group"
 msgstr "グループを展開"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Expand images"
+msgstr "画像を展開"
 
 #: src/renderer/views/SettingsOverlay/parts/RemoteAccessSettings.tsx
 msgid "Expand to review or revoke access."
@@ -5053,6 +5164,7 @@ msgstr "Factory Droid"
 msgid "failed"
 msgstr "失敗しました"
 
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/SubAgentOverlay.tsx
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 #: src/renderer/utils/prStatus.ts
@@ -5184,6 +5296,7 @@ msgstr "ファイルが大きすぎて表示できません（{0, plural, one {#
 msgid "File uses an unsupported encoding."
 msgstr "ファイルはサポートされていないエンコーディングを使用しています。"
 
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/layout/PanelDock/panelTabMeta.ts
 #: src/renderer/components/thread/ThreadToolRail.tsx
 #: src/renderer/views/MainView/parts/MobileWorkspacePage.tsx
@@ -5314,8 +5427,12 @@ msgid "First-class Kimi Code CLI integration using Poracode's native runtime."
 msgstr "Poracode のネイティブ ランタイムを使用したファーストクラスの Kimi Code CLI 統合。"
 
 #: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
-msgid "First-class Muse Code CLI integration using Poracode's native terminal runtime."
-msgstr "Poracode のネイティブなターミナル ランタイムを使用したファーストクラスの Muse Code CLI 統合。"
+#~ msgid "First-class Muse Code CLI integration using Poracode's native terminal runtime."
+#~ msgstr "Poracode のネイティブなターミナル ランタイムを使用したファーストクラスの Muse Code CLI 統合。"
+
+#: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
+msgid "First-class Muse Code integration using Poracode's native terminal and GUI runtimes."
+msgstr "Poracode のネイティブなターミナルおよび GUI ランタイムを使用したファーストクラスの Muse Code 統合。"
 
 #: src/renderer/views/SettingsOverlay/parts/agentRegistryNative.ts
 msgid "First-class OpenCode integration using Poracode's native SDK runtime."
@@ -5722,6 +5839,8 @@ msgid "Go forward in navigation history"
 msgstr "ナビゲーション履歴で進む"
 
 #: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Goal"
 msgstr "目標"
@@ -5729,6 +5848,10 @@ msgstr "目標"
 #: src/renderer/components/thread/ThreadGoalControls.tsx
 msgid "Goal objective"
 msgstr "目標の内容"
+
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#~ msgid "Goal, plan, agents, and background tasks for this thread."
+#~ msgstr "このスレッドのゴール、プラン、エージェント、バックグラウンドタスク。"
 
 #: src/mobile/views/DesktopWorkspacePanel.tsx
 #: src/renderer/components/layout/UnifiedRightPanel.tsx
@@ -5822,6 +5945,11 @@ msgstr "非表示の再開可能なスレッドは 5 分ごとにスイープさ
 #: src/renderer/views/MainView/parts/Sidebar/parts/WhatsNewButton.tsx
 msgid "Hide"
 msgstr "隠す"
+
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+msgid "Hide {label}"
+msgstr "{label}を隠す"
 
 #: src/renderer/views/SettingsOverlay/parts/UsageProviderRow.tsx
 msgid "Hide {label} circle in sidebar"
@@ -5990,6 +6118,9 @@ msgstr "画像"
 msgid "Image preview"
 msgstr "画像プレビュー"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/ProjectIconPicker.tsx
 msgid "Images"
 msgstr "画像"
@@ -6150,6 +6281,10 @@ msgstr "このプロジェクト内"
 msgid "Inspect canonical runtime items"
 msgstr "正規のランタイム項目を検査する"
 
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Inspect threads and terminal panes, and drive git, pull requests, and schedules."
+msgstr "スレッドとターミナルパネルを確認し、git、プルリクエスト、スケジュールを操作します。"
+
 #: src/renderer/views/LoginTerminalOverlay/LoginTerminalOverlay.tsx
 msgid "install"
 msgstr "インストールする"
@@ -6180,6 +6315,10 @@ msgstr "{0}をインストールしてスレッドを作成します。"
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 msgid "Install {0}."
 msgstr "{0}をインストールします。"
+
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
+msgid "Install {badge}"
+msgstr "{badge}をインストール"
 
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 #~ msgid "Install {env}"
@@ -6382,7 +6521,7 @@ msgstr "内部コマンドとエージェント"
 msgid "Interrupted"
 msgstr "中断"
 
-#: src/renderer/state/slices/runtimeEventSlice.ts
+#: src/renderer/state/slices/staleSubAgents.ts
 msgid "Interrupted: agent session ended before completion."
 msgstr "中断されました: エージェントセッションが完了前に終了しました。"
 
@@ -6826,6 +6965,10 @@ msgstr "管理"
 #~ msgid "Manage global and project agent skills, including skills imported from other providers."
 #~ msgstr "他のプロバイダーからインポートしたスキルを含む、グローバルおよびプロジェクトのエージェントスキルを管理します。"
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Manage MCP servers"
+msgstr "MCPサーバーを管理"
+
 #: src/renderer/views/MainView/parts/Sidebar/parts/SidebarRemoteServers.tsx
 #~ msgid "Manage remote environments"
 #~ msgstr "リモート環境を管理"
@@ -6989,10 +7132,13 @@ msgstr "MCP"
 #~ msgid "MCP Market"
 #~ msgstr "MCP Market"
 
-#: src/renderer/components/thread/ThreadComposerSection.tsx
-#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
 msgid "MCP server"
 msgstr "MCPサーバー"
+
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "MCP server actions"
+msgstr "MCPサーバーの操作"
 
 #: src/renderer/components/mcp/McpServerEditor.tsx
 msgid "MCP server arguments"
@@ -7042,13 +7188,15 @@ msgstr "MCPサーバーのタイムアウト（ミリ秒）"
 msgid "MCP server URL"
 msgstr "MCPサーバーのURL"
 
-#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/plugins/PluginDetail.tsx
 #: src/renderer/views/SettingsOverlay/parts/OpenCodeProviderSettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/ProfileSettings.tsx
 msgid "MCP servers"
 msgstr "MCPサーバー"
 
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/McpSection.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/MobileProjectSettingsIndex.tsx
 #: src/renderer/views/ProjectSettingsOverlay/parts/SettingsSidebar.tsx
@@ -7310,6 +7458,7 @@ msgstr "モデル"
 msgid "Modes"
 msgstr "モード"
 
+#: src/renderer/components/layout/UnifiedRightPanel.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/MobileHomeActions.tsx
 #: src/renderer/views/MainView/parts/Sidebar/parts/SidebarFooterNav.tsx
 #: src/renderer/views/ProfileOverlay/parts/ActivityHeatmap.tsx
@@ -7423,8 +7572,8 @@ msgstr "変更を含めてワークツリーに移動"
 #~ msgstr "ワークツリーに移動…"
 
 #: src/renderer/components/thread/ThreadTodoDock.tsx
-msgid "Move todo dock to right panel"
-msgstr "Todo ドックを右側のパネルに移動します"
+#~ msgid "Move todo dock to right panel"
+#~ msgstr "Todo ドックを右側のパネルに移動します"
 
 #. placeholder {0}: fallback.name
 #: src/renderer/actions/workspaceActions.ts
@@ -7978,9 +8127,13 @@ msgstr "一致するスケジュールはありません。"
 msgid "No matching threads"
 msgstr "一致するスレッドがありません"
 
-#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
 msgid "No MCP servers are enabled for this run"
 msgstr "この実行で有効な MCP サーバーはありません"
+
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "No MCP servers configured"
+msgstr "MCPサーバーが設定されていません"
 
 #: src/renderer/components/mcp/McpExternalImportModal.tsx
 msgid "No MCP servers found in this scope."
@@ -8023,6 +8176,10 @@ msgstr "パターンはありません。"
 #: src/renderer/components/thread/ChatPane/parts/items/WorkflowOverlayBody.tsx
 msgid "No phases yet."
 msgstr "まだフェーズはありません。"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+msgid "No plugins are enabled for this run"
+msgstr "この実行で有効なプラグインはありません"
 
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 msgid "No plugins match your search."
@@ -8170,6 +8327,10 @@ msgstr "スレッドがありません"
 msgid "No threads yet."
 msgstr "まだスレッドがありません。"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "no verdict arrived — the CLI may have blocked /goal (workspace trust or hooks settings) or the evaluator could not run"
+msgstr "判定が届きませんでした — CLIが/goalをブロックしたか（ワークスペースの信頼またはフック設定）、評価器を実行できませんでした"
+
 #: src/renderer/components/providers/usageFormat.ts
 msgid "No windows reported"
 msgstr "ウィンドウは報告されませんでした"
@@ -8219,6 +8380,10 @@ msgstr "このマシンではまだ検出されていません。"
 #: src/renderer/components/thread/AgentDiscoveryScreen.tsx
 msgid "Not found"
 msgstr "見つかりません"
+
+#: src/renderer/views/SettingsOverlay/parts/nativeAgentRuntimes.ts
+msgid "not installed"
+msgstr "未インストール"
 
 #: src/renderer/components/providers/CombinedRuntimeVersionList.tsx
 #: src/renderer/views/SettingsOverlay/parts/antigravityRuntimeInstall.ts
@@ -8301,7 +8466,6 @@ msgid "Official sources only"
 msgstr "公式ソースのみ"
 
 #: src/renderer/components/common/RemoteServerStatusDot.tsx
-#: src/renderer/views/SettingsOverlay/parts/machineScope/MachineSelect.tsx
 msgid "Offline"
 msgstr "オフライン"
 
@@ -8496,7 +8660,14 @@ msgstr "Git レビューを開く"
 msgid "Open git review as a right-side panel or a full page."
 msgstr "git review を右側のパネルまたはページ全体として開きます。"
 
+#. placeholder {0}: index + 1
+#. placeholder {1}: gallery.length
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Open image {0} of {1}"
+msgstr "画像 {0}/{1} を開く"
+
 #: src/renderer/components/thread/ChatPane/parts/items/ImageCard.tsx
+#: src/renderer/components/thread/ThreadImagesDock.tsx
 msgid "Open image preview"
 msgstr "画像のプレビューを開く"
 
@@ -8657,6 +8828,10 @@ msgstr "モデルピッカーを開く"
 msgid "OpenCode"
 msgstr "OpenCode"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "OpenCode request failed, retrying..."
+msgstr "OpenCode リクエストが失敗しました、再試行しています..."
+
 #. placeholder {0}: request.receivedAt
 #. placeholder {1}: index + 1
 #: src/renderer/components/thread/ChatPane/ChatRuntimeDebugPanel.tsx
@@ -8793,8 +8968,8 @@ msgid "Pair a phone, tablet, or browser with this desktop."
 msgstr "このデスクトップとスマートフォン、タブレット、またはブラウザをペアリングします。"
 
 #: src/renderer/views/SettingsOverlay/parts/machineScope/MachineSelect.tsx
-msgid "Pair a remote machine…"
-msgstr "リモートマシンをペアリング…"
+#~ msgid "Pair a remote machine…"
+#~ msgstr "リモートマシンをペアリング…"
 
 #: src/mobile/components.tsx src/mobile/remoteConnectionState.ts
 #~ msgid "Pair again"
@@ -9080,9 +9255,10 @@ msgstr "固定された"
 msgid "Pinned task routes"
 msgstr "固定されたタスクルート"
 
-#: src/renderer/components/layout/PanelDock/panelTabMeta.ts
 #: src/renderer/components/mobileComposer/ComposerInfoChips.tsx
 #: src/renderer/components/providers/composerControlBuilders.tsx
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/components/thread/ThreadTodoDock.tsx
 #: src/renderer/views/SettingsOverlay/parts/CursorProviderSettings.tsx
 msgid "Plan"
@@ -9104,13 +9280,16 @@ msgid "Play notification sound"
 msgstr "通知音を鳴らす"
 
 #: src/renderer/components/skills/SkillsManager.tsx
-#: src/renderer/components/skills/useSkills.ts
 msgid "Plugin"
 msgstr "プラグイン"
 
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 msgid "Plugin folder"
 msgstr "プラグインフォルダ"
+
+#: src/renderer/components/mcp/McpServersManager.tsx
+msgid "Plugin servers"
+msgstr "プラグインサーバー"
 
 #: src/renderer/components/plugins/pluginCopy.ts
 msgid "plugin.json could not be read as JSON."
@@ -9128,6 +9307,8 @@ msgstr "plugin.json は Agent Plugins 仕様として正しくありません。
 msgid "plugin.json targets an Agent Plugins version this build does not support."
 msgstr "plugin.json はこのビルドが対応していない Agent Plugins バージョンを指定しています。"
 
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/components/plugins/PluginMarketplace.tsx
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
@@ -9150,6 +9331,14 @@ msgstr "このプロファイルを、カスタムの環境変数・モデル名
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 msgid "Popular editor themes adapted to Poracode. Each follows the light or dark mode above."
 msgstr "人気のエディター テーマを Poracode に適合させました。それぞれは上記のライト モードまたはダーク モードに従います。"
+
+#: src/renderer/components/mcp/McpServersManager.tsx
+#: src/renderer/components/plugins/pluginCopy.ts
+#: src/renderer/components/thread/ContinueInProviderDialog.tsx
+#: src/renderer/components/thread/ThreadComposerSection.tsx
+#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+msgid "Poracode"
+msgstr "Poracode"
 
 #: src/renderer/views/SettingsOverlay/parts/SshConnectionForm.tsx
 msgid "Poracode and your agents run on the remote machine. SSH is used only to start the remote environment and secure its local tunnel."
@@ -9375,10 +9564,15 @@ msgstr "プライバシーポリシー"
 #~ msgid "Private key"
 #~ msgstr "秘密鍵"
 
-#. placeholder {0}: agent.label
 #. placeholder {0}: updateAllProgress.agentLabel
+#. placeholder {1}: updateAllProgress.current
+#. placeholder {2}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Probing {0} ({1} of {2})"
+msgstr "{0}を確認中（{1}/{2}）"
+
+#. placeholder {0}: agent.label
 #. placeholder {1}: update.targetVersion
-#. placeholder {1}: updateAllProgress.targetVersion
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
 msgid "Probing {0} v{1}"
 msgstr "{0} v{1}を確認中"
@@ -9429,6 +9623,8 @@ msgstr "プロファイル"
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/common/MobileProjectPicker.tsx
 #: src/renderer/components/mcp/McpExternalImportModal.tsx
+#: src/renderer/components/plugins/PluginDetail.tsx
+#: src/renderer/components/plugins/PluginMarketplace.tsx
 #: src/renderer/components/thread/ThreadCommandPanel.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsMobileWorkflowList.tsx
 #: src/renderer/views/GitHubActionsView/GitHubActionsSidebar.tsx
@@ -9804,6 +10000,18 @@ msgstr "すべてのジョブを再実行"
 #: src/renderer/views/GitHubActionsView/GitHubActionsRunList.tsx
 msgid "Re-run failed jobs"
 msgstr "失敗したジョブを再実行"
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read and drive Poracode itself: threads, terminal panes, git, pull requests, and schedules."
+msgstr "Poracode 自体の読み取りと操作：スレッド、ターミナルパネル、git、プルリクエスト、スケジュール。"
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read the Terminal panel attached to this worktree and report the evidence."
+msgstr "このワークツリーのターミナルパネルを読み、根拠を報告します。"
+
+#: src/renderer/components/plugins/pluginCopy.ts
+msgid "Read the Terminal panel attached to this worktree and report what it is printing."
+msgstr "このワークツリーのターミナルパネルを読み、表示内容を報告します。"
 
 #: src/renderer/views/ExperimentView/parts/ExperimentJudgeRunDialog.tsx
 msgid "Reading each candidate's changes…"
@@ -10268,6 +10476,7 @@ msgstr "レンダラーが未処理の Promise 拒否に遭遇しました"
 msgid "Reorder {0}"
 msgstr "{0}を並べ替える"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/UsagePanel/parts/UsageProviderCard.tsx
 msgid "Reorder {label}"
 msgstr "{label}を並べ替える"
@@ -10585,6 +10794,7 @@ msgid "Right"
 msgstr "右"
 
 #: src/renderer/views/SettingsOverlay/parts/BrowserSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsOptions.ts
 msgid "Right panel"
 msgstr "右パネル"
 
@@ -10610,12 +10820,20 @@ msgstr "{0}を実行"
 
 #. placeholder {0}: agentStatus.loginCommand
 #: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
-msgid "Run {0} before this thread can run."
-msgstr "このスレッドが実行される前に{0}を実行してください。"
+#~ msgid "Run {0} before this thread can run."
+#~ msgstr "このスレッドが実行される前に{0}を実行してください。"
 
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
-msgid "Run {loginCommand} to sign in."
-msgstr "{loginCommand}を実行してサインインします。"
+#~ msgid "Run {loginCommand} to sign in."
+#~ msgstr "{loginCommand}を実行してサインインします。"
+
+#: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
+msgid "Run {loginCommandDisplay} before this thread can run."
+msgstr "このスレッドが実行される前に{loginCommandDisplay}を実行してください。"
+
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
+msgid "Run {loginCommandDisplay} to sign in."
+msgstr "{loginCommandDisplay}を実行してサインインします。"
 
 #. placeholder {0}: server.label
 #: src/renderer/views/RemoteProjectModal/RemoteProjectModal.tsx
@@ -10728,7 +10946,6 @@ msgstr "あと{runOut}でなくなります"
 #: src/renderer/components/providers/CombinedRuntimeVersionList.tsx
 #: src/renderer/views/MainView/parts/CreateProject/CloneProjectModal.tsx
 #: src/renderer/views/MainView/parts/CreateProject/CreateProjectModal.tsx
-#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Runtime"
 msgstr "ランタイム"
 
@@ -11218,6 +11435,10 @@ msgstr "会話のタイトルの代わりに一般的なテキストを Apple �
 msgid "Send message"
 msgstr "メッセージを送信する"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Send terminal input"
+msgstr "ターミナルに入力を送信"
+
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/hooks/useElementPicker.ts
 msgid "Sent selection to terminal."
 msgstr "選択内容を端末に送信しました。"
@@ -11268,9 +11489,17 @@ msgstr "実験目標を設定または表示する"
 msgid "Set shortcut"
 msgstr "ショートカットを設定"
 
+#: src/renderer/components/composer/ComposerMcpServersMenu.tsx
+msgid "Set when this session started — start a new thread to change MCP servers"
+msgstr "このセッションの開始時に確定されます — MCPサーバーを変更するには新しいスレッドを開始してください"
+
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Set when this session started — start a new thread to change servers"
-msgstr "このセッションの開始時に確定されます — サーバーを変更するには新しいスレッドを開始してください"
+msgid "Set when this session started — start a new thread to change plugins"
+msgstr "このセッションの開始時に確定されます — プラグインを変更するには新しいスレッドを開始してください"
+
+#: src/renderer/components/composer/ComposerAddMenu.tsx
+#~ msgid "Set when this session started — start a new thread to change servers"
+#~ msgstr "このセッションの開始時に確定されます — サーバーを変更するには新しいスレッドを開始してください"
 
 #: src/renderer/components/thread/ThreadAuthRequiredDock.tsx
 #: src/renderer/views/MainView/parts/MainPageLayout.tsx
@@ -11316,6 +11545,10 @@ msgstr "ショートカット"
 #: src/renderer/components/providers/ProviderUsageRail.tsx
 msgid "Show {0}"
 msgstr "{0}を表示"
+
+#: src/renderer/components/thread/ThreadDockBubbles.tsx
+msgid "Show {label}"
+msgstr "{label}を表示"
 
 #: src/renderer/views/SettingsOverlay/parts/UsageProviderRow.tsx
 msgid "Show {label} circle in sidebar"
@@ -11371,6 +11604,14 @@ msgstr "コンポーザーを表示"
 msgid "Show context usage details"
 msgstr "コンテキストの使用状況の詳細を表示する"
 
+#: src/renderer/components/thread/ThreadDocksPlacementToggle.tsx
+msgid "Show docks above the composer"
+msgstr "ドックをコンポーザーの上に表示"
+
+#: src/renderer/components/thread/ThreadDocksPlacementToggle.tsx
+msgid "Show docks in the right panel"
+msgstr "ドックを右パネルに表示"
+
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #: src/renderer/views/SettingsOverlay/parts/UsageSettings.tsx
 msgid "Show estimated cost"
@@ -11380,6 +11621,10 @@ msgstr "推定コストを表示"
 #: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
 #~ msgid "Show GitHub Actions in the sidebar footer."
 #~ msgstr "サイドバーのフッターに GitHub Actions を表示します。"
+
+#: src/renderer/components/thread/ThreadImagesBubble.tsx
+msgid "Show images"
+msgstr "画像を表示"
 
 #: src/renderer/components/thread/ChatPane/parts/items/InlineFolderPathChip.tsx
 msgid "Show in file explorer"
@@ -12068,8 +12313,8 @@ msgid "Subagent"
 msgstr "サブエージェント"
 
 #: src/renderer/components/plugins/pluginCopy.ts
-msgid "Subagent Delegation"
-msgstr "サブエージェントへの委任"
+#~ msgid "Subagent Delegation"
+#~ msgstr "サブエージェントへの委任"
 
 #: src/renderer/components/thread/ChatPane/parts/items/SubAgentOverlay.tsx
 msgid "Subagent not found."
@@ -12311,8 +12556,8 @@ msgid "Take Screenshot"
 msgstr "スクリーンショットを撮る"
 
 #: src/renderer/components/composer/ComposerAddMenu.tsx
-msgid "Takes over the desktop while the agent clicks or types"
-msgstr "エージェントがクリックや入力をしている間、デスクトップを占有します"
+#~ msgid "Takes over the desktop while the agent clicks or types"
+#~ msgstr "エージェントがクリックや入力をしている間、デスクトップを占有します"
 
 #: src/renderer/views/SettingsOverlay/parts/MobileRemoteProjectsSheet.tsx
 msgid "Tap + to add a folder or clone a repository on your desktop."
@@ -12339,9 +12584,17 @@ msgstr "対象ブランチ"
 msgid "Task"
 msgstr "タスク"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "Task {id}"
+msgstr "タスク {id}"
+
 #: src/renderer/views/SettingsOverlay/parts/crossagent/CrossagentRankedRow.tsx
 msgid "Task match"
 msgstr "タスク一致"
+
+#: src/renderer/components/thread/ChatPane/parts/items/ItemMarkdown.tsx
+msgid "Task Notification"
+msgstr "タスク通知"
 
 #: src/renderer/components/thread/ChatPane/parts/items/toolDisplay.ts
 msgid "Task output"
@@ -12367,8 +12620,7 @@ msgstr "ターゲットプロバイダーに次に何をすべきかを伝えま
 #: src/renderer/commands/registry.ts
 #: src/renderer/commands/shortcutCatalog.ts
 #: src/renderer/components/layout/PanelDock/panelTabMeta.ts
-#: src/renderer/components/thread/ThreadComposerSection.tsx
-#: src/renderer/components/thread/ThreadDraftComposerArea.tsx
+#: src/renderer/components/plugins/pluginCopy.ts
 #: src/renderer/components/thread/ThreadToolRail.tsx
 #: src/renderer/views/MainView/parts/MainPageLayout.tsx
 #: src/renderer/views/MainView/parts/RightPanel/parts/BrowserPanel/parts/BrowserToolbar.tsx
@@ -12669,6 +12921,10 @@ msgstr "テーマとチャットのフォントサイズ"
 msgid "These built-in MCP servers are shared by OpenCode threads. Saving updates running GUI projects; removing a server can interrupt an active turn. Terminal threads pick up changes on their next launch."
 msgstr "これらの組み込みMCPサーバーはOpenCodeスレッド間で共有されます。保存すると実行中のGUIプロジェクトが更新されますが、サーバーを削除すると進行中のターンが中断される場合があります。ターミナルスレッドには次回起動時に変更が反映されます。"
 
+#: src/renderer/components/mcp/McpServersManager.tsx
+msgid "These servers come from plugins. Enable or disable them from Plugins; they cannot be edited here."
+msgstr "これらのサーバーはプラグインが提供します。プラグインから有効または無効にしてください。ここでは編集できません。"
+
 #: src/renderer/components/common/EffortContextMenu/EffortContextMenu.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/Reasoning.tsx
 #: src/renderer/components/thread/ChatPane/parts/items/ReasoningInline.tsx
@@ -12850,10 +13106,18 @@ msgstr "このサーバーはこのコンピューターで動作するため、
 msgid "This system-wide shortcut is unavailable. Choose another key combination."
 msgstr "このシステム全体のショートカットは使用できません。別のキーの組み合わせを選択してください。"
 
+#: src/renderer/i18n/sharedMessages.ts
+msgid "This thread switched provider without transferring context: {agent} started without Poracode's read_thread tool, so it cannot read the earlier conversation. Re-enable the app-controls MCP tool, or summarize what it needs."
+msgstr "このスレッドはコンテキストを引き継がずにプロバイダーを切り替えました。{agent} は Poracode の read_thread ツールなしで起動したため、これまでの会話を読み取れません。app-controls の MCP ツールを再度有効にするか、必要な内容を要約してください。"
+
 #. placeholder {0}: props.worktreeBranch
 #: src/renderer/views/MainView/parts/Sidebar/parts/DeleteWorktreePopover.tsx
 #~ msgid "This thread uses worktree <0>{0}</0>. Also remove the worktree directory?"
 #~ msgstr "このスレッドはワークツリー <0>{0}</0> を使用します。ワークツリーディレクトリも削除しますか?"
+
+#: src/renderer/i18n/sharedMessages.ts
+msgid "This thread was forked without transferring context: {agent} started without Poracode's read_thread tool, so it cannot read the original conversation. Re-enable the app-controls MCP tool, or summarize what it needs."
+msgstr "このスレッドはコンテキストを引き継がずにフォークされました。{agent} は Poracode の read_thread ツールなしで起動したため、元の会話を読み取れません。app-controls の MCP ツールを再度有効にするか、必要な内容を要約してください。"
 
 #: src/renderer/views/MainView/parts/Sidebar/parts/DeleteWorktreePopover.tsx
 #~ msgid "This will permanently delete the thread and its worktree."
@@ -12909,6 +13173,16 @@ msgstr "スレッドの既定値とホーム範囲"
 msgid "Thread dock"
 msgstr "スレッドドック"
 
+#: src/renderer/components/thread/ThreadDocksPanel.tsx
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Thread docks"
+msgstr "スレッドのドック"
+
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+msgid "Thread docks placement"
+msgstr "スレッドのドックの配置"
+
 #: src/renderer/components/thread/ThreadView.tsx
 msgid "Thread failed to start."
 msgstr "スレッドの開始に失敗しました。"
@@ -12921,6 +13195,14 @@ msgstr "スレッドが終了したか、入力を待っています。"
 #: src/renderer/components/thread/ThreadGoalDock.tsx
 msgid "Thread goal dock"
 msgstr "スレッドゴールドック"
+
+#: src/renderer/components/thread/ThreadImagesDock.tsx
+msgid "Thread images"
+msgstr "スレッドの画像"
+
+#: src/renderer/views/MainView/parts/ProjectAuxiliaryPanel.tsx
+msgid "Thread info"
+msgstr "スレッド情報"
 
 #: src/renderer/views/MainView/parts/Sidebar/parts/ThreadContextMenu.tsx
 msgid "Thread is already unloaded."
@@ -12951,6 +13233,7 @@ msgstr "スレッドが見つかりません"
 msgid "Thread todo dock"
 msgstr "スレッドのやることドック"
 
+#: src/renderer/components/composer/MentionPopover.tsx
 #: src/renderer/views/SettingsOverlay/parts/SettingsSidebar.tsx
 #: src/renderer/views/SettingsOverlay/parts/ThreadSettings.tsx
 #: src/renderer/views/ThreadSearchOverlay/ThreadSearchOverlay.tsx
@@ -13231,8 +13514,10 @@ msgstr "実験のソースブランチを特定できません。"
 msgid "Unable to install {0} hooks."
 msgstr "{0}フックをインストールできません。"
 
+#. placeholder {0}: agent.label
 #. placeholder {0}: input.label
 #: src/renderer/actions/agentLoginActions.ts
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Unable to install {0}."
 msgstr "{0}をインストールできません。"
 
@@ -13615,10 +13900,20 @@ msgstr "更新"
 #: src/renderer/components/thread/ThreadAgentUpdateDock.tsx
 #: src/renderer/views/SettingsOverlay/parts/AcpRegistrySettings.tsx
 #: src/renderer/views/SettingsOverlay/parts/CursorSdkRuntimeSetup.tsx
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/HookPluginSettings.tsx
-#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/SingleAgentSettings.tsx
 msgid "Update"
 msgstr "アップデート"
+
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Update {0}"
+msgstr "{0}を更新"
+
+#. placeholder {0}: props.agentLabel
+#: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
+msgid "Update {0} ({env})"
+msgstr "{0}を更新（{env}）"
 
 #. placeholder {0}: agent.label
 #. placeholder {0}: props.agentLabel
@@ -13628,8 +13923,12 @@ msgid "Update {0} to {updateLabel}"
 msgstr "{0}を{updateLabel}に更新します"
 
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
-msgid "Update all"
-msgstr "すべて更新"
+#~ msgid "Update all"
+#~ msgstr "すべて更新"
+
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Update all ({outdatedCount})"
+msgstr "すべて更新（{outdatedCount}）"
 
 #: src/renderer/views/SettingsOverlay/parts/antigravityRuntimeInstall.ts
 #~ msgid "Update Antigravity"
@@ -13736,10 +14035,23 @@ msgstr "{0}を更新しました"
 msgid "Updating"
 msgstr "更新中"
 
+#. placeholder {0}: updateAllProgress.current
+#. placeholder {1}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Updating ({0}/{1})"
+msgstr "更新中（{0}/{1}）"
+
 #. placeholder {0}: props.agentLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
 msgid "Updating {0}"
 msgstr "{0}を更新しています"
+
+#. placeholder {0}: updateAllProgress.agentLabel
+#. placeholder {1}: updateAllProgress.current
+#. placeholder {2}: updateAllProgress.total
+#: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
+msgid "Updating {0} ({1} of {2})"
+msgstr "{0}を更新中（{1}/{2}）"
 
 #. placeholder {0}: props.agentLabel
 #: src/renderer/views/SettingsOverlay/parts/SingleAgentSettings/parts/AgentEnvironmentRow.tsx
@@ -13747,9 +14059,7 @@ msgid "Updating {0} ({env})"
 msgstr "{0}({env}) を更新しています"
 
 #. placeholder {0}: agent.label
-#. placeholder {0}: updateAllProgress.agentLabel
 #. placeholder {1}: update.targetVersion
-#. placeholder {1}: updateAllProgress.targetVersion
 #: src/renderer/views/SettingsOverlay/parts/ModelOrderSection.tsx
 msgid "Updating {0} to v{1}"
 msgstr "{0}をv{1}に更新しています"
@@ -14206,6 +14516,11 @@ msgstr "ウィンドウを閉じてもシステムトレイで Poracode を実�
 #: src/renderer/views/SettingsOverlay/parts/TerminalSettings.tsx
 msgid "Where a browser element-picker selection goes in terminal-native threads. A collapsed composer always routes to the terminal."
 msgstr "ターミナルネイティブのスレッドで、ブラウザーの要素ピッカーの選択がどこに送られるか。折りたたまれたコンポーザーは常にターミナルにルーティングされます。"
+
+#: src/renderer/views/SettingsOverlay/parts/AppearanceSettings.tsx
+#: src/renderer/views/SettingsOverlay/parts/settingsSearchIndex.ts
+msgid "Where a thread's goal, plan, agents, and background tasks appear. In the right panel, compact bubbles above the composer open them."
+msgstr "スレッドのゴール、プラン、エージェント、バックグラウンドタスクの表示場所。右パネルの場合はコンポーザー上のコンパクトなバブルから開きます。"
 
 #: src/renderer/views/WelcomeOverlay.tsx
 msgid "Where do you want to begin?"

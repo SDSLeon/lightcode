@@ -55,4 +55,22 @@ class RichChatSessionRuntimeAmbiguityTest {
         assertEquals(1, gateway.calls.count { it == "history" })
         assertEquals(1, gateway.calls.count { it == "send" })
     }
+
+    @Test
+    fun projectTerminalSurfaceOwnsPresentationAndClearsGuiSelection() = runTest {
+        val runtime = RichChatSessionRuntime(
+            MutableStateFlow(richLease()),
+            FakeRichChatSessionGateway(),
+            scope = backgroundScope,
+        )
+        runtime.selectThread("thread-a")
+
+        runtime.presentProjectTerminalSurface()
+
+        assertTrue(runtime.isProjectTerminalSurfacePresented)
+        assertEquals(null, runtime.chat.selection.value)
+
+        runtime.dismissProjectTerminalSurface()
+        assertFalse(runtime.isProjectTerminalSurfacePresented)
+    }
 }

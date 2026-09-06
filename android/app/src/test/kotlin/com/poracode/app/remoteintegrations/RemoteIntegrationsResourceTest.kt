@@ -12,7 +12,7 @@ class RemoteIntegrationsResourceTest {
     fun allLocalesHaveExactNonEmptyKeyAndPlaceholderParity() {
         val root = androidRoot().resolve("app/src/main/res")
         val source = values(root.resolve("values/remote_integrations.xml"))
-        assertEquals(100, source.size)
+        assertEquals(108, source.size)
         LOCALES.forEach { locale ->
             val file = root.resolve("values-$locale/remote_integrations.xml")
             assertTrue("Missing $locale", file.isFile)

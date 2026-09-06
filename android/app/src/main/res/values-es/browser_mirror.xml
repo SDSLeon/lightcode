@@ -35,4 +35,7 @@
     <string name="browser_mirror_stop">Detener duplicación</string>
     <string name="browser_mirror_empty">No hay pestañas del navegador abiertas.</string>
     <string name="browser_mirror_stopped">La duplicación del navegador está detenida.</string>
+    <string name="browser_mirror_move_left">Mover a la izquierda</string>
+    <string name="browser_mirror_move_right">Mover a la derecha</string>
+    <string name="browser_mirror_privacy_notice">Las páginas duplicadas pueden mostrar contenido personal. Las imágenes permanecen en este dispositivo y se eliminan al salir de esta pantalla.</string>
 </resources>

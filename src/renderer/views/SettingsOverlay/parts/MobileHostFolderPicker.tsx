@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@heroui/react";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { ChevronRight, CornerLeftUp, File, Folder, House, Loader2 } from "lucide-react";
@@ -17,27 +17,47 @@ export function MobileHostFolderPicker(props: {
   const { t } = useLingui();
   const browseHostDirectory = useRemoteServersStore((state) => state.browseHostDirectory);
   const [listing, setListing] = useState<BrowseHostDirectoryResult | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [requestedPath, setRequestedPath] = useState(props.initialPath ?? "");
+  // The browsed path is owned state: `loading` derives from the request
+  // identity (current vs. settled path) instead of a flag set synchronously in
+  // an effect. Navigations only set the request — from events and from the
+  // initial-path adjustment below — while the effect fulfills it. The nonce
+  // re-issues an identical path (retry after a failure would otherwise bail
+  // out of the effect with no state change).
+  const initialPath = props.initialPath ?? "";
+  const [request, setRequest] = useState({ path: initialPath, nonce: 0 });
+  const [settledPath, setSettledPath] = useState<string | null>(null);
+  const loading = settledPath !== request.path;
 
-  async function browse(path: string) {
-    setRequestedPath(path);
-    setLoading(true);
-    setError(null);
-    try {
-      setListing(await browseHostDirectory(props.desktopId, path));
-    } catch (browseError) {
-      setError(friendlyError(browseError));
-    } finally {
-      setLoading(false);
-    }
+  const [prevInitialPath, setPrevInitialPath] = useState(initialPath);
+  if (prevInitialPath !== initialPath) {
+    setPrevInitialPath(initialPath);
+    setRequest((current) => ({ ...current, path: initialPath }));
   }
-  const browseInitialPath = useEffectEvent(browse);
 
+  const desktopId = props.desktopId;
   useEffect(() => {
-    void browseInitialPath(props.initialPath ?? "");
-  }, [props.initialPath]);
+    const { path } = request;
+    let cancelled = false;
+    void browseHostDirectory(desktopId, path).then(
+      (result) => {
+        if (cancelled) return;
+        setListing(result);
+        setError(null);
+        setSettledPath(path);
+      },
+      (browseError: unknown) => {
+        if (cancelled) return;
+        setError(friendlyError(browseError));
+        setSettledPath(path);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [browseHostDirectory, desktopId, request]);
+  const browse = (path: string) => setRequest((current) => ({ ...current, path }));
+  const retry = () => setRequest((current) => ({ ...current, nonce: current.nonce + 1 }));
 
   const directories = listing?.entries.filter((entry) => entry.type === "directory") ?? [];
   const files = listing?.entries.filter((entry) => entry.type === "file") ?? [];
@@ -55,7 +75,7 @@ export function MobileHostFolderPicker(props: {
             className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted disabled:opacity-40"
             aria-label={t`Up one level`}
             disabled={!listing?.parentPath}
-            onClick={() => listing?.parentPath && void browse(listing.parentPath)}
+            onClick={() => listing?.parentPath && browse(listing.parentPath)}
           >
             <CornerLeftUp className="size-4" />
           </button>
@@ -63,7 +83,7 @@ export function MobileHostFolderPicker(props: {
             type="button"
             className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted"
             aria-label={t`Home folder`}
-            onClick={() => listing && void browse(listing.homePath)}
+            onClick={() => listing && browse(listing.homePath)}
           >
             <House className="size-4" />
           </button>
@@ -81,7 +101,7 @@ export function MobileHostFolderPicker(props: {
           ) : error ? (
             <div className="flex min-h-40 flex-col items-center justify-center gap-3 px-4 text-center text-xs text-danger">
               <p>{error}</p>
-              <Button size="sm" variant="secondary" onPress={() => void browse(requestedPath)}>
+              <Button size="sm" variant="secondary" onPress={retry}>
                 <Trans>Retry</Trans>
               </Button>
             </div>
@@ -96,7 +116,7 @@ export function MobileHostFolderPicker(props: {
                   key={entry.path}
                   type="button"
                   className="m-sheet-action"
-                  onClick={() => void browse(entry.path)}
+                  onClick={() => browse(entry.path)}
                 >
                   <Folder className="size-4 shrink-0 text-accent" />
                   <span className="min-w-0 flex-1 truncate">{entry.name}</span>

@@ -28,13 +28,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.poracode.app.R
+import com.poracode.app.protocol.ProtocolConstants
 import com.poracode.app.protocol.settingsintegrations.SkillOwner
+import com.poracode.app.protocol.settingsintegrations.McpDiscoveryRequest
+import com.poracode.app.protocol.settingsintegrations.McpDiscoveryScope
+import com.poracode.app.model.ProjectIdentity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsIntegrationsSessionScreen(
+internal fun SettingsIntegrationsSessionScreen(
     composition: SettingsIntegrationsComposition,
     onBack: () -> Unit,
+    onImportMcp: (
+        SkillOwner,
+        com.poracode.app.protocol.settingsintegrations.McpServer,
+    ) -> Unit,
+    initialProjectIdentity: ProjectIdentity? = null,
+    initialPage: SettingsIntegrationsPage = SettingsIntegrationsPage.Skills,
     modifier: Modifier = Modifier,
 ) {
     val lease by composition.lease.collectAsStateWithLifecycle()
@@ -43,7 +53,7 @@ fun SettingsIntegrationsSessionScreen(
     val state by composition.controller.state.collectAsStateWithLifecycle()
     val owner = lease?.selectedProject ?: SkillOwner.Global
     var projectMenuExpanded by rememberSaveable { mutableStateOf(false) }
-    val callbacks = remember(composition) {
+    val callbacks = remember(composition, onImportMcp) {
         SettingsIntegrationsCallbacks(
             onRefreshSkills = { composition.refreshSkills(it) },
             onSetSkillEnabled = { owner, skill, enabled ->
@@ -54,6 +64,7 @@ fun SettingsIntegrationsSessionScreen(
             onMarketplaceSearch = { composition.searchMarketplace(it) },
             onInstallSkill = { composition.installMarketplaceSkill(it) },
             onDiscoverMcp = { composition.discoverMcp(it) },
+            onImportMcp = onImportMcp,
             onProbeMcp = { owner, server -> composition.probeMcp(owner, server) },
             onBeginOauth = { owner, server -> composition.beginOauth(owner, server) },
             onLaunchOauth = composition::launchOauth,
@@ -63,7 +74,7 @@ fun SettingsIntegrationsSessionScreen(
     }
     val access = SettingsIntegrationsAccess(
         hostSelected = lease != null,
-        protocolCompatible = lease?.protocolVersion == 8,
+        protocolCompatible = lease?.protocolVersion == ProtocolConstants.REMOTE_PROTOCOL_VERSION,
         ready = lease?.ready == true,
         online = lease?.online == true,
         canRead = "session:read" in lease?.scopes.orEmpty(),
@@ -73,7 +84,19 @@ fun SettingsIntegrationsSessionScreen(
     LaunchedEffect(lease?.key, owner) {
         if (access.canRead && access.online && access.ready) {
             composition.refreshInitial(owner)
+            if (initialPage == SettingsIntegrationsPage.Mcp && !owner.isGlobal) {
+                composition.discoverMcp(McpDiscoveryRequest(McpDiscoveryScope.Workspace, owner))
+            }
         }
+    }
+    LaunchedEffect(lease?.connectionId, initialProjectIdentity, projects.map { it.id }) {
+        composition.selectProject(
+            initialSettingsIntegrationsProjectId(
+                lease?.connectionId,
+                initialProjectIdentity,
+                projects.map { it.id },
+            ),
+        )
     }
     DisposableEffect(composition) { onDispose(composition::onBackground) }
     BackHandler(onBack = onBack)
@@ -82,7 +105,19 @@ fun SettingsIntegrationsSessionScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
+                title = {
+                    Text(
+                        stringResource(
+                            if (initialProjectIdentity != null &&
+                                initialPage == SettingsIntegrationsPage.Mcp
+                            ) {
+                                R.string.settings_global_mcp_title
+                            } else {
+                                R.string.settings_title
+                            },
+                        ),
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -92,7 +127,7 @@ fun SettingsIntegrationsSessionScreen(
                     }
                 },
                 actions = {
-                    if (projects.isNotEmpty()) {
+                    if (projects.isNotEmpty() && initialProjectIdentity == null) {
                         val selectedName = projects.firstOrNull { it.id == selectedProjectId }?.name
                         Box {
                             TextButton(onClick = { projectMenuExpanded = true }) {
@@ -137,8 +172,19 @@ fun SettingsIntegrationsSessionScreen(
                 globalOwner = SkillOwner.Global,
                 projectOwner = lease?.selectedProject,
                 callbacks = callbacks,
+                initialPage = initialPage,
+                lockProjectOwner = initialProjectIdentity != null &&
+                    initialPage == SettingsIntegrationsPage.Mcp,
                 modifier = Modifier.weight(1f),
             )
         }
     }
+}
+
+internal fun initialSettingsIntegrationsProjectId(
+    connectionId: com.poracode.app.model.ClientConnectionId?,
+    identity: ProjectIdentity?,
+    availableProjectIds: List<String>,
+): String? = identity?.projectId?.takeIf {
+    connectionId == identity.connectionId && it in availableProjectIds
 }

@@ -8,6 +8,7 @@
  */
 
 const messages = {
+  "supervisor.sendTerminalInput": "Send terminal input",
   // ── Git: general ──────────────────────────────────────────
   "git.commandFailed": "Git {command} failed: {detail}",
   "github.accountUnavailable":
@@ -122,16 +123,28 @@ const messages = {
   "supervisor.exited": "Background process exited unexpectedly",
   "supervisor.notRunning": "Background process is not running",
   "supervisor.proposedPlan": "Proposed plan",
+  "supervisor.handoffTranscriptUnavailable":
+    "This thread switched provider without transferring context: {agent} started without Poracode's read_thread tool, so it cannot read the earlier conversation. Re-enable the app-controls MCP tool, or summarize what it needs.",
+  "supervisor.forkTranscriptUnavailable":
+    "This thread was forked without transferring context: {agent} started without Poracode's read_thread tool, so it cannot read the original conversation. Re-enable the app-controls MCP tool, or summarize what it needs.",
+
+  // ── Claude ────────────────────────────────────────────────
+  "claude.goal.noVerdict":
+    "no verdict arrived — the CLI may have blocked /goal (workspace trust or hooks settings) or the evaluator could not run",
 
   // ── ACP ───────────────────────────────────────────────────
   "acp.authenticationUnverified":
     "{agent} reported authentication success, but Poracode could not verify it. Configure {agent} directly, then try again.",
+  "acp.taskNotification.task": "Task {id}",
 
   // ── Kimi Code ─────────────────────────────────────────────
   "kimi.credentialsLocked":
     "Kimi Code could not update its credentials because another process is using the credential file. Close other Poracode or Kimi Code processes, then retry.",
   "kimi.emptyResponse":
     "Kimi Code ended the turn without returning a response. Restart the thread and try again.",
+
+  // ── OpenCode ──────────────────────────────────────────
+  "opencode.retryFallback": "OpenCode request failed, retrying...",
 
   // ── App update ────────────────────────────────────────────
   "update.error": "Update error: {detail}",

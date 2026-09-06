@@ -439,6 +439,26 @@ class AppSessionIntegrationTest {
     }
 
     @Test
+    fun malformedExternalPairingLinksCannotCrashOrReplaceTheSession() = runTest {
+        val (session, _, _) = buildSession()
+        pairReady(session)
+        val profileBefore = session.state.value.profile
+        val generationBefore = session.sessionGenerationForTests()
+
+        listOf(
+            "https://?token=missing-host",
+            "https://host-b.test/?token=%",
+        ).forEach { malformed ->
+            session.handleIncomingPairingUrl(raw = malformed, external = true)
+            advanceUntilIdle()
+            assertNull(session.state.value.pendingPairConfirm)
+            assertEquals(profileBefore, session.state.value.profile)
+            assertEquals(generationBefore, session.sessionGenerationForTests())
+            assertEquals(AppSession.Phase.Ready, session.state.value.phase)
+        }
+    }
+
+    @Test
     fun browsableConfirmStartsPairAndFingerprintDedupes() = runTest {
         val (session, _, _) = buildSession()
         session.handleIncomingPairingUrl(

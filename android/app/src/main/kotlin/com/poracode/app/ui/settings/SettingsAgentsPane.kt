@@ -25,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import com.poracode.app.R
 import com.poracode.app.session.settings.SettingsHostInformationEntry
 import com.poracode.app.session.settings.SettingsInformationSlot
+import com.poracode.app.ui.components.EmptyStateView
+import com.poracode.app.ui.components.ErrorStateView
+import com.poracode.app.ui.components.LoadingStateView
 import java.text.NumberFormat
 
 @Composable
@@ -34,60 +37,109 @@ internal fun SettingsAgentsPane(
     replayCache: com.poracode.app.session.replay.HostReplayCacheUi,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+) = SettingsAgentsAndUsagePane(
+    page = SettingsAgentsUsagePage.Agents,
+    entry = entry,
+    access = access,
+    replayCache = replayCache,
+    onRetry = onRetry,
+    modifier = modifier,
+)
+
+@Composable
+internal fun SettingsUsagePane(
+    entry: SettingsHostInformationEntry?,
+    access: SettingsUiAccess,
+    replayCache: com.poracode.app.session.replay.HostReplayCacheUi,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) = SettingsAgentsAndUsagePane(
+    page = SettingsAgentsUsagePage.Usage,
+    entry = entry,
+    access = access,
+    replayCache = replayCache,
+    onRetry = onRetry,
+    modifier = modifier,
+)
+
+private enum class SettingsAgentsUsagePage { Agents, Usage }
+
+@Composable
+private fun SettingsAgentsAndUsagePane(
+    page: SettingsAgentsUsagePage,
+    entry: SettingsHostInformationEntry?,
+    access: SettingsUiAccess,
+    replayCache: com.poracode.app.session.replay.HostReplayCacheUi,
+    onRetry: () -> Unit,
+    modifier: Modifier,
 ) {
     val projection = projectAgents(entry?.agentStatuses, entry?.providerUsage)
     val authoritative = projectAuthoritativeAgents(replayCache, entry?.agentStatuses)
-    val loading = entry?.loading.orEmpty().any {
-        it == SettingsInformationSlot.AgentStatuses || it == SettingsInformationSlot.ProviderUsage
+    val slot = when (page) {
+        SettingsAgentsUsagePage.Agents -> SettingsInformationSlot.AgentStatuses
+        SettingsAgentsUsagePage.Usage -> SettingsInformationSlot.ProviderUsage
     }
-    val failure = entry?.failures?.get(SettingsInformationSlot.AgentStatuses)
-        ?: entry?.failures?.get(SettingsInformationSlot.ProviderUsage)
+    val loading = slot in entry?.loading.orEmpty()
+    val failure = entry?.failures?.get(slot)
     if (entry == null && access.canRead) {
         SettingsLoading(stringResource(R.string.settings_loading_agents))
         return
     }
-    LazyColumn(
-        modifier.fillMaxSize().padding(horizontal = 16.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        if (loading) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
-        if (failure != null) item { SettingsFailure(failure, onRetry) }
-        item {
-            SettingsSection(stringResource(R.string.settings_agents_title)) {
-                if (authoritative.sections.all { it.loadState == SettingsAgentLoadState.NotLoaded } &&
-                    projection.agents.isEmpty()
-                ) {
-                    Text(
-                        stringResource(R.string.settings_agents_empty),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+    val hasAnyAgents = authoritative.sections.any {
+        it.loadState == SettingsAgentLoadState.Populated
+    }
+    val agentsSettled = authoritative.sections.all {
+        it.loadState != SettingsAgentLoadState.NotLoaded
+    }
+    // Mutually exclusive: a failed load never also claims the list is empty, and the
+    // spinner never coexists with either. Content only renders once something loaded.
+    when {
+        loading && page == SettingsAgentsUsagePage.Agents && !hasAnyAgents && !agentsSettled ->
+            LoadingStateView(stringResource(R.string.settings_loading_agents), modifier)
+        loading && page == SettingsAgentsUsagePage.Usage && projection.usage.isEmpty() ->
+            LoadingStateView(stringResource(R.string.settings_loading_agents), modifier)
+        failure != null -> ErrorStateView(
+            settingsFailureMessage(failure),
+            onRetry = onRetry,
+            modifier = modifier,
+        )
+        page == SettingsAgentsUsagePage.Agents && agentsSettled && !hasAnyAgents -> EmptyStateView(
+            stringResource(R.string.settings_agents_empty_title),
+            stringResource(R.string.settings_agents_empty),
+            modifier,
+        )
+        page == SettingsAgentsUsagePage.Usage && projection.usage.isEmpty() -> EmptyStateView(
+            stringResource(R.string.settings_usage_empty_title),
+            stringResource(R.string.settings_usage_empty),
+            modifier,
+        )
+        else -> LazyColumn(
+            modifier.fillMaxSize().padding(horizontal = 16.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            when (page) {
+                SettingsAgentsUsagePage.Agents -> {
+                    authoritative.sections.forEach { section ->
+                        item(key = "env-${section.environment}") {
+                            SettingsAgentEnvironmentSection(section)
+                        }
+                    }
+                }
+                SettingsAgentsUsagePage.Usage -> {
+                    if (projection.usageFromCache) item {
+                        Text(
+                            stringResource(R.string.settings_usage_cached),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    items(projection.usage, key = { it.providerId }) { usage ->
+                        SettingsUsageCard(usage)
+                    }
                 }
             }
         }
-        authoritative.sections.forEach { section ->
-            item(key = "env-${section.environment}") {
-                SettingsAgentEnvironmentSection(section)
-            }
-        }
-        item {
-            SettingsSection(stringResource(R.string.settings_usage_title)) {
-                if (projection.usageFromCache) {
-                    Text(
-                        stringResource(R.string.settings_usage_cached),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (projection.usage.isEmpty()) {
-                    Text(
-                        stringResource(R.string.settings_usage_empty),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-        items(projection.usage, key = { it.providerId }) { usage -> SettingsUsageCard(usage) }
     }
 }
 

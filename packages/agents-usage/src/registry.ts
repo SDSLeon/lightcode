@@ -7,6 +7,8 @@ import { collectFactory } from "./collectors/factory";
 import { collectGemini } from "./collectors/gemini";
 import { collectGrok } from "./collectors/grok";
 import { collectKimi } from "./collectors/kimi";
+import { collectMuse } from "./collectors/muse";
+import { collectQoder } from "./collectors/qoder";
 import { collectQwen } from "./collectors/qwen";
 import { collectZai } from "./collectors/zai";
 import type { CollectOptions, HostPort } from "./host";
@@ -73,9 +75,19 @@ const KIMI_COLLECTOR: UsageCollector = {
   collect: collectKimi,
 };
 
+const MUSE_COLLECTOR: UsageCollector = {
+  descriptor: BUILT_IN_USAGE_PROVIDER_DESCRIPTORS.muse,
+  collect: collectMuse,
+};
+
 const QWEN_COLLECTOR: UsageCollector = {
   descriptor: BUILT_IN_USAGE_PROVIDER_DESCRIPTORS.qwen,
   collect: collectQwen,
+};
+
+const QODER_COLLECTOR: UsageCollector = {
+  descriptor: BUILT_IN_USAGE_PROVIDER_DESCRIPTORS.qoder,
+  collect: collectQoder,
 };
 
 // Antigravity is collected supervisor-side from its local language server
@@ -92,7 +104,9 @@ const BUILT_IN: UsageCollector[] = [
   FACTORY_COLLECTOR,
   ZAI_COLLECTOR,
   KIMI_COLLECTOR,
+  MUSE_COLLECTOR,
   QWEN_COLLECTOR,
+  QODER_COLLECTOR,
 ];
 
 export interface UsageCollectorRegistry {

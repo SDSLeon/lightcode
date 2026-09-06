@@ -11,7 +11,7 @@ class SettingsUiResourceTest {
     fun settingsResourcesMatchInEverySupportedLocale() {
         val root = projectFile("app/src/main/res")
         val source = values(root.resolve("values/settings_strings.xml"))
-        assertEquals(88, source.size)
+        assertEquals(128, source.size)
         LOCALES.forEach { locale ->
             val file = root.resolve("values-$locale/settings_strings.xml")
             assertTrue("Missing $locale settings resources", file.isFile)

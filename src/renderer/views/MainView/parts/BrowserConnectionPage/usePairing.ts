@@ -106,7 +106,15 @@ export function usePairing() {
     pairFromCredentials,
     pairFromScan,
     onScanFile,
-    scanInputRef,
+    // The hidden file input's element stays behind this committed-component
+    // boundary: surfaces attach it and trigger it through callbacks instead
+    // of reading a shared ref during render.
+    attachScanInput: (node: HTMLInputElement | null) => {
+      scanInputRef.current = node;
+    },
+    clickScanInput: () => {
+      scanInputRef.current?.click();
+    },
   };
 }
 

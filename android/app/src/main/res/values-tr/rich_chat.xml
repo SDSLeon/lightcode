@@ -38,6 +38,7 @@
     <string name="rich_chat_remove_attachment">%1$s ekini kaldır</string>
     <string name="rich_chat_attachment_invalid">Boş olmayan ve 20 MiB’den büyük olmayan bir dosya seçin.</string>
     <string name="rich_chat_attachment_upload_failed">Ek yüklenemedi. Mesajınız korundu.</string>
+    <string name="rich_chat_camera_unavailable">Bu cihazda kullanılabilir bir kamera uygulaması yok.</string>
 
     <string name="rich_chat_requests_title">Aracı isteği</string>
     <string name="rich_chat_allow">İzin ver</string>
@@ -100,4 +101,34 @@
     <string name="rich_chat_conversation">Konuşma</string>
     <string name="rich_chat_cancel">İptal</string>
     <string name="rich_chat_submit">Gönder</string>
+    <string name="rich_chat_composer_controls">Düzenleyici kontrolleri</string>
+    <string name="rich_chat_composer_controls_summary">Düzenleyici kontrolleri: %1$s</string>
+    <string name="rich_chat_model">Model</string>
+    <string name="rich_chat_effort">Çaba</string>
+    <string name="rich_chat_context">Bağlam</string>
+    <string name="rich_chat_fast_mode">Hızlı mod</string>
+    <string name="rich_chat_thinking">Düşünme</string>
+    <string name="rich_chat_mode">Mod</string>
+    <string name="rich_chat_permissions">İzinler</string>
+    <string name="rich_chat_mcp_servers">MCP sunucuları</string>
+    <string name="rich_chat_browser_mcp">Tarayıcı</string>
+    <string name="rich_chat_crossagent_mcp">Crossagents</string>
+    <string name="rich_chat_chrome_mcp">Chrome</string>
+    <string name="rich_chat_computer_use">Bilgisayar kullanımı</string>
+    <string name="rich_chat_subagent">Alt ajan</string>
+    <string name="rich_chat_crossagent">Çapraz ajan</string>
+    <string name="rich_chat_workflow">İş akışı</string>
+    <string name="rich_chat_activity_count">Etkinlik: %1$d</string>
+    <string name="rich_chat_sign_in_required">Oturum açmanız gerekiyor</string>
+    <string name="rich_chat_plan">Plan</string>
+    <string name="rich_chat_errors">Hatalar</string>
+    <string name="rich_chat_plan_pending">Bekliyor</string>
+    <string name="rich_chat_plan_in_progress">Devam ediyor</string>
+    <string name="rich_chat_plan_completed">Tamamlandı</string>
+    <string name="rich_chat_plan_step_description">%1$s, %2$s</string>
+    <string name="rich_chat_agent_settings">Ajan ayarları</string>
+    <string name="rich_chat_open_request">İsteği aç</string>
+    <string name="rich_chat_app_controls">Uygulama denetimleri</string>
+    <string name="rich_chat_remove_context">%1$s öğesini kaldır</string>
+    <string name="rich_chat_send_steer">Takip talimatını gönder</string>
 </resources>

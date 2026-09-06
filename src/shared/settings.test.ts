@@ -3,15 +3,68 @@ import {
   defaultSharedSettings,
   normalizeSharedSettings,
   normalizeSidebarShortcutOrder,
+  normalizeThreadDocksOrder,
+  reorderVisibleThreadDocks,
 } from "./settings";
 
 describe("shared settings defaults", () => {
+  it("normalizes legacy chrome_-prefixed disabled MCP tools once at load", () => {
+    const normalized = normalizeSharedSettings({
+      disabledBuiltInMcpTools: {
+        chrome: ["chrome_click", "click", "chrome_eval"],
+        browser: ["fill"],
+      },
+    });
+    expect(normalized.disabledBuiltInMcpTools).toEqual({
+      chrome: ["click", "eval"],
+      browser: ["fill"],
+    });
+  });
+
+  it("preserves legacy MCP servers while stripping URL credentials and fragments", () => {
+    const normalized = normalizeSharedSettings({
+      mcpServers: [
+        {
+          id: "legacy-http",
+          name: "legacy-http",
+          transport: {
+            type: "http",
+            url: "https://user:password@example.test/mcp?version=1#token=secret",
+          },
+        },
+      ],
+    });
+    expect(normalized.mcpServers).toHaveLength(1);
+    expect(normalized.mcpServers[0]?.transport).toMatchObject({
+      type: "http",
+      url: "https://example.test/mcp?version=1",
+    });
+  });
+
   it("normalizes sidebar shortcut order without duplicates or omissions", () => {
     expect(normalizeSidebarShortcutOrder(["schedules", "schedules"])).toEqual([
       "schedules",
       "pullRequests",
       "githubActions",
     ]);
+  });
+
+  it("normalizes and reorders thread docks without moving hidden dock slots", () => {
+    expect(normalizeThreadDocksOrder(["plan", "plan"])).toEqual([
+      "plan",
+      "goal",
+      "agents",
+      "backgroundTasks",
+      "images",
+    ]);
+    expect(
+      reorderVisibleThreadDocks(
+        ["goal", "plan", "agents", "backgroundTasks", "images"],
+        ["plan", "backgroundTasks", "images"],
+        2,
+        0,
+      ),
+    ).toEqual(["goal", "images", "agents", "plan", "backgroundTasks"]);
   });
 
   it("enables notifications and displays them for visible threads by default", () => {

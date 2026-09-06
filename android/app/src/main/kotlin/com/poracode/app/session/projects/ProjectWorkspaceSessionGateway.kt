@@ -57,6 +57,33 @@ interface ProjectWorkspaceGateway {
         baseModifiedAtMs: Double,
     ): ProjectFileWriteResult
 
+    suspend fun createEntry(
+        lease: ProjectHostLease,
+        target: ProjectWorkspaceTarget,
+        path: String,
+        type: String,
+    ): Unit = throw UnsupportedOperationException("Project entry mutations are unavailable")
+
+    suspend fun renameEntry(
+        lease: ProjectHostLease,
+        target: ProjectWorkspaceTarget,
+        path: String,
+        nextName: String,
+    ): Unit = throw UnsupportedOperationException("Project entry mutations are unavailable")
+
+    suspend fun moveEntry(
+        lease: ProjectHostLease,
+        target: ProjectWorkspaceTarget,
+        path: String,
+        nextParentPath: String?,
+    ): Unit = throw UnsupportedOperationException("Project entry mutations are unavailable")
+
+    suspend fun deleteEntry(
+        lease: ProjectHostLease,
+        target: ProjectWorkspaceTarget,
+        path: String,
+    ): Unit = throw UnsupportedOperationException("Project entry mutations are unavailable")
+
     suspend fun gitStatus(
         lease: ProjectHostLease,
         target: ProjectWorkspaceTarget,
@@ -144,6 +171,41 @@ class GeneratedProjectWorkspaceSessionGateway(
         mutation = true,
     ) {
         writeProjectFile(target.location, path, content, baseModifiedAtMs)
+    }
+
+    override suspend fun createEntry(
+        lease: ProjectHostLease,
+        target: ProjectWorkspaceTarget,
+        path: String,
+        type: String,
+    ): Unit = invoke(lease, target, ProjectCapability.Operate, mutation = true) {
+        createProjectEntry(target.location, path, type)
+    }
+
+    override suspend fun renameEntry(
+        lease: ProjectHostLease,
+        target: ProjectWorkspaceTarget,
+        path: String,
+        nextName: String,
+    ): Unit = invoke(lease, target, ProjectCapability.Operate, mutation = true) {
+        renameProjectEntry(target.location, path, nextName)
+    }
+
+    override suspend fun moveEntry(
+        lease: ProjectHostLease,
+        target: ProjectWorkspaceTarget,
+        path: String,
+        nextParentPath: String?,
+    ): Unit = invoke(lease, target, ProjectCapability.Operate, mutation = true) {
+        moveProjectEntry(target.location, path, nextParentPath)
+    }
+
+    override suspend fun deleteEntry(
+        lease: ProjectHostLease,
+        target: ProjectWorkspaceTarget,
+        path: String,
+    ): Unit = invoke(lease, target, ProjectCapability.Operate, mutation = true) {
+        deleteProjectEntry(target.location, path)
     }
 
     override suspend fun gitStatus(

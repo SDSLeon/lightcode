@@ -3,6 +3,7 @@ package com.poracode.app.session
 import com.poracode.app.model.ClientConnectionId
 import com.poracode.app.model.HostCatalogSnapshot
 import com.poracode.app.model.HostRecord
+import com.poracode.app.model.RemoteWebSocketServerMessage
 import com.poracode.app.storage.HostMutationResult
 import com.poracode.app.storage.HostOperationKind
 import com.poracode.app.storage.MultiHostCredentialRepository
@@ -10,8 +11,11 @@ import com.poracode.app.storage.SessionCredentialRepository
 import com.poracode.app.storage.SessionCredentials
 import com.poracode.app.transport.RemoteApiGatewayFactory
 import com.poracode.app.transport.RemoteEventSocketFactory
+import com.poracode.app.transport.RemoteEventSocket
+import com.poracode.app.transport.RemoteWebSocketClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -19,9 +23,31 @@ data class HostUiCatalog(
     val hosts: List<HostRecord> = emptyList(),
     val selectedConnectionId: ClientConnectionId? = null,
     val lru: List<ClientConnectionId> = emptyList(),
+    val connectionStates: Map<ClientConnectionId, RemoteWebSocketClient.ConnectionState> =
+        emptyMap(),
 )
 
-/** Safe host receipt/selection/removal coordinator; all stale generations no-op. */
+/** Legacy stores may hold several rows per endpoint; show one, most recent first. */
+internal fun compactHostsByEndpoint(snapshot: HostCatalogSnapshot): HostCatalogSnapshot {
+    if (snapshot.hosts.map { it.httpBaseUrl }.distinct().size == snapshot.hosts.size) {
+        return snapshot
+    }
+    val byId = snapshot.hosts.associateBy { it.connectionId }
+    val ordered = snapshot.lru.mapNotNull(byId::get) +
+        snapshot.hosts.filter { it.connectionId !in snapshot.lru }
+    val seen = mutableSetOf<String>()
+    val hosts = ordered.filter { host -> seen.add(host.httpBaseUrl) }
+    val ids = hosts.mapTo(mutableSetOf()) { it.connectionId }
+    return HostCatalogSnapshot(
+        snapshot.document.copy(
+            hosts = hosts,
+            lru = snapshot.lru.filter { it in ids },
+        ),
+        snapshot.registryExists,
+    )
+}
+
+/** Safe host receipt/selection/removal/rename coordinator; all stale generations no-op. */
 class HostSessionController(
     repository: SessionCredentialRepository,
     private val scope: CoroutineScope,
@@ -41,8 +67,7 @@ class HostSessionController(
     private val repository = repository as? MultiHostCredentialRepository
 
     suspend fun refreshCatalog(): HostCatalogSnapshot? {
-        val snapshot = repository?.let { withContext(ioDispatcher) { it.catalogSnapshot() } }
-            ?: return null
+        val snapshot = readCatalog() ?: return null
         publish(snapshot)
         return snapshot
     }
@@ -65,20 +90,29 @@ class HostSessionController(
         val operation = owner.begin(SessionOperationOwner.Kind.HostSwap)
         val receipt = repository.beginHostOperation(HostOperationKind.Select)
         scope.launch {
-            val result = withContext(ioDispatcher) {
-                repository.selectHost(connectionId, receipt)
+            try {
+                val result = withContext(ioDispatcher) {
+                    repository.selectHost(connectionId, receipt)
+                }
+                if (!result.didApply || !owner.isCurrent(operation)) return@launch
+                val snapshot = readCatalog() ?: return@launch
+                if (snapshot.selectedConnectionId != connectionId) return@launch
+                val credentials = withContext(ioDispatcher) {
+                    repository.credentialsFor(connectionId)
+                } ?: return@launch surfaceStoreError()
+                if (!owner.isCurrent(operation)) return@launch
+                pool.forget(SessionPoolKey.Host(connectionId))
+                // Publish the new owner only after its credentials are ready. The
+                // synchronous install immediately clears the old selected snapshot.
+                publish(snapshot)
+                installSelected(credentials)
+                warmSecondary(snapshot)
+                refreshHostSnapshots(snapshot)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                if (owner.isCurrent(operation)) surfaceStoreError()
             }
-            if (!result.didApply || !owner.isCurrent(operation)) return@launch
-            pool.forget(SessionPoolKey.Host(connectionId))
-            val snapshot = refreshCatalog() ?: return@launch
-            val selected = snapshot.selected ?: return@launch
-            val credentials = withContext(ioDispatcher) {
-                repository.credentialsFor(selected.connectionId)
-            } ?: return@launch surfaceStoreError()
-            if (!owner.isCurrent(operation)) return@launch
-            installSelected(credentials)
-            warmSecondary(snapshot)
-            refreshHostSnapshots(snapshot)
         }
     }
 
@@ -91,31 +125,72 @@ class HostSessionController(
             try {
                 withContext(ioDispatcher) { repository.credentialsFor(connectionId) }
                     ?.let { credentials -> beforeRemove(connectionId, credentials) }
+                val result = withContext(ioDispatcher) {
+                    repository.removeHost(connectionId, receipt)
+                }
+                if (!result.didApply || !owner.isCurrent(operation)) return@launch
+                pool.forget(SessionPoolKey.Host(connectionId))
+                val snapshot = readCatalog() ?: return@launch
+                val selected = snapshot.selected ?: run {
+                    publish(snapshot)
+                    installEmpty()
+                    return@launch
+                }
+                if (snapshot.selectedConnectionId == selectedAtReceipt) {
+                    publish(snapshot)
+                    warmSecondary(snapshot)
+                    return@launch
+                }
+                val credentials = withContext(ioDispatcher) {
+                    repository.credentialsFor(selected.connectionId)
+                } ?: return@launch surfaceStoreError()
+                if (!owner.isCurrent(operation)) return@launch
+                publish(snapshot)
+                installSelected(credentials)
+                warmSecondary(snapshot)
+                refreshHostSnapshots(snapshot)
+            } catch (error: CancellationException) {
+                throw error
             } catch (_: Exception) {
+                if (owner.isCurrent(operation)) surfaceStoreError()
+            }
+        }
+    }
+
+    fun rename(connectionId: ClientConnectionId, label: String) {
+        val repository = repository ?: return
+        val normalized = label.trim()
+        if (normalized.isEmpty() || normalized.length > 80) return
+        if (state().hostCatalog.hosts.none { it.connectionId == connectionId }) return
+        val receipt = repository.beginHostOperation(HostOperationKind.Rename)
+        scope.launch {
+            val result = runCatching {
+                withContext(ioDispatcher) {
+                    repository.renameHost(connectionId, normalized, receipt)
+                }
+            }.getOrElse {
                 surfaceStoreError()
                 return@launch
             }
-            val result = withContext(ioDispatcher) {
-                repository.removeHost(connectionId, receipt)
-            }
-            if (!result.didApply || !owner.isCurrent(operation)) return@launch
-            pool.forget(SessionPoolKey.Host(connectionId))
-            val snapshot = refreshCatalog() ?: return@launch
-            val selected = snapshot.selected ?: run {
-                installEmpty()
+            if (!result.didApply) return@launch
+            val snapshot = runCatching { readCatalog() }.getOrElse {
+                surfaceStoreError()
                 return@launch
             }
-            if (snapshot.selectedConnectionId == selectedAtReceipt) {
-                warmSecondary(snapshot)
-                return@launch
+            val renamed = snapshot?.document?.host(connectionId) ?: return@launch
+            updateState { current ->
+                val hosts = current.hostCatalog.hosts.map { host ->
+                    if (host.connectionId == connectionId) renamed else host
+                }
+                current.copy(
+                    hostCatalog = current.hostCatalog.copy(hosts = hosts),
+                    profile = if (current.hostCatalog.selectedConnectionId == connectionId) {
+                        current.profile?.copy(label = renamed.label)
+                    } else {
+                        current.profile
+                    },
+                )
             }
-            val credentials = withContext(ioDispatcher) {
-                repository.credentialsFor(selected.connectionId)
-            } ?: return@launch surfaceStoreError()
-            if (!owner.isCurrent(operation)) return@launch
-            installSelected(credentials)
-            warmSecondary(snapshot)
-            refreshHostSnapshots(snapshot)
         }
     }
 
@@ -132,7 +207,6 @@ class HostSessionController(
             ?: return
         val api = apiFactory.create(credentials.profile.httpBaseUrl, credentials.accessToken)
         val socket = socketFactory.create(api)
-        socket.setListener(null)
         val lease = pool.install(key, socket) ?: run {
             socket.destroy()
             return
@@ -141,6 +215,7 @@ class HostSessionController(
             pool.forget(key)
             return
         }
+        socket.setListener(SecondaryHostListener(secondaryId, lease))
         socket.start(pool.cache(key).lastSeenSeq ?: 0)
     }
 
@@ -183,7 +258,14 @@ class HostSessionController(
             }
     }
 
-    fun onBackground() = pool.onBackground()
+    fun onBackground() {
+        updateState { current ->
+            current.copy(
+                hostCatalog = current.hostCatalog.copy(connectionStates = emptyMap()),
+            )
+        }
+        pool.onBackground()
+    }
 
     fun onForeground() {
         state().hostCatalog.hosts
@@ -196,15 +278,22 @@ class HostSessionController(
         }
     }
 
+    private suspend fun readCatalog(): HostCatalogSnapshot? =
+        repository?.let { withContext(ioDispatcher) { it.catalogSnapshot() } }
+
     private fun publish(snapshot: HostCatalogSnapshot) {
         pool.updatePolicy(snapshot.selectedConnectionId, snapshot.lru)
-        val retained = snapshot.hosts.mapTo(mutableSetOf()) { it.connectionId }
+        val canonical = compactHostsByEndpoint(snapshot)
+        val retained = canonical.hosts.mapTo(mutableSetOf()) { it.connectionId }
         updateState {
             it.copy(
                 hostCatalog = HostUiCatalog(
-                    hosts = snapshot.hosts,
-                    selectedConnectionId = snapshot.selectedConnectionId,
-                    lru = snapshot.lru,
+                    hosts = canonical.hosts,
+                    selectedConnectionId = canonical.selectedConnectionId,
+                    lru = canonical.lru,
+                    connectionStates = it.hostCatalog.connectionStates.filterKeys { id ->
+                        id == canonical.document.secondaryLru
+                    },
                 ),
                 hostSnapshots = it.hostSnapshots.filterKeys(retained::contains),
             )
@@ -213,5 +302,33 @@ class HostSessionController(
 
     private fun surfaceStoreError() {
         updateState { it.copy(phase = AppSession.Phase.LocalStoreInconsistent) }
+    }
+
+    private inner class SecondaryHostListener(
+        private val connectionId: ClientConnectionId,
+        private val lease: SessionLease,
+    ) : RemoteEventSocket.Listener {
+        override fun onStateChanged(
+            state: RemoteWebSocketClient.ConnectionState,
+            detail: String?,
+        ) {
+            if (!pool.isValid(lease)) return
+            updateState { current ->
+                if (current.hostCatalog.hosts.none { it.connectionId == connectionId }) current
+                else current.copy(
+                    hostCatalog = current.hostCatalog.copy(
+                        connectionStates = current.hostCatalog.connectionStates +
+                            (connectionId to state),
+                    ),
+                )
+            }
+        }
+
+        override fun onMessage(message: RemoteWebSocketServerMessage) = Unit
+        override fun onResyncRequired(reason: String) = Unit
+
+        override fun onSessionExpired(reason: String) {
+            onStateChanged(RemoteWebSocketClient.ConnectionState.SessionExpired, reason)
+        }
     }
 }

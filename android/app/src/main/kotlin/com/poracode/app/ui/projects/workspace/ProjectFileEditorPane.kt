@@ -6,9 +6,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.Undo
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -17,6 +22,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -29,6 +38,7 @@ import com.poracode.app.model.ProjectFileReadResult
 import com.poracode.app.session.projects.ProjectOperationFailure
 import com.poracode.app.ui.components.EmptyStateView
 import com.poracode.app.ui.components.LoadingStateView
+import com.poracode.app.ui.richchat.RichMarkdownView
 
 @Composable
 internal fun ProjectFileEditorPane(
@@ -45,6 +55,7 @@ internal fun ProjectFileEditorPane(
     onDraftChange: (String) -> Unit,
     onSave: () -> Unit,
     onReload: () -> Unit,
+    onDiscard: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (loading) {
@@ -85,6 +96,7 @@ internal fun ProjectFileEditorPane(
             onDraftChange,
             onSave,
             onReload,
+            onDiscard,
             modifier,
         )
     }
@@ -104,8 +116,11 @@ private fun TextFileEditor(
     onDraftChange: (String) -> Unit,
     onSave: () -> Unit,
     onReload: () -> Unit,
+    onDiscard: () -> Unit,
     modifier: Modifier,
 ) {
+    val canPreviewMarkdown = isMarkdownPath(file.path)
+    var previewing by remember(file.path) { mutableStateOf(false) }
     Column(modifier.fillMaxSize()) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
@@ -132,6 +147,28 @@ private fun TextFileEditor(
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
             )
+            if (canPreviewMarkdown) {
+                IconButton(onClick = { previewing = !previewing }) {
+                    Icon(
+                        if (previewing) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                        contentDescription = stringResource(
+                            if (previewing) {
+                                R.string.workspace_markdown_edit
+                            } else {
+                                R.string.workspace_markdown_preview
+                            },
+                        ),
+                    )
+                }
+            }
+            if (dirty) {
+                IconButton(onClick = onDiscard, enabled = canWrite && !saving) {
+                    Icon(
+                        Icons.Outlined.Undo,
+                        contentDescription = stringResource(R.string.workspace_discard),
+                    )
+                }
+            }
             IconButton(onClick = onReload, enabled = canReload && !saving) {
                 Icon(
                     Icons.Outlined.Refresh,
@@ -160,17 +197,27 @@ private fun TextFileEditor(
             saving = saveFailed,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
-        OutlinedTextField(
-            value = draft,
-            onValueChange = onDraftChange,
-            modifier = Modifier.fillMaxSize().padding(12.dp),
-            enabled = canWrite && !saving,
-            label = { Text(stringResource(R.string.workspace_editor_label)) },
-            textStyle = TextStyle(
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurface,
-            ),
-        )
+        if (canPreviewMarkdown && previewing) {
+            RichMarkdownView(
+                source = draft,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(12.dp),
+            )
+        } else {
+            OutlinedTextField(
+                value = draft,
+                onValueChange = onDraftChange,
+                modifier = Modifier.fillMaxSize().padding(12.dp),
+                enabled = canWrite && !saving,
+                label = { Text(stringResource(R.string.workspace_editor_label)) },
+                textStyle = TextStyle(
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+            )
+        }
     }
 }
 

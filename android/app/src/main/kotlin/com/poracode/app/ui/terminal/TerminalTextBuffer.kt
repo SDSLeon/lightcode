@@ -2,6 +2,8 @@ package com.poracode.app.ui.terminal
 
 data class TerminalRenderedDocument(
     val lines: List<String>,
+    /** Same rows as [lines], grouped into style runs for ANSI-colored rendering. */
+    val styledLines: List<List<TerminalStyledRun>>,
     val revision: Long,
 )
 
@@ -10,11 +12,18 @@ class TerminalTextBuffer(
     private val maxLines: Int = 5_000,
     private val maxLineUtf16Units: Int = 8_192,
 ) {
-    private val lines = mutableListOf(StringBuilder())
+    private class Line {
+        val text = StringBuilder()
+        val styles = mutableListOf<TerminalAnsiStyle>()
+    }
+
+    private val lines = mutableListOf(Line())
     private var source = ""
     private var cursorColumn = 0
     private var escape = StringBuilder()
+    private var style = TerminalAnsiStyle()
     private var revision = 0L
+    private var cachedTerminalDocument: TerminalRenderedDocument? = null
 
     fun update(transcript: String): TerminalRenderedDocument {
         if (transcript == source) return snapshot()
@@ -64,29 +73,52 @@ class TerminalTextBuffer(
         when (command) {
             'K' -> clearLine(arguments.toIntOrNull() ?: 0)
             'J' -> if ((arguments.toIntOrNull() ?: 0) == 2) clearScreen()
-            'G' -> cursorColumn = ((arguments.toIntOrNull() ?: 1) - 1).coerceAtLeast(0)
+            'G' -> cursorColumn = columnCount(arguments) - 1
             'H', 'f' -> cursorColumn = 0
-            // SGR and unsupported cursor controls are intentionally presentation-only.
+            'C' -> cursorColumn =
+                (cursorColumn + columnCount(arguments)).coerceAtMost(maxLineUtf16Units)
+            'D' -> cursorColumn = (cursorColumn - columnCount(arguments)).coerceAtLeast(0)
+            'm' -> style = applyTerminalSgr(parseSgrParameters(arguments), style)
+            // Unsupported cursor controls are intentionally presentation-only.
             else -> Unit
         }
     }
 
+    /** CSI column argument; omitted means 1, and hostile magnitudes stay inside the line window. */
+    private fun columnCount(arguments: String): Int =
+        (arguments.toIntOrNull() ?: 1).coerceIn(1, maxLineUtf16Units)
+
+    private fun parseSgrParameters(arguments: String): List<Int> =
+        if (arguments.isEmpty()) {
+            listOf(0)
+        } else {
+            arguments.split(';').map { it.toIntOrNull() ?: 0 }
+        }
+
     private fun write(character: Char) {
         val line = lines.last()
-        if (cursorColumn < line.length) line.setCharAt(cursorColumn, character)
-        else {
-            while (line.length < cursorColumn) line.append(' ')
-            line.append(character)
+        if (cursorColumn < line.text.length) {
+            line.text.setCharAt(cursorColumn, character)
+            line.styles[cursorColumn] = style
+        } else {
+            while (line.text.length < cursorColumn) {
+                line.text.append(' ')
+                line.styles.add(TerminalAnsiStyle())
+            }
+            line.text.append(character)
+            line.styles.add(style)
         }
         cursorColumn += 1
-        if (line.length > maxLineUtf16Units) {
-            line.delete(0, line.length - maxLineUtf16Units)
-            cursorColumn = line.length
+        if (line.text.length > maxLineUtf16Units) {
+            val overflow = line.text.length - maxLineUtf16Units
+            line.text.delete(0, overflow)
+            repeat(overflow) { line.styles.removeAt(0) }
+            cursorColumn = line.text.length
         }
     }
 
     private fun newLine() {
-        lines += StringBuilder()
+        lines += Line()
         cursorColumn = 0
         trimLines()
     }
@@ -99,18 +131,28 @@ class TerminalTextBuffer(
     private fun clearLine(mode: Int) {
         val line = lines.last()
         when (mode) {
-            1 -> if (line.isNotEmpty()) line.delete(0, (cursorColumn + 1).coerceAtMost(line.length))
+            1 -> {
+                val end = (cursorColumn + 1).coerceAtMost(line.text.length)
+                if (line.text.isNotEmpty()) {
+                    line.text.delete(0, end)
+                    repeat(end) { line.styles.removeAt(0) }
+                }
+            }
             2 -> {
-                line.clear()
+                line.text.clear()
+                line.styles.clear()
                 cursorColumn = 0
             }
-            else -> if (cursorColumn < line.length) line.delete(cursorColumn, line.length)
+            else -> if (cursorColumn < line.text.length) {
+                line.text.delete(cursorColumn, line.text.length)
+                while (line.styles.size > cursorColumn) line.styles.removeAt(line.styles.size - 1)
+            }
         }
     }
 
     private fun clearScreen() {
         lines.clear()
-        lines += StringBuilder()
+        lines += Line()
         cursorColumn = 0
     }
 
@@ -121,13 +163,40 @@ class TerminalTextBuffer(
 
     private fun reset() {
         lines.clear()
-        lines += StringBuilder()
+        lines += Line()
         cursorColumn = 0
         escape = StringBuilder()
+        style = TerminalAnsiStyle()
         source = ""
     }
 
-    private fun snapshot() = TerminalRenderedDocument(lines.map(StringBuilder::toString), revision)
+    private fun snapshot(): TerminalRenderedDocument {
+        cachedTerminalDocument?.takeIf { it.revision == revision }?.let { return it }
+        val document = TerminalRenderedDocument(
+            lines = lines.map { it.text.toString() },
+            styledLines = lines.map(::styledRuns),
+            revision = revision,
+        )
+        cachedTerminalDocument = document
+        return document
+    }
+
+    private fun styledRuns(line: Line): List<TerminalStyledRun> {
+        if (line.text.isEmpty()) return emptyList()
+        val runs = mutableListOf<TerminalStyledRun>()
+        var runStart = 0
+        for (index in 1..line.text.length) {
+            val boundary = index == line.text.length || line.styles[index] != line.styles[runStart]
+            if (boundary) {
+                runs += TerminalStyledRun(
+                    text = line.text.substring(runStart, index),
+                    style = line.styles[runStart],
+                )
+                runStart = index
+            }
+        }
+        return runs
+    }
 
     private companion object {
         const val TAB_WIDTH = 8

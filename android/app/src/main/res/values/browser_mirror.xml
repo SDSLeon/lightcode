@@ -35,4 +35,7 @@
     <string name="browser_mirror_key_down">Down</string>
     <string name="browser_mirror_key_left">Left</string>
     <string name="browser_mirror_key_right">Right</string>
+    <string name="browser_mirror_move_left">Move left</string>
+    <string name="browser_mirror_move_right">Move right</string>
+    <string name="browser_mirror_privacy_notice">Mirrored pages can show personal content. Frames stay on this device and are cleared when you leave this screen.</string>
 </resources>

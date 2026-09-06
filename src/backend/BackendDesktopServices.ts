@@ -227,6 +227,15 @@ export class BackendDesktopServices {
     this.remote?.handleSupervisorEvent(event);
   }
 
+  /**
+   * The supervisor process restarted; its in-session state is gone. Mirrors
+   * the headless host: drop cached background-task levels so stale entries
+   * cannot shadow the fresh supervisor's live reads.
+   */
+  handleSupervisorReset(): void {
+    this.remote?.handleSupervisorReset();
+  }
+
   publishBrowserEvent(event: import("@/shared/backendHostProtocol").BackendBrowserEvent): void {
     this.browser.publish(event);
   }

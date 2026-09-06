@@ -21,6 +21,9 @@ import com.poracode.app.protocol.git.GitProcedure
 import com.poracode.app.protocol.git.RemoteV3GitContract
 import com.poracode.app.protocol.github.GithubProcedure
 import com.poracode.app.protocol.github.RemoteV3GithubContract
+import com.poracode.app.protocol.advancedops.AdvancedOperation
+import com.poracode.app.protocol.advancedops.AdvancedOpsContract
+import com.poracode.app.protocol.advancedops.AdvancedPayloads
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonElement
@@ -102,6 +105,38 @@ class ProjectWorkspaceRemoteApiClient private constructor(
             put("baseModifiedAtMs", baseModifiedAtMs)
         },
         ProjectFileWriteResult.serializer(),
+    )
+
+    override suspend fun createProjectEntry(
+        location: ProjectLocation,
+        path: String,
+        type: String,
+    ) = entryCall(
+        AdvancedOperation.CreateProjectEntry,
+        AdvancedPayloads.projectEntry(location, path, type = type),
+    )
+
+    override suspend fun renameProjectEntry(
+        location: ProjectLocation,
+        path: String,
+        nextName: String,
+    ) = entryCall(
+        AdvancedOperation.RenameProjectEntry,
+        AdvancedPayloads.projectEntry(location, path, nextName = nextName),
+    )
+
+    override suspend fun moveProjectEntry(
+        location: ProjectLocation,
+        path: String,
+        nextParentPath: String?,
+    ) = entryCall(
+        AdvancedOperation.MoveProjectEntry,
+        AdvancedPayloads.projectEntry(location, path, nextParentPath = nextParentPath),
+    )
+
+    override suspend fun deleteProjectEntry(location: ProjectLocation, path: String) = entryCall(
+        AdvancedOperation.DeleteProjectEntry,
+        AdvancedPayloads.projectEntry(location, path),
     )
 
     override suspend fun getGitStatus(
@@ -201,6 +236,17 @@ class ProjectWorkspaceRemoteApiClient private constructor(
             expectedStatus = route.expectedStatus,
         )
         return RemoteV3GithubContract.result(procedure, envelope)
+    }
+
+    private suspend fun entryCall(operation: AdvancedOperation, payload: JsonObject) {
+        val route = AdvancedOpsContract.route()
+        val envelope = http.requestText(
+            path = route.path,
+            method = route.method,
+            jsonBody = AdvancedOpsContract.request(operation, payload),
+            expectedStatus = route.expectedStatus,
+        )
+        AdvancedOpsContract.result(operation, envelope)
     }
 
     private suspend fun <T> call(

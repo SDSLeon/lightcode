@@ -6,6 +6,7 @@ import com.poracode.app.model.remoteintegrations.PrWatch
 import com.poracode.app.model.remoteintegrations.PrWatchDraft
 import com.poracode.app.model.remoteintegrations.PrWatchKey
 import com.poracode.app.model.remoteintegrations.ScheduledTask
+import com.poracode.app.model.remoteintegrations.ScheduleRun
 import com.poracode.app.transport.RemoteMutationClassification
 import com.poracode.app.transport.remoteintegrations.RemoteIntegrationsGateway
 import com.poracode.app.transport.remoteintegrations.RemoteIntegrationsGatewayProvider
@@ -18,6 +19,7 @@ interface IntegrationSessionGateway {
     suspend fun checkHostUpdate(lease: IntegrationHostLease): HostUpdateState
     suspend fun installHostUpdate(lease: IntegrationHostLease)
     suspend fun schedules(lease: IntegrationHostLease): List<ScheduledTask>
+    suspend fun scheduleRuns(lease: IntegrationHostLease, id: String): List<ScheduleRun>
     suspend fun commandSchedule(
         lease: IntegrationHostLease,
         command: ScheduleCommand,
@@ -51,6 +53,9 @@ class GeneratedIntegrationSessionGateway(
 
     override suspend fun schedules(lease: IntegrationHostLease) =
         invoke(lease, IntegrationCapability.Read, false) { schedules() }
+
+    override suspend fun scheduleRuns(lease: IntegrationHostLease, id: String) =
+        invoke(lease, IntegrationCapability.Read, false) { scheduleRuns(id) }
 
     override suspend fun commandSchedule(lease: IntegrationHostLease, command: ScheduleCommand) =
         invoke(lease, IntegrationCapability.Operate, true) { commandSchedule(command) }

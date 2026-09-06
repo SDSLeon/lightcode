@@ -20,10 +20,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -31,6 +33,8 @@ import com.poracode.app.R
 import com.poracode.app.session.settings.SettingsHostInformationEntry
 import com.poracode.app.session.settings.SettingsInformationSlot
 import java.text.NumberFormat
+import java.util.Currency
+import java.util.Locale
 
 @Composable
 internal fun SettingsProfilePane(
@@ -80,6 +84,8 @@ internal fun SettingsProfilePane(
                 )
             }
             item { SettingsActivityCard(projection) }
+            item { SettingsAutomationCard(projection) }
+            if (projection.tokenStatsAvailable) item { SettingsTokensCard(projection) }
             item { SettingsDevicesCard(projection.devices) }
         }
     }
@@ -132,12 +138,12 @@ private fun SettingsIdentityEditor(
             value = color,
             onValueChange = { if (it.length <= 64) color = it },
             label = { Text(stringResource(R.string.settings_profile_color)) },
-            supportingText = if (!draft.isValid) {
+            supportingText = if (color.length > 64) {
                 { Text(stringResource(R.string.settings_profile_color_error)) }
             } else {
                 null
             },
-            isError = !draft.isValid,
+            isError = color.length > 64,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -188,6 +194,10 @@ private fun SettingsActivityCard(profile: SettingsProfileProjection) {
             } ?: stringResource(R.string.settings_value_unknown),
         )
         SettingsValueRow(
+            stringResource(R.string.settings_profile_goals),
+            profile.goalsSet?.let(format::format) ?: stringResource(R.string.settings_value_unknown),
+        )
+        SettingsValueRow(
             stringResource(R.string.settings_profile_tokens),
             if (profile.tokenStatsAvailable) {
                 profile.lifetimeTokens?.let(format::format)
@@ -196,6 +206,60 @@ private fun SettingsActivityCard(profile: SettingsProfileProjection) {
                 stringResource(R.string.settings_profile_tokens_unavailable)
             },
         )
+    }
+}
+
+@Composable
+private fun SettingsAutomationCard(profile: SettingsProfileProjection) {
+    val format = NumberFormat.getIntegerInstance()
+    SettingsSection(stringResource(R.string.settings_profile_automation)) {
+        SettingsValueRow(
+            stringResource(R.string.settings_profile_workflows),
+            profile.workflowRuns?.let(format::format) ?: stringResource(R.string.settings_value_unknown),
+        )
+        SettingsValueRow(
+            stringResource(R.string.settings_profile_subagents),
+            profile.subagentRuns?.let(format::format) ?: stringResource(R.string.settings_value_unknown),
+        )
+        SettingsValueRow(
+            stringResource(R.string.settings_profile_skills_used),
+            profile.totalSkillsUsed?.let(format::format)
+                ?: stringResource(R.string.settings_value_unknown),
+        )
+        SettingsValueRow(
+            stringResource(R.string.settings_profile_mcp_calls),
+            profile.mcpToolCalls?.let(format::format) ?: stringResource(R.string.settings_value_unknown),
+        )
+    }
+}
+
+@Composable
+private fun SettingsTokensCard(profile: SettingsProfileProjection) {
+    val format = NumberFormat.getIntegerInstance()
+    SettingsSection(stringResource(R.string.settings_profile_tokens_by_provider)) {
+        SettingsValueRow(
+            stringResource(R.string.settings_profile_peak_day),
+            profile.peakDayTokens?.let(format::format) ?: stringResource(R.string.settings_value_unknown),
+        )
+        if (profile.tokenProviders.isEmpty()) {
+            Text(
+                stringResource(R.string.settings_profile_tokens_by_provider_empty),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        val locale = Locale.forLanguageTag(LocalLocale.current.toLanguageTag())
+        val currencyFormat = remember(locale) {
+            NumberFormat.getCurrencyInstance(locale).apply { currency = Currency.getInstance("USD") }
+        }
+        profile.tokenProviders.forEach { provider ->
+            SettingsValueRow(provider.label, format.format(provider.tokens))
+            provider.estimatedCostUsd?.let { cost ->
+                SettingsValueRow(
+                    stringResource(R.string.settings_profile_provider_cost),
+                    currencyFormat.format(cost),
+                )
+            }
+        }
     }
 }
 

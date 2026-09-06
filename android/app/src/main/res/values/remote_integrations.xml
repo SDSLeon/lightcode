@@ -68,9 +68,11 @@
     <string name="remote_integrations_weekly">Weekly</string>
     <string name="remote_integrations_once">Once</string>
     <string name="remote_integrations_minute">Minute (0–59)</string>
-    <string name="remote_integrations_weekdays">Weekdays (0–6, comma-separated)</string>
-    <string name="remote_integrations_local_time">Local time (HH:MM)</string>
-    <string name="remote_integrations_run_at">Run at (UTC ISO date and time)</string>
+    <string name="remote_integrations_weekdays">Weekdays</string>
+    <string name="remote_integrations_local_time">Local time</string>
+    <string name="remote_integrations_run_at">Run at</string>
+    <string name="remote_integrations_choose_time">Choose time</string>
+    <string name="remote_integrations_choose_date_time">Choose date &amp; time</string>
     <string name="remote_integrations_enabled">Enabled</string>
     <string name="remote_integrations_fast_mode">Fast mode</string>
     <string name="remote_integrations_invalid_schedule">Complete all required fields with valid values.</string>
@@ -100,4 +102,10 @@
     <string name="remote_integrations_watch_enabled_label">Watch enabled</string>
     <string name="remote_integrations_auto_merge">Automatic merge</string>
     <string name="remote_integrations_invalid_watch">Watching requires a project, PR, branch, agent, and model.</string>
+    <string name="remote_integrations_run_history">Run history</string>
+    <string name="remote_integrations_close">Close</string>
+    <string name="remote_integrations_no_runs">No runs yet</string>
+    <string name="remote_integrations_no_runs_message">Run this schedule to see its thread history.</string>
+    <string name="remote_integrations_open_thread">Open thread</string>
+    <string name="remote_integrations_status_interrupted">Interrupted</string>
 </resources>
